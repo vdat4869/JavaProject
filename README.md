@@ -19,6 +19,5 @@ UTH Conference Management System là nền tảng hỗ trợ toàn bộ quy trì
 | Database | PostgreSQL |
 | Cache/Queue | Redis (tùy chọn) |
 | Auth | JWT hoặc SSO |
-| Deploy | Docker / Docker Compose |
 
 ---
