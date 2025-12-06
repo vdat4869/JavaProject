@@ -10,3 +10,15 @@ UTH Conference Management System là nền tảng hỗ trợ toàn bộ quy trì
 - Tối ưu trải nghiệm cho tác giả, phản biện và ban tổ chức.
 
 ---
+## 2. Công nghệ sử dụng
+
+| Thành phần | Công nghệ |
+|-----------|-----------|
+| Backend | Java Spring Boot |
+| Frontend | ReactJS |
+| Database | PostgreSQL |
+| Cache/Queue | Redis (tùy chọn) |
+| Auth | JWT hoặc SSO |
+| Deploy | Docker / Docker Compose |
+
+---
