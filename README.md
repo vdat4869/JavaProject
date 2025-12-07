@@ -36,7 +36,6 @@ CFP → Nộp bài → Gán reviewer → Phản biện → Quyết định → C
 | **DTO Mapping** | MapStruct |
 | **Validation** | Spring Validation (Jakarta Validation) |
 | **API Docs** | Swagger / OpenAPI 3 |
-| **Build Tool** | Maven 3.9+ |
 | **PDF Toolkit** | Apache PDFBox (kiểm tra PDF camera-ready) |
 
 ---
@@ -97,7 +96,6 @@ Tất cả phải đụng backend + frontend + database theo yêu cầu giảng 
 ---
 
 ## 8. License & Team
-
 Sinh viên Khoa CNTT – UTH  
 Đồ án môn học Lập trình Java
 
