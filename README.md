@@ -41,6 +41,34 @@ CFP → Nộp bài → Gán reviewer → Phản biện → Quyết định → C
 ---
 ## 3. Kiến trúc hệ thống
 
+### Cấu trúc Project
+
+```
+UTH-ConfMS/
+├── backend/              # Spring Boot Backend
+│   ├── src/main/java/com/uth/confms/
+│   │   ├── auth/          # Module xác thực
+│   │   ├── conference/    # Module quản lý hội nghị
+│   │   ├── submission/    # Module nộp bài
+│   │   ├── pc/            # Module PC member
+│   │   ├── review/        # Module review
+│   │   ├── decision/      # Module quyết định
+│   │   └── cameraready/   # Module camera-ready
+│   └── pom.xml
+├── frontend/            # React Frontend
+│   ├── src/
+│   │   ├── pages/        # Các trang
+│   │   ├── components/   # Components
+│   │   └── contexts/      # Context API
+│   └── package.json
+├── database/            # Database scripts
+│   ├── schema.sql       # Schema hoàn chỉnh
+│   ├── init.sql         # Script đơn giản
+│   └── README.md        # Hướng dẫn database
+├── SETUP.md             # Hướng dẫn setup chi tiết
+└── README.md            # File này
+```
+
 ---
 
 ## 4. Chia module cho 7 người
@@ -95,7 +123,50 @@ Tất cả phải đụng backend + frontend + database theo yêu cầu giảng 
 
 ---
 
-## 8. License & Team
+## 8. Quick Start
+
+### Yêu cầu
+- Java 17+
+- Maven 3.9+
+- Node.js 18+
+- PostgreSQL 15+
+
+### Setup nhanh
+
+1. **Tạo database:**
+```bash
+createdb uth_confms
+psql -U postgres -d uth_confms -f database/schema.sql
+```
+
+2. **Cấu hình backend:**
+Chỉnh sửa `backend/src/main/resources/application.yml` với thông tin database của bạn.
+
+3. **Chạy backend:**
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+4. **Chạy frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+5. **Đăng nhập:**
+- URL: http://localhost:3000
+- Email: admin@uth.edu.vn
+- Password: admin123
+
+**⚠️ Lưu ý**: Đổi mật khẩu admin ngay sau khi setup!
+
+Xem chi tiết tại [SETUP.md](SETUP.md) và [database/README.md](database/README.md)
+
+---
+
+## 9. License & Team
 Sinh viên Khoa CNTT – UTH  
 Đồ án môn học Lập trình Java
 
