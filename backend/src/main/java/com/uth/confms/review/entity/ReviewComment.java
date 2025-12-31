@@ -12,13 +12,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "assignments")
+@Table(name = "review_comments")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class Assignment {
+public class ReviewComment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,24 +29,18 @@ public class Assignment {
     @Column(nullable = false)
     private Long reviewerId;
     
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    @Builder.Default
-    private AssignmentStatus status = AssignmentStatus.ASSIGNED;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String content;
     
     @Column(nullable = false)
     @Builder.Default
-    private Boolean isPrimary = false;
+    private Boolean isInternal = true; // Internal discussion between reviewers
     
     @CreatedDate
     @Column(nullable = false, updatable = false)
-    private LocalDateTime assignedAt;
+    private LocalDateTime createdAt;
     
     @LastModifiedDate
     private LocalDateTime updatedAt;
-    
-    public enum AssignmentStatus {
-        ASSIGNED, ACCEPTED, DECLINED, COMPLETED
-    }
 }
 
