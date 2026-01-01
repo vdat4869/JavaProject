@@ -1,3 +1,90 @@
 spring:
   application:
     name: uth-confms
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/uth_confms
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:Hoyo@4869}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+  
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production-minimum-32-characters}
+  access-token-validity: 3600000
+  refresh-token-validity: 86400000
+
+app:
+  file-storage:
+    path: ${FILE_STORAGE_PATH:./uploads}
+    max-size: 10485760
+  storage:
+    base-dir: ${STORAGE_BASE_DIR:/data/uploads}
+    max-file-size-mb: ${STORAGE_MAX_FILE_SIZE_MB:20}
+  email:
+    verification:
+      expiration-hours: 24
+    from-name: ${EMAIL_FROM_NAME:UTH-ConfMS}
+  ai:
+    enabled: ${AI_ENABLED:true}
+    confidence-threshold: ${AI_CONFIDENCE_THRESHOLD:0.5}
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
+  pc:
+    invitation:
+      expiration-days: 7
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.uth: DEBUG
+    org.springframework.security: DEBUG
+

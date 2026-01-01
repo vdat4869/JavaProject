@@ -11,6 +11,22 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entity đại diện cho review (đánh giá bài nộp)
+ * 
+ * <p>Review được tạo bởi reviewer sau khi accept assignment.
+ * Review có các trạng thái:
+ * <ul>
+ *   <li>DRAFT - Đang soạn thảo, chưa submit</li>
+ *   <li>SUBMITTED - Đã submit, không thể chỉnh sửa</li>
+ * </ul>
+ * 
+ * <p>Review có các scores từ STRONG_ACCEPT đến STRONG_REJECT.
+ * Review có thể là confidential (chỉ chair/PC thấy) hoặc public (author thấy).
+ * 
+ * @author UTH-ConfMS Team
+ * @version 1.0
+ */
 @Entity
 @Table(name = "reviews")
 @Data
@@ -64,12 +80,34 @@ public class Review {
     @LastModifiedDate
     private LocalDateTime submittedAt;
     
+    /**
+     * Enum định nghĩa các điểm đánh giá (score) của review
+     */
     public enum ReviewScore {
-        STRONG_ACCEPT, ACCEPT, WEAK_ACCEPT, BORDERLINE, WEAK_REJECT, REJECT, STRONG_REJECT
+        /** Chấp nhận mạnh mẽ */
+        STRONG_ACCEPT,
+        /** Chấp nhận */
+        ACCEPT,
+        /** Chấp nhận yếu */
+        WEAK_ACCEPT,
+        /** Ranh giới (có thể chấp nhận hoặc từ chối) */
+        BORDERLINE,
+        /** Từ chối yếu */
+        WEAK_REJECT,
+        /** Từ chối */
+        REJECT,
+        /** Từ chối mạnh mẽ */
+        STRONG_REJECT
     }
     
+    /**
+     * Enum định nghĩa các trạng thái của review
+     */
     public enum ReviewStatus {
-        DRAFT, SUBMITTED
+        /** Đang soạn thảo, chưa submit */
+        DRAFT,
+        /** Đã submit, không thể chỉnh sửa */
+        SUBMITTED
     }
 }
 
