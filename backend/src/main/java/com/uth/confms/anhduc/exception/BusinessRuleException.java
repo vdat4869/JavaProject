@@ -58,4 +58,33 @@ public class BusinessRuleException extends RuntimeException {
         return new BusinessRuleException("PUBLIC_ACCESS_DISABLED", 
                 "Tính năng công khai bị tắt");
     }
+public static BusinessRuleException alreadyApproved() {
+    return new BusinessRuleException("ALREADY_APPROVED", 
+            "Bài nộp đã được phê duyệt, không thể thay đổi");
+    }
+
+public static BusinessRuleException deadlineNotSet() {
+    return new BusinessRuleException("DEADLINE_NOT_SET", 
+            "Chưa thiết lập deadline nộp camera-ready");
+    }
+
+public static BusinessRuleException duplicateFile() {
+    return new BusinessRuleException("DUPLICATE_FILE", 
+            "File này đã được tải lên trước đó");
+    }
+
+public static BusinessRuleException maxVersionsExceeded(int maxVersions) {
+    return new BusinessRuleException("MAX_VERSIONS_EXCEEDED", 
+            String.format("Đã vượt quá số phiên bản tối đa cho phép (%d)", maxVersions));
+    }
+
+public static BusinessRuleException noVersionUploaded() {
+    return new BusinessRuleException("NO_VERSION_UPLOADED", 
+            "Chưa có phiên bản nào được tải lên");
+    }
+
+public static BusinessRuleException trackNotInConference() {
+    return new BusinessRuleException("TRACK_NOT_IN_CONFERENCE", 
+            "Track không thuộc hội nghị này");
+    }
 }
