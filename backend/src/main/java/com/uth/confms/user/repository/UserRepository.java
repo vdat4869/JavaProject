@@ -1,9 +1,11 @@
 package com.uth.confms.user.repository;
 
-import com.uth.confms.user.entity.User;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
+import com.uth.confms.user.entity.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
-    Optional<User> findByUsername(String username);
+    Optional<User> findByEmail(String email);
+
+    Optional<User> findByRefreshToken(String refreshToken);
 }
