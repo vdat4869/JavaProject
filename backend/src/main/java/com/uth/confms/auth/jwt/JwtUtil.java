@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.UUID;
 import java.util.Date;
+import java.util.List;
+import java.security.Key;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class JwtUtil {
@@ -28,7 +31,7 @@ public class JwtUtil {
     public String generateAccessToken(User user) {
         return Jwts.builder()
                 .setSubject(user.getEmail())
-                .claim("role", user.getRole())
+                .claim("roles", user.getRoles().stream().map(Enum::name).toList())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + accessExpiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -65,12 +68,13 @@ public class JwtUtil {
                 .getSubject();
     }
 
-    public String extractRole(String token) {
-        return (String) Jwts.parserBuilder()
+    public List<String> extractRoles(String token) {
+        return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
-                .get("role");
+                .get("roles", List.class);
     }
+
 }

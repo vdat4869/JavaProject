@@ -3,6 +3,7 @@ package com.uth.confms.auth.service;
 import com.uth.confms.auth.dto.*;
 import com.uth.confms.auth.jwt.JwtUtil;
 import com.uth.confms.user.entity.User;
+import com.uth.confms.user.entity.Role;
 import com.uth.confms.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
