@@ -3,6 +3,7 @@ package com.uth.confms.anhduc.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.UUID;
 
@@ -13,6 +14,7 @@ import java.util.UUID;
  * @author Anh Đức
  * @version 1.0.0
  */
+@Slf4j
 @Service("authorizationService")
 @RequiredArgsConstructor
 public class AuthorizationService {
@@ -23,16 +25,19 @@ public class AuthorizationService {
      */
     public boolean canAccessPaper(UUID paperId, Authentication authentication) {
         UserPrincipal user = getUserPrincipal(authentication);
-        if (user == null) return false;
+        if (user == null) {
+            log.debug("Từ chối truy cập paper {}: người dùng chưa xác thực", paperId);
+            return false;
+        }
         
-        // Tác giả của paper
         if (user.isAuthorOfPaper(paperId)) {
+            log.debug("Cho phép truy cập paper {}: user {} là tác giả", 
+                    paperId, user.getId());
             return true;
         }
         
-        // TODO: Kiểm tra Chair/Track Chair dựa trên conferenceId của paper
-        // Cần inject PaperRepository để lấy thông tin conference
-        
+        log.debug("Từ chối truy cập paper {}: user {} không có quyền", 
+                paperId, user.getId());
         return false;
     }
 
@@ -58,25 +63,43 @@ public class AuthorizationService {
      */
     public boolean canReviewSubmission(UUID conferenceId, Authentication authentication) {
         UserPrincipal user = getUserPrincipal(authentication);
-        if (user == null) return false;
+        if (user == null) {
+            log.warn("Từ chối review submission: người dùng chưa xác thực");
+            return false;
+        }
         
-        return user.isChairOfConference(conferenceId) 
+        boolean canReview = user.isChairOfConference(conferenceId) 
                 || user.isTrackChairOfConference(conferenceId);
+        
+        log.debug("Kiểm tra quyền review cho user {} trên conference {}: {}", 
+                user.getId(), conferenceId, canReview ? "CHO PHÉP" : "TỪ CHỐI");
+        
+        return canReview;
     }
 
-    /**
-     * Kiểm tra user có phải là Chair của conference không.
-     */
     public boolean isChairOfConference(UUID conferenceId, Authentication authentication) {
         UserPrincipal user = getUserPrincipal(authentication);
-        return user != null && user.isChairOfConference(conferenceId);
+        boolean isChair = user != null && user.isChairOfConference(conferenceId);
+        
+        if (isChair) {
+            log.debug("Xác nhận user {} là Chair của conference {}", 
+                    user.getId(), conferenceId);
+        } else {
+            log.debug("User {} không phải Chair của conference {}", 
+                    user != null ? user.getId() : "null", conferenceId);
+        }
+        
+        return isChair;
     }
 
     /**
      * Kiểm tra user có quyền quản lý camera-ready của conference không.
      */
     public boolean canManageCameraReady(UUID conferenceId, Authentication authentication) {
-        return isChairOfConference(conferenceId, authentication);
+        boolean result = isChairOfConference(conferenceId, authentication);
+        log.info("Kiểm tra quyền quản lý camera-ready cho conference {}: {}", 
+                conferenceId, result ? "CHO PHÉP" : "TỪ CHỐI");
+        return result;
     }
 
     /**
