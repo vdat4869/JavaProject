@@ -54,7 +54,7 @@ public class AuthService {
                 refreshToken);
     }
 
-    public AuthResponse refreshToken(String refreshToken) {
+    public AuthResponse refresh(String refreshToken) {
         // 1. Tìm user theo refresh token
         User user = userRepository.findByRefreshToken(refreshToken)
                 .orElseThrow(() -> new RuntimeException("Refresh token không hợp lệ"));
