@@ -1,5 +1,17 @@
 package com.uth.confms.review.controller;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.uth.confms.auth.entity.Role;
 import com.uth.confms.auth.entity.User;
 import com.uth.confms.auth.repository.UserRepository;
@@ -11,168 +23,164 @@ import com.uth.confms.review.dto.ReviewResponseDTO;
 import com.uth.confms.review.dto.ReviewSubmitDTO;
 import com.uth.confms.review.service.DiscussionService;
 import com.uth.confms.review.service.ReviewService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import jakarta.validation.Valid;
 
 /**
  * Controller quản lý reviews và discussions
- * 
+ *
  * <p>Các endpoints:
+ *
  * <ul>
- *   <li>POST /api/reviews/draft - Tạo/cập nhật draft review (PC/REVIEWER)</li>
- *   <li>POST /api/reviews/{id}/submit - Submit review (PC/REVIEWER)</li>
- *   <li>GET /api/reviews/assignment/{id} - Lấy review của assignment (PC/REVIEWER)</li>
- *   <li>GET /api/reviews/submission/{id} - Lấy reviews của submission (authenticated)</li>
- *   <li>GET /api/reviews/{id} - Lấy review by ID (authenticated)</li>
- *   <li>POST /api/reviews/submission/{id}/comments - Thêm internal comment (PC/REVIEWER)</li>
- *   <li>GET /api/reviews/submission/{id}/comments - Lấy internal comments (PC/REVIEWER/CHAIR/ADMIN)</li>
- *   <li>POST /api/reviews/rebuttal - Tạo/cập nhật rebuttal (AUTHOR)</li>
- *   <li>POST /api/reviews/rebuttal/{id}/submit - Submit rebuttal (AUTHOR)</li>
- *   <li>GET /api/reviews/rebuttal/submission/{id} - Lấy rebuttal (authenticated)</li>
+ *   <li>POST /api/reviews/draft - Tạo/cập nhật draft review (PC/REVIEWER)
+ *   <li>POST /api/reviews/{id}/submit - Submit review (PC/REVIEWER)
+ *   <li>GET /api/reviews/assignment/{id} - Lấy review của assignment (PC/REVIEWER)
+ *   <li>GET /api/reviews/submission/{id} - Lấy reviews của submission (authenticated)
+ *   <li>GET /api/reviews/{id} - Lấy review by ID (authenticated)
+ *   <li>POST /api/reviews/submission/{id}/comments - Thêm internal comment (PC/REVIEWER)
+ *   <li>GET /api/reviews/submission/{id}/comments - Lấy internal comments (PC/REVIEWER/CHAIR/ADMIN)
+ *   <li>POST /api/reviews/rebuttal - Tạo/cập nhật rebuttal (AUTHOR)
+ *   <li>POST /api/reviews/rebuttal/{id}/submit - Submit rebuttal (AUTHOR)
+ *   <li>GET /api/reviews/rebuttal/submission/{id} - Lấy rebuttal (authenticated)
  * </ul>
- * 
+ *
  * @author UTH-ConfMS Team
  * @version 1.0
  */
 @RestController
 @RequestMapping("/api/reviews")
-@RequiredArgsConstructor
 public class ReviewController {
-    private final ReviewService reviewService;
-    private final DiscussionService discussionService;
-    private final UserRepository userRepository;
-    
-    @PostMapping("/draft")
-    @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
-    public ResponseEntity<ApiResponse<ReviewResponseDTO>> createOrUpdateDraft(
-            @Valid @RequestBody ReviewSubmitDTO dto,
-            Authentication authentication) {
-        Long reviewerId = getUserIdFromAuthentication(authentication);
-        return ResponseEntity.ok(ApiResponse.success(
-                reviewService.createOrUpdateDraft(dto, reviewerId)));
-    }
-    
-    @PostMapping("/{id}/submit")
-    @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
-    public ResponseEntity<ApiResponse<ReviewResponseDTO>> submitReview(
-            @PathVariable Long id,
-            Authentication authentication) {
-        Long reviewerId = getUserIdFromAuthentication(authentication);
-        return ResponseEntity.ok(ApiResponse.success(
-                reviewService.submitReview(id, reviewerId)));
-    }
-    
-    @GetMapping("/assignment/{assignmentId}")
-    @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
-    public ResponseEntity<ApiResponse<ReviewResponseDTO>> getMyReview(
-            @PathVariable Long assignmentId,
-            Authentication authentication) {
-        Long reviewerId = getUserIdFromAuthentication(authentication);
-        return ResponseEntity.ok(ApiResponse.success(
-                reviewService.getMyReview(assignmentId, reviewerId)));
-    }
-    
-    @GetMapping("/submission/{submissionId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<List<ReviewResponseDTO>>> getReviewsBySubmission(
-            @PathVariable Long submissionId,
-            Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        boolean isChairOrAdmin = isChairOrAdmin(userId);
-        return ResponseEntity.ok(ApiResponse.success(
-                reviewService.getReviewsBySubmission(submissionId, userId, isChairOrAdmin)));
-    }
-    
-    @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<ReviewResponseDTO>> getReview(
-            @PathVariable Long id,
-            Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        boolean isChairOrAdmin = isChairOrAdmin(userId);
-        return ResponseEntity.ok(ApiResponse.success(
-                reviewService.getReview(id, userId, isChairOrAdmin)));
-    }
-    
-    // Internal Discussion
-    
-    @PostMapping("/submission/{submissionId}/comments")
-    @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
-    public ResponseEntity<ApiResponse<ReviewCommentDTO>> addInternalComment(
-            @PathVariable Long submissionId,
-            @RequestBody String content,
-            Authentication authentication) {
-        Long reviewerId = getUserIdFromAuthentication(authentication);
-        return ResponseEntity.ok(ApiResponse.success(
-                discussionService.addInternalComment(submissionId, content, reviewerId)));
-    }
-    
-    @GetMapping("/submission/{submissionId}/comments")
-    @PreAuthorize("hasRole('PC') or hasRole('REVIEWER') or hasRole('CHAIR') or hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<ReviewCommentDTO>>> getInternalComments(
-            @PathVariable Long submissionId,
-            Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        boolean isChairOrAdmin = isChairOrAdmin(userId);
-        return ResponseEntity.ok(ApiResponse.success(
-                discussionService.getInternalComments(submissionId, userId, isChairOrAdmin)));
-    }
-    
-    // Rebuttal
-    
-    @PostMapping("/rebuttal")
-    @PreAuthorize("hasRole('AUTHOR')")
-    public ResponseEntity<ApiResponse<RebuttalDTO>> createOrUpdateRebuttal(
-            @Valid @RequestBody RebuttalSubmitDTO dto,
-            Authentication authentication) {
-        Long authorId = getUserIdFromAuthentication(authentication);
-        return ResponseEntity.ok(ApiResponse.success(
-                discussionService.createOrUpdateRebuttal(dto, authorId)));
-    }
-    
-    @PostMapping("/rebuttal/{id}/submit")
-    @PreAuthorize("hasRole('AUTHOR')")
-    public ResponseEntity<ApiResponse<RebuttalDTO>> submitRebuttal(
-            @PathVariable Long id,
-            Authentication authentication) {
-        Long authorId = getUserIdFromAuthentication(authentication);
-        return ResponseEntity.ok(ApiResponse.success(
-                discussionService.submitRebuttal(id, authorId)));
-    }
-    
-    @GetMapping("/rebuttal/submission/{submissionId}")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<RebuttalDTO>> getRebuttalBySubmission(
-            @PathVariable Long submissionId,
-            Authentication authentication) {
-        Long userId = getUserIdFromAuthentication(authentication);
-        boolean isChairOrAdmin = isChairOrAdmin(userId);
-        RebuttalDTO rebuttal = discussionService.getRebuttalBySubmission(submissionId, userId, isChairOrAdmin);
-        return ResponseEntity.ok(ApiResponse.success(rebuttal));
-    }
-    
-    private Long getUserIdFromAuthentication(Authentication authentication) {
-        String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        return user.getId();
-    }
-    
-    @SuppressWarnings("null")
-    private boolean isChairOrAdmin(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElse(null);
-        if (user == null || user.getRoles() == null) {
-            return false;
-        }
-        return user.getRoles().stream()
-                .anyMatch(role -> role != null && (role.getName() == Role.RoleName.CHAIR || role.getName() == Role.RoleName.ADMIN));
-    }
-}
+  private final ReviewService reviewService;
+  private final DiscussionService discussionService;
+  private final UserRepository userRepository;
 
+  public ReviewController(
+      ReviewService reviewService,
+      DiscussionService discussionService,
+      UserRepository userRepository) {
+    this.reviewService = reviewService;
+    this.discussionService = discussionService;
+    this.userRepository = userRepository;
+  }
+
+  @PostMapping("/draft")
+  @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
+  public ResponseEntity<ApiResponse<ReviewResponseDTO>> createOrUpdateDraft(
+      @Valid @RequestBody ReviewSubmitDTO dto, Authentication authentication) {
+    Long reviewerId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(reviewService.createOrUpdateDraft(dto, reviewerId)));
+  }
+
+  @PostMapping("/{id}/submit")
+  @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
+  public ResponseEntity<ApiResponse<ReviewResponseDTO>> submitReview(
+      @PathVariable Long id, Authentication authentication) {
+    Long reviewerId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(reviewService.submitReview(id, reviewerId)));
+  }
+
+  @GetMapping("/assignment/{assignmentId}")
+  @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
+  public ResponseEntity<ApiResponse<ReviewResponseDTO>> getMyReview(
+      @PathVariable Long assignmentId, Authentication authentication) {
+    Long reviewerId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(reviewService.getMyReview(assignmentId, reviewerId)));
+  }
+
+  @GetMapping("/submission/{submissionId}")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<ApiResponse<List<ReviewResponseDTO>>> getReviewsBySubmission(
+      @PathVariable Long submissionId, Authentication authentication) {
+    Long userId = getUserIdFromAuthentication(authentication);
+    boolean isChairOrAdmin = isChairOrAdmin(userId);
+    return ResponseEntity.ok(
+        ApiResponse.success(
+            reviewService.getReviewsBySubmission(submissionId, userId, isChairOrAdmin)));
+  }
+
+  @GetMapping("/{id}")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<ApiResponse<ReviewResponseDTO>> getReview(
+      @PathVariable Long id, Authentication authentication) {
+    Long userId = getUserIdFromAuthentication(authentication);
+    boolean isChairOrAdmin = isChairOrAdmin(userId);
+    return ResponseEntity.ok(
+        ApiResponse.success(reviewService.getReview(id, userId, isChairOrAdmin)));
+  }
+
+  // Internal Discussion
+
+  @PostMapping("/submission/{submissionId}/comments")
+  @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
+  public ResponseEntity<ApiResponse<ReviewCommentDTO>> addInternalComment(
+      @PathVariable Long submissionId, @RequestBody String content, Authentication authentication) {
+    Long reviewerId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(
+            discussionService.addInternalComment(submissionId, content, reviewerId)));
+  }
+
+  @GetMapping("/submission/{submissionId}/comments")
+  @PreAuthorize("hasRole('PC') or hasRole('REVIEWER') or hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<List<ReviewCommentDTO>>> getInternalComments(
+      @PathVariable Long submissionId, Authentication authentication) {
+    Long userId = getUserIdFromAuthentication(authentication);
+    boolean isChairOrAdmin = isChairOrAdmin(userId);
+    return ResponseEntity.ok(
+        ApiResponse.success(
+            discussionService.getInternalComments(submissionId, userId, isChairOrAdmin)));
+  }
+
+  // Rebuttal
+
+  @PostMapping("/rebuttal")
+  @PreAuthorize("hasRole('AUTHOR')")
+  public ResponseEntity<ApiResponse<RebuttalDTO>> createOrUpdateRebuttal(
+      @Valid @RequestBody RebuttalSubmitDTO dto, Authentication authentication) {
+    Long authorId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(discussionService.createOrUpdateRebuttal(dto, authorId)));
+  }
+
+  @PostMapping("/rebuttal/{id}/submit")
+  @PreAuthorize("hasRole('AUTHOR')")
+  public ResponseEntity<ApiResponse<RebuttalDTO>> submitRebuttal(
+      @PathVariable Long id, Authentication authentication) {
+    Long authorId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(discussionService.submitRebuttal(id, authorId)));
+  }
+
+  @GetMapping("/rebuttal/submission/{submissionId}")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<ApiResponse<RebuttalDTO>> getRebuttalBySubmission(
+      @PathVariable Long submissionId, Authentication authentication) {
+    Long userId = getUserIdFromAuthentication(authentication);
+    boolean isChairOrAdmin = isChairOrAdmin(userId);
+    RebuttalDTO rebuttal =
+        discussionService.getRebuttalBySubmission(submissionId, userId, isChairOrAdmin);
+    return ResponseEntity.ok(ApiResponse.success(rebuttal));
+  }
+
+  private Long getUserIdFromAuthentication(Authentication authentication) {
+    String email = authentication.getName();
+    User user =
+        userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+    return user.getId();
+  }
+
+  @SuppressWarnings("null")
+  private boolean isChairOrAdmin(Long userId) {
+    User user = userRepository.findById(userId).orElse(null);
+    if (user == null || user.getRoles() == null) {
+      return false;
+    }
+    return user.getRoles().stream()
+        .anyMatch(
+            role ->
+                role != null
+                    && (role.getName() == Role.RoleName.CHAIR
+                        || role.getName() == Role.RoleName.ADMIN));
+  }
+}
