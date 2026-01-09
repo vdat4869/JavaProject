@@ -1,88 +1,97 @@
 package com.uth.confms.conference.controller;
 
-import com.uth.confms.conference.dto.*;
-import com.uth.confms.conference.entity.Conference;
+import com.uth.confms.auth.service.UserService;
+import com.uth.confms.common.annotations.NoAuth;
+import com.uth.confms.common.dto.ApiResponse;
+import com.uth.confms.conference.dto.ConferenceCreateDTO;
+import com.uth.confms.conference.dto.ConferenceResponseDTO;
+import com.uth.confms.conference.dto.ConferenceUpdateDTO;
 import com.uth.confms.conference.service.ConferenceService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
+/**
+ * Controller quản lý hội nghị (Conference)
+ *
+ * <p>Các endpoints:
+ *
+ * <ul>
+ *   <li>GET /api/conferences/public - Lấy danh sách hội nghị đã publish (public)
+ *   <li>GET /api/conferences/{id} - Lấy thông tin hội nghị (public)
+ *   <li>GET /api/conferences/my - Lấy danh sách hội nghị của chair (CHAIR/ADMIN)
+ *   <li>POST /api/conferences - Tạo hội nghị mới (CHAIR/ADMIN)
+ *   <li>PUT /api/conferences/{id} - Cập nhật hội nghị (CHAIR/ADMIN)
+ *   <li>DELETE /api/conferences/{id} - Xóa hội nghị (CHAIR/ADMIN)
+ * </ul>
+ *
+ * @author UTH-ConfMS Team
+ * @version 1.0
+ */
 @RestController
-@RequestMapping("/conferences")
-@RequiredArgsConstructor
-@Tag(name = "Conference Management", description = "APIs for managing conferences and CFP")
+@RequestMapping("/api/conferences")
 public class ConferenceController {
-    
-    private final ConferenceService conferenceService;
-    
-    @PostMapping
-    @Operation(summary = "Create a new conference", description = "Create a new conference with CFP configuration")
-    public ResponseEntity<ApiResponse<ConferenceDTO>> createConference(
-            @Valid @RequestBody ConferenceCreateRequest request,
-            @RequestHeader(value = "X-User-Id", required = false, defaultValue = "1") Long userId) {
-        ConferenceDTO conference = conferenceService.createConference(request, userId);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Conference created successfully", conference));
-    }
-    
-    @GetMapping("/{id}")
-    @Operation(summary = "Get conference by ID", description = "Retrieve conference details by ID")
-    public ResponseEntity<ApiResponse<ConferenceDTO>> getConferenceById(@PathVariable Long id) {
-        ConferenceDTO conference = conferenceService.getConferenceById(id);
-        return ResponseEntity.ok(ApiResponse.success(conference));
-    }
-    
-    @GetMapping
-    @Operation(summary = "Get all conferences", description = "Retrieve all active conferences")
-    public ResponseEntity<ApiResponse<List<ConferenceDTO>>> getAllConferences() {
-        List<ConferenceDTO> conferences = conferenceService.getAllConferences();
-        return ResponseEntity.ok(ApiResponse.success(conferences));
-    }
-    
-    @GetMapping("/status/{status}")
-    @Operation(summary = "Get conferences by status", description = "Retrieve conferences filtered by status")
-    public ResponseEntity<ApiResponse<List<ConferenceDTO>>> getConferencesByStatus(
-            @PathVariable Conference.ConferenceStatus status) {
-        List<ConferenceDTO> conferences = conferenceService.getConferencesByStatus(status);
-        return ResponseEntity.ok(ApiResponse.success(conferences));
-    }
-    
-    @GetMapping("/acronym/{acronym}")
-    @Operation(summary = "Get conference by acronym", description = "Retrieve conference by acronym")
-    public ResponseEntity<ApiResponse<ConferenceDTO>> getConferenceByAcronym(@PathVariable String acronym) {
-        ConferenceDTO conference = conferenceService.getConferenceByAcronym(acronym);
-        return ResponseEntity.ok(ApiResponse.success(conference));
-    }
-    
-    @PutMapping("/{id}")
-    @Operation(summary = "Update conference", description = "Update conference information")
-    public ResponseEntity<ApiResponse<ConferenceDTO>> updateConference(
-            @PathVariable Long id,
-            @Valid @RequestBody ConferenceUpdateRequest request) {
-        ConferenceDTO conference = conferenceService.updateConference(id, request);
-        return ResponseEntity.ok(ApiResponse.success("Conference updated successfully", conference));
-    }
-    
-    @DeleteMapping("/{id}")
-    @Operation(summary = "Delete conference", description = "Soft delete a conference")
-    public ResponseEntity<ApiResponse<Void>> deleteConference(@PathVariable Long id) {
-        conferenceService.deleteConference(id);
-        return ResponseEntity.ok(ApiResponse.success("Conference deleted successfully", null));
-    }
-    
-    @PatchMapping("/{id}/status")
-    @Operation(summary = "Change conference status", description = "Change the status of a conference")
-    public ResponseEntity<ApiResponse<ConferenceDTO>> changeConferenceStatus(
-            @PathVariable Long id,
-            @RequestParam Conference.ConferenceStatus status) {
-        ConferenceDTO conference = conferenceService.changeConferenceStatus(id, status);
-        return ResponseEntity.ok(ApiResponse.success("Conference status updated successfully", conference));
-    }
-}
+  private final ConferenceService conferenceService;
+  private final UserService userService;
 
+  public ConferenceController(ConferenceService conferenceService, UserService userService) {
+    this.conferenceService = conferenceService;
+    this.userService = userService;
+  }
+
+  @GetMapping("/public")
+  @NoAuth
+  public ResponseEntity<ApiResponse<List<ConferenceResponseDTO>>> getPublishedConferences() {
+    return ResponseEntity.ok(ApiResponse.success(conferenceService.getPublishedConferences()));
+  }
+
+  @GetMapping("/{id}")
+  @NoAuth
+  public ResponseEntity<ApiResponse<ConferenceResponseDTO>> getConference(@PathVariable Long id) {
+    return ResponseEntity.ok(ApiResponse.success(conferenceService.getConference(id)));
+  }
+
+  @GetMapping("/my")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<List<ConferenceResponseDTO>>> getMyConferences(
+      Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(conferenceService.getConferencesByChair(chairId)));
+  }
+
+  @PostMapping
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<ConferenceResponseDTO>> createConference(
+      @Valid @RequestBody ConferenceCreateDTO dto, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(conferenceService.createConference(dto, chairId)));
+  }
+
+  @PutMapping("/{id}")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<ConferenceResponseDTO>> updateConference(
+      @PathVariable Long id,
+      @Valid @RequestBody ConferenceUpdateDTO dto,
+      Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(conferenceService.updateConference(id, dto, chairId)));
+  }
+
+  @DeleteMapping("/{id}")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<Void>> deleteConference(
+      @PathVariable Long id, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    conferenceService.deleteConference(id, chairId);
+    return ResponseEntity.ok(ApiResponse.success("Conference deleted successfully", null));
+  }
+
+  private Long getUserIdFromAuthentication(Authentication authentication) {
+    String email = authentication.getName();
+    return userService.getUserIdByEmail(email);
+  }
+}

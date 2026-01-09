@@ -1,0 +1,89 @@
+package com.uth.confms.storage.service;
+
+import java.io.InputStream;
+import org.springframework.web.multipart.MultipartFile;
+
+/**
+ * Service interface cho file storage operations
+ *
+ * <p>Service này cung cấp các operations để quản lý file storage:
+ *
+ * <ul>
+ *   <li>Lưu PDF files cho submissions và camera-ready papers
+ *   <li>Xóa files
+ *   <li>Lấy file streams để download
+ * </ul>
+ *
+ * <p>Hiện tại chỉ hỗ trợ:
+ *
+ * <ul>
+ *   <li>File types: PDF only
+ *   <li>Max file size: 20MB
+ *   <li>Storage mode: Local filesystem
+ * </ul>
+ *
+ * @author UTH-ConfMS Team
+ * @version 1.0
+ */
+public interface StorageService {
+
+  /**
+   * Lưu PDF file cho submission
+   *
+   * <p>File sẽ được lưu với path pattern: submissions/{submissionId}/{timestamp}_{originalFilename}
+   *
+   * @param submissionId ID của submission
+   * @param file MultipartFile chứa PDF data
+   * @return Đường dẫn file đã lưu (relative path từ base directory)
+   * @throws IllegalArgumentException Nếu file không phải PDF hoặc vượt quá size limit
+   * @throws RuntimeException Nếu có lỗi khi lưu file
+   */
+  String storeSubmissionPdf(Long submissionId, MultipartFile file);
+
+  /**
+   * Lưu PDF file cho camera-ready paper
+   *
+   * <p>File sẽ được lưu với path pattern: camera-ready/{paperId}/{timestamp}_{originalFilename}
+   *
+   * @param paperId ID của camera-ready paper (submission ID)
+   * @param file MultipartFile chứa PDF data
+   * @return Đường dẫn file đã lưu (relative path từ base directory)
+   * @throws IllegalArgumentException Nếu file không phải PDF hoặc vượt quá size limit
+   * @throws RuntimeException Nếu có lỗi khi lưu file
+   */
+  String storeCameraReadyPdf(Long paperId, MultipartFile file);
+
+  /**
+   * Xóa file từ storage
+   *
+   * @param filePath Đường dẫn file (relative path từ base directory)
+   * @return true nếu xóa thành công, false nếu file không tồn tại
+   */
+  boolean deleteFile(String filePath);
+
+  /**
+   * Lấy InputStream để đọc file
+   *
+   * @param filePath Đường dẫn file (relative path từ base directory)
+   * @return InputStream để đọc file
+   * @throws RuntimeException Nếu file không tồn tại hoặc có lỗi khi đọc
+   */
+  InputStream getFileStream(String filePath);
+
+  /**
+   * Kiểm tra file có tồn tại không
+   *
+   * @param filePath Đường dẫn file (relative path từ base directory)
+   * @return true nếu file tồn tại, false nếu không
+   */
+  boolean fileExists(String filePath);
+
+  /**
+   * Lấy kích thước file (bytes)
+   *
+   * @param filePath Đường dẫn file (relative path từ base directory)
+   * @return Kích thước file tính bằng bytes
+   * @throws RuntimeException Nếu file không tồn tại
+   */
+  long getFileSize(String filePath);
+}

@@ -1,154 +1,240 @@
 package com.uth.confms.cameraready.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-/**
- * Entity đại diện cho bài nộp camera-ready.
- * Mỗi bài báo đã được chấp nhận sẽ có một CameraReadySubmission tương ứng.
- * 
- * @author Anh Đức
- * @version 1.0.0
- */
 @Entity
-@Table(name = "camera_ready_submissions", indexes = {
-        @Index(name = "idx_cr_submission_paper_id", columnList = "paper_id"),
-        @Index(name = "idx_cr_submission_conference_id", columnList = "conference_id"),
-        @Index(name = "idx_cr_submission_status", columnList = "status")
-})
+@Table(name = "camera_ready_submissions")
 @EntityListeners(AuditingEntityListener.class)
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class CameraReadySubmission {
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+  @Column(nullable = false)
+  private Long submissionId;
 
-    /**
-     * Mã bài báo (liên kết với module submission).
-     */
-    @Column(name = "paper_id", nullable = false, unique = true)
-    private UUID paperId;
+  @Column(nullable = false)
+  private String pdfFilePath;
 
-    /**
-     * Mã hội nghị.
-     */
-    @Column(name = "conference_id", nullable = false)
-    private UUID conferenceId;
+  @Column(nullable = false)
+  private Long fileSize;
 
-    /**
-     * Mã track (nếu có).
-     */
-    @Column(name = "track_id")
-    private UUID trackId;
+  private String checksum;
 
-    /**
-     * Trạng thái hiện tại của bài nộp.
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    @Builder.Default
-    private CameraReadyStatus status = CameraReadyStatus.NOT_OPEN;
+  @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
+  private ValidationStatus validationStatus = ValidationStatus.PENDING;
 
-    /**
-     * Đã xác nhận bản quyền chưa.
-     */
-    @Column(name = "copyright_confirmed")
-    @Builder.Default
-    private Boolean copyrightConfirmed = false;
+  @Column(columnDefinition = "TEXT")
+  private String validationNotes;
 
-    /**
-     * Thời gian xác nhận bản quyền.
-     */
-    @Column(name = "copyright_confirmed_at")
-    private LocalDateTime copyrightConfirmedAt;
+  @Column(nullable = false)
+  private Boolean approved = false;
 
-    /**
-     * Người xác nhận bản quyền (user_id).
-     */
-    @Column(name = "copyright_confirmed_by")
-    private UUID copyrightConfirmedBy;
+  @CreatedDate
+  @Column(nullable = false, updatable = false)
+  private LocalDateTime uploadedAt;
 
-    /**
-     * Phiên bản hiện tại.
-     */
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "current_version_id")
-    private CameraReadyVersion currentVersion;
+  @LastModifiedDate private LocalDateTime updatedAt;
 
-    /**
-     * Danh sách tất cả các phiên bản đã tải lên.
-     */
-    @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("versionNumber DESC")
-    @Builder.Default
-    private List<CameraReadyVersion> versions = new ArrayList<>();
+  public CameraReadySubmission() {
+    this.validationStatus = ValidationStatus.PENDING;
+    this.approved = false;
+  }
 
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+  public CameraReadySubmission(
+      Long id,
+      Long submissionId,
+      String pdfFilePath,
+      Long fileSize,
+      String checksum,
+      ValidationStatus validationStatus,
+      String validationNotes,
+      Boolean approved,
+      LocalDateTime uploadedAt,
+      LocalDateTime updatedAt) {
+    this.id = id;
+    this.submissionId = submissionId;
+    this.pdfFilePath = pdfFilePath;
+    this.fileSize = fileSize;
+    this.checksum = checksum;
+    this.validationStatus = validationStatus != null ? validationStatus : ValidationStatus.PENDING;
+    this.validationNotes = validationNotes;
+    this.approved = approved != null ? approved : false;
+    this.uploadedAt = uploadedAt;
+    this.updatedAt = updatedAt;
+  }
 
-    @LastModifiedDate
-    @Column(name = "updated_at", nullable = false)
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public Long getSubmissionId() {
+    return submissionId;
+  }
+
+  public void setSubmissionId(Long submissionId) {
+    this.submissionId = submissionId;
+  }
+
+  public String getPdfFilePath() {
+    return pdfFilePath;
+  }
+
+  public void setPdfFilePath(String pdfFilePath) {
+    this.pdfFilePath = pdfFilePath;
+  }
+
+  public Long getFileSize() {
+    return fileSize;
+  }
+
+  public void setFileSize(Long fileSize) {
+    this.fileSize = fileSize;
+  }
+
+  public String getChecksum() {
+    return checksum;
+  }
+
+  public void setChecksum(String checksum) {
+    this.checksum = checksum;
+  }
+
+  public ValidationStatus getValidationStatus() {
+    return validationStatus;
+  }
+
+  public void setValidationStatus(ValidationStatus validationStatus) {
+    this.validationStatus = validationStatus;
+  }
+
+  public String getValidationNotes() {
+    return validationNotes;
+  }
+
+  public void setValidationNotes(String validationNotes) {
+    this.validationNotes = validationNotes;
+  }
+
+  public Boolean getApproved() {
+    return approved;
+  }
+
+  public void setApproved(Boolean approved) {
+    this.approved = approved;
+  }
+
+  public LocalDateTime getUploadedAt() {
+    return uploadedAt;
+  }
+
+  public void setUploadedAt(LocalDateTime uploadedAt) {
+    this.uploadedAt = uploadedAt;
+  }
+
+  public LocalDateTime getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(LocalDateTime updatedAt) {
+    this.updatedAt = updatedAt;
+  }
+
+  public enum ValidationStatus {
+    PENDING,
+    VALID,
+    INVALID,
+    REQUIRES_REVISION
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+    private Long id;
+    private Long submissionId;
+    private String pdfFilePath;
+    private Long fileSize;
+    private String checksum;
+    private ValidationStatus validationStatus = ValidationStatus.PENDING;
+    private String validationNotes;
+    private Boolean approved = false;
+    private LocalDateTime uploadedAt;
     private LocalDateTime updatedAt;
 
-    // ==================== Business Methods ====================
-
-    public boolean canUpload() {
-        return status.canUpload();
+    public Builder id(Long id) {
+      this.id = id;
+      return this;
     }
 
-    public boolean canReview() {
-        return status.canReview();
+    public Builder submissionId(Long submissionId) {
+      this.submissionId = submissionId;
+      return this;
     }
 
-    public boolean canTransitionTo(CameraReadyStatus newStatus) {
-        return status.canTransitionTo(newStatus);
+    public Builder pdfFilePath(String pdfFilePath) {
+      this.pdfFilePath = pdfFilePath;
+      return this;
     }
 
-    public void transitionTo(CameraReadyStatus newStatus) {
-        if (!canTransitionTo(newStatus)) {
-            throw new IllegalStateException(
-                    String.format("Không thể chuyển từ %s sang %s", status, newStatus));
-        }
-        this.status = newStatus;
+    public Builder fileSize(Long fileSize) {
+      this.fileSize = fileSize;
+      return this;
     }
 
-    public void addVersion(CameraReadyVersion version) {
-        versions.add(version);
-        version.setSubmission(this);
-        this.currentVersion = version;
-        
-        if (status == CameraReadyStatus.OPEN || status == CameraReadyStatus.NEED_FIX) {
-            this.status = CameraReadyStatus.SUBMITTED;
-        }
+    public Builder checksum(String checksum) {
+      this.checksum = checksum;
+      return this;
     }
 
-    public void confirmCopyright(UUID userId) {
-        if (Boolean.TRUE.equals(this.copyrightConfirmed)) {
-            throw new IllegalStateException("Bản quyền đã được xác nhận trước đó");
-        }
-        this.copyrightConfirmed = true;
-        this.copyrightConfirmedAt = LocalDateTime.now();
-        this.copyrightConfirmedBy = userId;
+    public Builder validationStatus(ValidationStatus validationStatus) {
+      this.validationStatus =
+          validationStatus != null ? validationStatus : ValidationStatus.PENDING;
+      return this;
     }
 
-    public int getNextVersionNumber() {
-        return versions.stream()
-                .mapToInt(CameraReadyVersion::getVersionNumber)
-                .max()
-                .orElse(0) + 1;
+    public Builder validationNotes(String validationNotes) {
+      this.validationNotes = validationNotes;
+      return this;
     }
+
+    public Builder approved(Boolean approved) {
+      this.approved = approved != null ? approved : false;
+      return this;
+    }
+
+    public Builder uploadedAt(LocalDateTime uploadedAt) {
+      this.uploadedAt = uploadedAt;
+      return this;
+    }
+
+    public Builder updatedAt(LocalDateTime updatedAt) {
+      this.updatedAt = updatedAt;
+      return this;
+    }
+
+    public CameraReadySubmission build() {
+      return new CameraReadySubmission(
+          id,
+          submissionId,
+          pdfFilePath,
+          fileSize,
+          checksum,
+          validationStatus,
+          validationNotes,
+          approved,
+          uploadedAt,
+          updatedAt);
+    }
+  }
 }

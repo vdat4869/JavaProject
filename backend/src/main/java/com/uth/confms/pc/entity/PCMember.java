@@ -1,134 +1,170 @@
 package com.uth.confms.pc.entity;
 
-import com.uth.confms.pc.entity.enums.InvitationStatus;
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 /**
- * Entity PCMember dai dien cho mot thanh vien trong Program Committee
- * Luu tru thong tin ca nhan, to chuc, va trang thai cua PC member
+ * Entity đại diện cho PC member (thành viên Program Committee)
+ *
+ * <p>PC member được mời bởi chair và có các trạng thái:
+ *
+ * <ul>
+ *   <li>PENDING - Đã được mời, chờ accept/decline
+ *   <li>ACCEPTED - Đã chấp nhận invitation
+ *   <li>DECLINED - Đã từ chối invitation
+ * </ul>
+ *
+ * <p>Chỉ PC members với status ACCEPTED mới có thể được assign reviews.
+ *
+ * @author UTH-ConfMS Team
+ * @version 1.0
  */
+@Entity
+@Table(name = "pc_members")
+@EntityListeners(AuditingEntityListener.class)
 public class PCMember {
-    private String id;
-    private String name;
-    private String email;
-    private String institution;
-    private List<String> researchTopics;
-    private InvitationStatus invitationStatus;
-    private List<String> assignedPapers;
-    private List<String> coAuthors;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    public PCMember() {
-        this.researchTopics = new ArrayList<>();
-        this.assignedPapers = new ArrayList<>();
-        this.coAuthors = new ArrayList<>();
-        this.invitationStatus = InvitationStatus.PENDING;
+  @Column(nullable = false)
+  private Long conferenceId;
+
+  @Column(nullable = false)
+  private Long userId;
+
+  @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
+  private PCMemberStatus status = PCMemberStatus.PENDING;
+
+  @CreatedDate
+  @Column(nullable = false, updatable = false)
+  private LocalDateTime createdAt;
+
+  @LastModifiedDate private LocalDateTime updatedAt;
+
+  public PCMember() {}
+
+  public PCMember(
+      Long id,
+      Long conferenceId,
+      Long userId,
+      PCMemberStatus status,
+      LocalDateTime createdAt,
+      LocalDateTime updatedAt) {
+    this.id = id;
+    this.conferenceId = conferenceId;
+    this.userId = userId;
+    this.status = status;
+    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public Long getConferenceId() {
+    return conferenceId;
+  }
+
+  public void setConferenceId(Long conferenceId) {
+    this.conferenceId = conferenceId;
+  }
+
+  public Long getUserId() {
+    return userId;
+  }
+
+  public void setUserId(Long userId) {
+    this.userId = userId;
+  }
+
+  public PCMemberStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(PCMemberStatus status) {
+    this.status = status;
+  }
+
+  public LocalDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(LocalDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  public LocalDateTime getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(LocalDateTime updatedAt) {
+    this.updatedAt = updatedAt;
+  }
+
+  /** Enum định nghĩa các trạng thái của PC member */
+  public enum PCMemberStatus {
+    /** Đã được mời, chờ accept/decline */
+    PENDING,
+    /** Đã chấp nhận invitation */
+    ACCEPTED,
+    /** Đã từ chối invitation */
+    DECLINED
+  }
+
+  public static class Builder {
+    private Long id;
+    private Long conferenceId;
+    private Long userId;
+    private PCMemberStatus status = PCMemberStatus.PENDING;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    public Builder id(Long id) {
+      this.id = id;
+      return this;
     }
 
-    public PCMember(String id, String name, String email, String institution) {
-        this();
-        this.id = id;
-        this.name = name;
-        this.email = email;
-        this.institution = institution;
+    public Builder conferenceId(Long conferenceId) {
+      this.conferenceId = conferenceId;
+      return this;
     }
 
-    public String getId() {
-        return id;
+    public Builder userId(Long userId) {
+      this.userId = userId;
+      return this;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public Builder status(PCMemberStatus status) {
+      this.status = status;
+      return this;
     }
 
-    public String getName() {
-        return name;
+    public Builder createdAt(LocalDateTime createdAt) {
+      this.createdAt = createdAt;
+      return this;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public Builder updatedAt(LocalDateTime updatedAt) {
+      this.updatedAt = updatedAt;
+      return this;
     }
 
-    public String getEmail() {
-        return email;
+    public PCMember build() {
+      return new PCMember(id, conferenceId, userId, status, createdAt, updatedAt);
     }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getInstitution() {
-        return institution;
-    }
-
-    public void setInstitution(String institution) {
-        this.institution = institution;
-    }
-
-    public List<String> getResearchTopics() {
-        return researchTopics;
-    }
-
-    public void setResearchTopics(List<String> researchTopics) {
-        this.researchTopics = researchTopics;
-    }
-
-    public void addResearchTopic(String topic) {
-        if (!this.researchTopics.contains(topic)) {
-            this.researchTopics.add(topic);
-        }
-    }
-
-    public InvitationStatus getInvitationStatus() {
-        return invitationStatus;
-    }
-
-    public void setInvitationStatus(InvitationStatus invitationStatus) {
-        this.invitationStatus = invitationStatus;
-    }
-
-    public List<String> getAssignedPapers() {
-        return assignedPapers;
-    }
-
-    public void setAssignedPapers(List<String> assignedPapers) {
-        this.assignedPapers = assignedPapers;
-    }
-
-    public void assignPaper(String paperId) {
-        if (!this.assignedPapers.contains(paperId)) {
-            this.assignedPapers.add(paperId);
-        }
-    }
-
-    public List<String> getCoAuthors() {
-        return coAuthors;
-    }
-
-    public void setCoAuthors(List<String> coAuthors) {
-        this.coAuthors = coAuthors;
-    }
-
-    public void addCoAuthor(String coAuthor) {
-        if (!this.coAuthors.contains(coAuthor)) {
-            this.coAuthors.add(coAuthor);
-        }
-    }
-
-    public boolean isActive() {
-        return invitationStatus == InvitationStatus.ACCEPTED;
-    }
-
-    @Override
-    public String toString() {
-        return "PCMember{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", email='" + email + '\'' +
-                ", institution='" + institution + '\'' +
-                ", invitationStatus=" + invitationStatus +
-                ", assignedPapers=" + assignedPapers.size() +
-                '}';
-    }
+  }
 }
-

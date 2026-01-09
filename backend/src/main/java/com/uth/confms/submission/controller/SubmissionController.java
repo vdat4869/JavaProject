@@ -1,134 +1,123 @@
 package com.uth.confms.submission.controller;
 
-import com.uth.confms.submission.dto.*;
-import com.uth.confms.submission.entity.SubmissionFile;
-import com.uth.confms.submission.service.FileStorageService;
+import com.uth.confms.auth.service.UserService;
+import com.uth.confms.common.dto.ApiResponse;
+import com.uth.confms.submission.dto.SubmissionCreateDTO;
+import com.uth.confms.submission.dto.SubmissionFileDTO;
+import com.uth.confms.submission.dto.SubmissionResponseDTO;
+import com.uth.confms.submission.dto.SubmissionUpdateDTO;
 import com.uth.confms.submission.service.SubmissionService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import java.io.IOException;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-
 /**
- * Controller submission
+ * Controller quản lý submissions (bài nộp)
+ *
+ * <p>Các endpoints:
+ *
+ * <ul>
+ *   <li>GET /api/submissions/my - Lấy danh sách submissions của author (AUTHOR)
+ *   <li>GET /api/submissions/{id} - Lấy thông tin submission (AUTHOR)
+ *   <li>POST /api/submissions - Tạo submission mới (AUTHOR)
+ *   <li>PUT /api/submissions/{id} - Cập nhật submission (AUTHOR)
+ *   <li>POST /api/submissions/{id}/submit - Submit submission (AUTHOR)
+ *   <li>POST /api/submissions/{id}/withdraw - Withdraw submission (AUTHOR)
+ *   <li>POST /api/submissions/{id}/upload-pdf - Upload PDF file (AUTHOR)
+ * </ul>
+ *
+ * @author UTH-ConfMS Team
+ * @version 1.0
  */
-@Tag(name = "Submission", description = "Submission management APIs")
 @RestController
 @RequestMapping("/api/submissions")
-@RequiredArgsConstructor
 public class SubmissionController {
-    
-    private final SubmissionService submissionService;
-    private final FileStorageService fileStorageService;
-    
-    @Operation(summary = "Create a new submission (draft)")
-    @PostMapping
-    public ResponseEntity<SubmissionResponse> createSubmission(
-            @Valid @RequestBody SubmissionRequest request,
-            @RequestHeader("X-User-Id") Long userId) {
-        SubmissionResponse response = submissionService.createSubmission(request, userId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-    
-    @Operation(summary = "Get submission by ID")
-    @GetMapping("/{id}")
-    public ResponseEntity<SubmissionResponse> getSubmission(
-            @PathVariable Long id,
-            @RequestHeader("X-User-Id") Long userId) {
-        SubmissionResponse response = submissionService.getSubmissionById(id, userId);
-        return ResponseEntity.ok(response);
-    }
-    
-    @Operation(summary = "Get my submissions")
-    @GetMapping("/my")
-    public ResponseEntity<Page<SubmissionResponse>> getMySubmissions(
-            @RequestParam(required = false) Long conferenceId,
-            @PageableDefault(size = 20) Pageable pageable,
-            @RequestHeader("X-User-Id") Long userId) {
-        Page<SubmissionResponse> responses = submissionService.getMySubmissions(userId, conferenceId, pageable);
-        return ResponseEntity.ok(responses);
-    }
-    
-    @Operation(summary = "Update submission (only DRAFT status)")
-    @PutMapping("/{id}")
-    public ResponseEntity<SubmissionResponse> updateSubmission(
-            @PathVariable Long id,
-            @Valid @RequestBody UpdateSubmissionRequest request,
-            @RequestHeader("X-User-Id") Long userId) {
-        SubmissionResponse response = submissionService.updateSubmission(id, request, userId);
-        return ResponseEntity.ok(response);
-    }
-    
-    @Operation(summary = "Submit submission (change status from DRAFT to SUBMITTED)")
-    @PostMapping("/{id}/submit")
-    public ResponseEntity<SubmissionResponse> submitSubmission(
-            @PathVariable Long id,
-            @RequestHeader("X-User-Id") Long userId) {
-        SubmissionResponse response = submissionService.submitSubmission(id, userId);
-        return ResponseEntity.ok(response);
-    }
-    
-    @Operation(summary = "Withdraw submission")
-    @PostMapping("/{id}/withdraw")
-    public ResponseEntity<SubmissionResponse> withdrawSubmission(
-            @PathVariable Long id,
-            @RequestParam(required = false) String reason,
-            @RequestHeader("X-User-Id") Long userId) {
-        SubmissionResponse response = submissionService.withdrawSubmission(id, reason, userId);
-        return ResponseEntity.ok(response);
-    }
-    
-    @Operation(summary = "Upload file for submission")
-    @PostMapping("/{id}/files")
-    public ResponseEntity<FileResponse> uploadFile(
-            @PathVariable Long id,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("category") SubmissionFile.FileCategory category,
-            @RequestHeader("X-User-Id") Long userId) throws IOException {
-        FileResponse response = submissionService.uploadFile(id, file, category, userId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-    
-    @Operation(summary = "Delete file from submission")
-    @DeleteMapping("/{id}/files/{fileId}")
-    public ResponseEntity<Void> deleteFile(
-            @PathVariable Long id,
-            @PathVariable Long fileId,
-            @RequestHeader("X-User-Id") Long userId) throws IOException {
-        submissionService.deleteFile(id, fileId, userId);
-        return ResponseEntity.noContent().build();
-    }
-    
-    @Operation(summary = "Download file")
-    @GetMapping("/{id}/files/{fileId}/download")
-    public ResponseEntity<Resource> downloadFile(
-            @PathVariable Long id,
-            @PathVariable Long fileId,
-            @RequestHeader("X-User-Id") Long userId) throws IOException {
-        // Validate submission belongs to user
-        submissionService.getSubmissionById(id, userId);
-        
-        // Get file from service
-        Resource resource = submissionService.downloadFile(id, fileId, userId);
-        
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + 
-                        resource.getFilename() + "\"")
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(resource);
-    }
-}
+  private final SubmissionService submissionService;
+  private final UserService userService;
 
+  public SubmissionController(SubmissionService submissionService, UserService userService) {
+    this.submissionService = submissionService;
+    this.userService = userService;
+  }
+
+  @GetMapping("/my")
+  @PreAuthorize("hasRole('AUTHOR')")
+  public ResponseEntity<ApiResponse<List<SubmissionResponseDTO>>> getMySubmissions(
+      Authentication authentication) {
+    Long authorId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(submissionService.getMySubmissions(authorId)));
+  }
+
+  @GetMapping("/{id}")
+  @PreAuthorize("hasRole('AUTHOR')")
+  public ResponseEntity<ApiResponse<SubmissionResponseDTO>> getSubmission(
+      @PathVariable Long id, Authentication authentication) {
+    Long authorId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(submissionService.getSubmission(id, authorId)));
+  }
+
+  @PostMapping
+  @PreAuthorize("hasRole('AUTHOR')")
+  public ResponseEntity<ApiResponse<SubmissionResponseDTO>> createSubmission(
+      @Valid @RequestBody SubmissionCreateDTO dto, Authentication authentication) {
+    Long authorId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(submissionService.createSubmission(dto, authorId)));
+  }
+
+  @PutMapping("/{id}")
+  @PreAuthorize("hasRole('AUTHOR')")
+  public ResponseEntity<ApiResponse<SubmissionResponseDTO>> updateSubmission(
+      @PathVariable Long id,
+      @Valid @RequestBody SubmissionUpdateDTO dto,
+      Authentication authentication) {
+    Long authorId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(submissionService.updateSubmission(id, dto, authorId)));
+  }
+
+  @PostMapping("/{id}/submit")
+  @PreAuthorize("hasRole('AUTHOR')")
+  public ResponseEntity<ApiResponse<SubmissionResponseDTO>> submitSubmission(
+      @PathVariable Long id, Authentication authentication) {
+    Long authorId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(submissionService.submitSubmission(id, authorId)));
+  }
+
+  @PostMapping("/{id}/withdraw")
+  @PreAuthorize("hasRole('AUTHOR')")
+  public ResponseEntity<ApiResponse<SubmissionResponseDTO>> withdrawSubmission(
+      @PathVariable Long id, Authentication authentication) {
+    Long authorId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(submissionService.withdrawSubmission(id, authorId)));
+  }
+
+  @PostMapping("/{id}/upload-pdf")
+  @PreAuthorize("hasRole('AUTHOR')")
+  public ResponseEntity<ApiResponse<SubmissionFileDTO>> uploadPdf(
+      @PathVariable Long id,
+      @RequestParam("file") MultipartFile file,
+      Authentication authentication)
+      throws IOException {
+    Long authorId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(submissionService.uploadPdf(id, file, authorId)));
+  }
+
+  private Long getUserIdFromAuthentication(Authentication authentication) {
+    String email = authentication.getName();
+    return userService.getUserIdByEmail(email);
+  }
+}
