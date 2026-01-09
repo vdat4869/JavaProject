@@ -162,7 +162,7 @@ npm run dev
 
 **⚠️ Lưu ý**: Đổi mật khẩu admin ngay sau khi setup!
 
-Xem chi tiết tại [SETUP.md](SETUP.md) và [database/README.md](database/README.md)
+Xem chi tiết tại [SETUP.md](SETUP.md)
 
 ---
 
