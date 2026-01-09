@@ -1,40 +1,55 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import SubmissionList from './pages/SubmissionList';
-import SubmissionForm from './pages/SubmissionForm';
-import SubmissionDetail from './pages/SubmissionDetail';
+import React, { useEffect } from 'react'
+import { BrowserRouter, useRoutes } from 'react-router-dom'
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
+import { useColorModes } from '@coreui/react'
+import './scss/style.scss'
+import './i18n/config'
 
-function App() {
-  return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <Routes>
-          <Route path="/" element={<SubmissionList />} />
-          <Route path="/submissions" element={<SubmissionList />} />
-          <Route path="/submissions/new" element={<SubmissionForm />} />
-          <Route path="/submissions/:id" element={<SubmissionDetail />} />
-        </Routes>
-      </Router>
-    </ThemeProvider>
-  );
+// Providers
+import { AuthProvider } from './context/AuthContext'
+import { UIProvider } from './context/UIContext'
+
+// Routes
+import { routes } from './routes'
+
+/**
+ * AppRoutes - Component để render routes
+ */
+const AppRoutes = () => {
+  const element = useRoutes(routes)
+  return element
 }
 
-export default App;
+/**
+ * App - Root component
+ */
+const App = () => {
+  const { isColorModeSet, setColorMode } = useColorModes('uth-confms-theme')
 
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.href.split('?')[1])
+    const theme = urlParams.get('theme') && urlParams.get('theme').match(/^[A-Za-z0-9\s]+/)[0]
+    if (theme) {
+      setColorMode(theme)
+    }
 
+    if (isColorModeSet()) {
+      return
+    }
 
+    // Default theme
+    setColorMode('light')
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  return (
+    <UIProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </UIProvider>
+  )
+}
+
+export default App

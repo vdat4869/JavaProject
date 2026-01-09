@@ -1,31 +1,55 @@
-
 {
   "name": "uth-confms-frontend",
-  "version": "0.0.1",
-  "type": "module",
+  "version": "1.0.0",
+  "description": "UTH Scientific Conference Paper Management System - Frontend",
+  "homepage": ".",
+  "license": "MIT",
+  "author": "UTH-ConfMS Team",
   "scripts": {
-    "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "lint": "eslint",
+    "serve": "vite preview",
+    "dev": "vite",
+    "start": "vite"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.20.0",
-    "axios": "^1.6.2",
-    "@mui/material": "^5.15.0",
-    "@mui/icons-material": "^5.15.0",
-    "@emotion/react": "^11.11.1",
-    "@emotion/styled": "^11.11.0"
+    "@coreui/chartjs": "^4.1.0",
+    "@coreui/coreui": "^5.5.0",
+    "@coreui/icons": "^3.0.1",
+    "@coreui/icons-react": "^2.3.0",
+    "@coreui/react": "^5.9.2",
+    "@coreui/react-chartjs": "^3.0.0",
+    "@coreui/utils": "^2.0.2",
+    "@popperjs/core": "^2.11.8",
+    "chart.js": "^4.5.1",
+    "classnames": "^2.5.1",
+    "core-js": "^3.47.0",
+    "prop-types": "^15.8.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-router-dom": "^7.11.0",
+    "simplebar-react": "^3.3.2",
+    "axios": "^1.7.7",
+    "react-i18next": "^15.1.2",
+    "i18next": "^24.0.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.43",
-    "@types/react-dom": "^18.2.17",
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.0.8"
+    "@vitejs/plugin-react": "^5.1.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.23",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^16.5.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "typescript": "^5.6.3",
+    "postcss": "^8.5.6",
+    "prettier": "3.7.4",
+    "sass": "^1.97.0",
+    "vite": "^7.3.0"
   }
 }
-
-
-
-
