@@ -418,4 +418,138 @@ public class SubmissionService {
         .uploadNote(file.getUploadNote())
         .build();
   }
+
+  /**
+   * Download PDF file hiện tại của submission
+   *
+   * @param id ID của submission
+   * @param authorId ID của author
+   * @return InputStream của file PDF
+   * @throws NotFoundException Nếu submission không tồn tại
+   * @throws UnauthorizedException Nếu author không có quyền truy cập
+   * @throws BusinessException Nếu submission chưa có PDF file
+   */
+  public InputStream downloadPdfFile(Long id, Long authorId) {
+    Submission submission =
+        submissionRepository
+            .findById(id)
+            .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
+
+    // Check authorization
+    if (!submission.getAuthorId().equals(authorId)) {
+      throw new UnauthorizedException("You can only download files from your own submissions");
+    }
+
+    // Check if PDF file exists
+    if (submission.getPdfFilePath() == null || submission.getPdfFilePath().isEmpty()) {
+      throw new BusinessException("Submission does not have a PDF file");
+    }
+
+    return storageService.getFileStream(submission.getPdfFilePath());
+  }
+
+  /**
+   * Lấy danh sách tất cả các version của PDF file đã upload
+   *
+   * @param id ID của submission
+   * @param authorId ID của author
+   * @return Danh sách SubmissionFileDTO
+   * @throws NotFoundException Nếu submission không tồn tại
+   * @throws UnauthorizedException Nếu author không có quyền truy cập
+   */
+  public List<SubmissionFileDTO> getFileVersions(Long id, Long authorId) {
+    Submission submission =
+        submissionRepository
+            .findById(id)
+            .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
+
+    // Check authorization
+    if (!submission.getAuthorId().equals(authorId)) {
+      throw new UnauthorizedException("You can only view files from your own submissions");
+    }
+
+    return submissionFileRepository.findBySubmission(submission).stream()
+        .map(this::mapFileToDTO)
+        .collect(Collectors.toList());
+  }
+
+  /**
+   * Download một version cụ thể của PDF file
+   *
+   * @param submissionId ID của submission
+   * @param fileId ID của file version
+   * @param authorId ID của author
+   * @return InputStream của file PDF
+   * @throws NotFoundException Nếu submission hoặc file không tồn tại
+   * @throws UnauthorizedException Nếu author không có quyền truy cập
+   */
+  public InputStream downloadFileVersion(Long submissionId, Long fileId, Long authorId) {
+    Submission submission =
+        submissionRepository
+            .findById(submissionId)
+            .orElseThrow(
+                () ->
+                    new NotFoundException(
+                        "Submission with id " + submissionId + " not found"));
+
+    // Check authorization
+    if (!submission.getAuthorId().equals(authorId)) {
+      throw new UnauthorizedException("You can only download files from your own submissions");
+    }
+
+    SubmissionFile file =
+        submissionFileRepository
+            .findById(fileId)
+            .orElseThrow(() -> new NotFoundException("File with id " + fileId + " not found"));
+
+    // Verify file belongs to submission
+    if (!file.getSubmission().getId().equals(submissionId)) {
+      throw new BusinessException("File does not belong to this submission");
+    }
+
+    return storageService.getFileStream(file.getFilePath());
+  }
+
+  /**
+   * Xóa submission (chỉ cho phép xóa draft chưa submit)
+   *
+   * @param id ID của submission
+   * @param authorId ID của author
+   * @throws NotFoundException Nếu submission không tồn tại
+   * @throws UnauthorizedException Nếu author không có quyền truy cập
+   * @throws BusinessException Nếu submission không thể xóa (đã submit hoặc đã được review)
+   */
+  @Transactional
+  public void deleteSubmission(Long id, Long authorId) {
+    Submission submission =
+        submissionRepository
+            .findById(id)
+            .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
+
+    // Check authorization
+    if (!submission.getAuthorId().equals(authorId)) {
+      throw new UnauthorizedException("You can only delete your own submissions");
+    }
+
+    // Only allow deletion of DRAFT submissions
+    if (submission.getStatus() != Submission.SubmissionStatus.DRAFT) {
+      throw new BusinessException(
+          "Cannot delete submission. Only DRAFT submissions can be deleted.");
+    }
+
+    // Delete associated files
+    List<SubmissionFile> files = submissionFileRepository.findBySubmission(submission);
+    for (SubmissionFile file : files) {
+      if (file.getFilePath() != null) {
+        storageService.deleteFile(file.getFilePath());
+      }
+      submissionFileRepository.delete(file);
+    }
+
+    // Delete associated authors
+    submissionAuthorRepository.deleteBySubmission(submission);
+
+    // Delete submission
+    submissionRepository.delete(submission);
+  }
 }

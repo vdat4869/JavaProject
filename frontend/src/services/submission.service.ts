@@ -81,6 +81,21 @@ export interface Decision {
 }
 
 /**
+ * Submission File interface
+ */
+export interface SubmissionFile {
+  id: number
+  versionNumber: number
+  fileName: string
+  filePath: string
+  fileSize: number
+  contentType: string
+  isCurrent: boolean
+  uploadedAt: string
+  uploadNote?: string
+}
+
+/**
  * Submission Service - Xử lý các API calls liên quan đến submissions
  */
 export const submissionService = {
@@ -146,11 +161,29 @@ export const submissionService = {
   },
 
   /**
-   * Xóa/Withdraw submission
+   * Xóa submission draft (chỉ cho phép xóa draft chưa submit)
    * DELETE /api/submissions/{id}
    */
   deleteSubmission: async (id: number): Promise<void> => {
     await apiClient.delete(`/submissions/${id}`)
+  },
+
+  /**
+   * Withdraw submission (rút bài đã submit)
+   * POST /api/submissions/{id}/withdraw
+   */
+  withdrawSubmission: async (id: number): Promise<Submission> => {
+    const response = await apiClient.post<Submission>(`/submissions/${id}/withdraw`)
+    return response.data
+  },
+
+  /**
+   * Submit submission (nộp bài)
+   * POST /api/submissions/{id}/submit
+   */
+  submitSubmission: async (id: number): Promise<Submission> => {
+    const response = await apiClient.post<Submission>(`/submissions/${id}/submit`)
+    return response.data
   },
 
   /**
@@ -179,11 +212,31 @@ export const submissionService = {
   },
 
   /**
-   * Download submission file
+   * Download submission file hiện tại
    * GET /api/submissions/{id}/file
    */
   downloadFile: async (id: number): Promise<Blob> => {
     const response = await apiClient.get(`/submissions/${id}/file`, {
+      responseType: 'blob',
+    })
+    return response.data
+  },
+
+  /**
+   * Lấy danh sách tất cả các version của PDF file đã upload
+   * GET /api/submissions/{id}/files
+   */
+  getFileVersions: async (id: number): Promise<SubmissionFile[]> => {
+    const response = await apiClient.get<SubmissionFile[]>(`/submissions/${id}/files`)
+    return response.data
+  },
+
+  /**
+   * Download một version cụ thể của PDF file
+   * GET /api/submissions/{id}/files/{fileId}
+   */
+  downloadFileVersion: async (id: number, fileId: number): Promise<Blob> => {
+    const response = await apiClient.get(`/submissions/${id}/files/${fileId}`, {
       responseType: 'blob',
     })
     return response.data

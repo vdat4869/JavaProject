@@ -41,15 +41,26 @@ const SubmissionDetail: React.FC = () => {
   }
 
   const handleWithdraw = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn rút bài nộp này?')) {
+    if (!submission) return
+
+    const isDraft = submission.status === 'DRAFT'
+    const message = isDraft
+      ? 'Bạn có chắc chắn muốn xóa bài nộp này?'
+      : 'Bạn có chắc chắn muốn rút bài nộp này?'
+    
+    if (!window.confirm(message)) {
       return
     }
 
     try {
-      await submissionService.deleteSubmission(parseInt(id!))
+      if (isDraft) {
+        await submissionService.deleteSubmission(parseInt(id!))
+      } else {
+        await submissionService.withdrawSubmission(parseInt(id!))
+      }
       navigate('/author/submissions')
     } catch (error) {
-      alert('Không thể rút bài nộp. Vui lòng thử lại.')
+      alert('Không thể thực hiện thao tác. Vui lòng thử lại.')
     }
   }
 
@@ -119,7 +130,7 @@ const SubmissionDetail: React.FC = () => {
               )}
               {submission.canWithdraw && (
                 <CButton color="danger" size="sm" onClick={handleWithdraw}>
-                  Rút bài
+                  {submission.status === 'DRAFT' ? 'Xóa' : 'Rút bài'}
                 </CButton>
               )}
               {submission.fileUrl && (

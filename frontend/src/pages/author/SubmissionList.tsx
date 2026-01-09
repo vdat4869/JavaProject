@@ -47,17 +47,26 @@ const SubmissionList: React.FC = () => {
     }
   }
 
-  const handleWithdraw = async (id: number) => {
-    if (!window.confirm('Bạn có chắc chắn muốn rút bài nộp này?')) {
+  const handleWithdraw = async (id: number, status: Submission['status']) => {
+    const isDraft = status === 'DRAFT'
+    const message = isDraft
+      ? 'Bạn có chắc chắn muốn xóa bài nộp này?'
+      : 'Bạn có chắc chắn muốn rút bài nộp này?'
+    
+    if (!window.confirm(message)) {
       return
     }
 
     try {
-      await submissionService.deleteSubmission(id)
+      if (isDraft) {
+        await submissionService.deleteSubmission(id)
+      } else {
+        await submissionService.withdrawSubmission(id)
+      }
       await loadSubmissions()
     } catch (error) {
       console.error('Error withdrawing submission:', error)
-      alert('Không thể rút bài nộp. Vui lòng thử lại.')
+      alert('Không thể thực hiện thao tác. Vui lòng thử lại.')
     }
   }
 
@@ -143,8 +152,8 @@ const SubmissionList: React.FC = () => {
                       </CButton>
                     )}
                     {submission.canWithdraw && (
-                      <CButton color="link" size="sm" onClick={() => handleWithdraw(submission.id)}>
-                        Rút
+                      <CButton color="link" size="sm" onClick={() => handleWithdraw(submission.id, submission.status)}>
+                        {submission.status === 'DRAFT' ? 'Xóa' : 'Rút'}
                       </CButton>
                     )}
                   </CTableDataCell>

@@ -4,30 +4,31 @@ spring:
   
   datasource:
     url: jdbc:postgresql://localhost:5432/uth_confms
-    username: ${DB_USERNAME:}
-    password: ${DB_PASSWORD:}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:ngocanh293}
     driver-class-name: org.postgresql.Driver
   
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: false
+      ddl-auto: update
+    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     open-in-view: false
   
-  cache:
-    type: redis
-    redis:
-      time-to-live: 3600000
+  # Cache configuration - comment out if Redis is not available
+  # cache:
+  #   type: redis
+  #   redis:
+  #     time-to-live: 3600000
   
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+  # data:
+  #   redis:
+  #     host: ${REDIS_HOST:localhost}
+  #     port: ${REDIS_PORT:6379}
+  #     password: ${REDIS_PASSWORD:}
   
   mail:
     host: ${SMTP_HOST:smtp.gmail.com}
