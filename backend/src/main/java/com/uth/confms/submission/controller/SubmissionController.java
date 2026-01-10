@@ -176,7 +176,7 @@ public class SubmissionController {
 
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-        .contentType(MediaType.APPLICATION_PDF)
+        .contentType(MediaType.valueOf("application/pdf"))
         .body(resource);
   }
 
@@ -220,7 +220,7 @@ public class SubmissionController {
 
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-        .contentType(MediaType.APPLICATION_PDF)
+        .contentType(MediaType.valueOf("application/pdf"))
         .body(resource);
   }
 

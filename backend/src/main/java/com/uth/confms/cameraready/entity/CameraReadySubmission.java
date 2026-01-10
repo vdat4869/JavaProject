@@ -1,240 +1,125 @@
 package com.uth.confms.cameraready.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 @Entity
 @Table(name = "camera_ready_submissions")
 @EntityListeners(AuditingEntityListener.class)
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CameraReadySubmission {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+  @GeneratedValue(strategy = GenerationType.UUID)
+  private UUID id;
 
   @Column(nullable = false)
-  private Long submissionId;
+  private UUID paperId;
 
   @Column(nullable = false)
-  private String pdfFilePath;
+  private UUID conferenceId;
 
   @Column(nullable = false)
-  private Long fileSize;
+  private UUID trackId;
 
-  private String checksum;
+  @Column(nullable = false)
+  private UUID authorId;
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private ValidationStatus validationStatus = ValidationStatus.PENDING;
+  @Builder.Default
+  private CameraReadyStatus status = CameraReadyStatus.OPEN;
 
-  @Column(columnDefinition = "TEXT")
-  private String validationNotes;
+  @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  private List<CameraReadyVersion> versions = new ArrayList<>();
 
-  @Column(nullable = false)
-  private Boolean approved = false;
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "current_version_id")
+  private CameraReadyVersion currentVersion;
+
+  @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
+  @Builder.Default
+  private List<CameraReadyReview> reviews = new ArrayList<>();
+
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "metadata_id")
+  private CameraReadyMetadata metadata;
+
+  @Builder.Default
+  private Boolean copyrightConfirmed = false;
+
+  private UUID copyrightConfirmedBy;
+
+  private LocalDateTime copyrightConfirmedAt;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
-  private LocalDateTime uploadedAt;
+  private LocalDateTime createdAt;
 
-  @LastModifiedDate private LocalDateTime updatedAt;
+  @LastModifiedDate
+  @Column(nullable = false)
+  private LocalDateTime updatedAt;
 
-  public CameraReadySubmission() {
-    this.validationStatus = ValidationStatus.PENDING;
-    this.approved = false;
+  // Business methods
+  public boolean canUpload() {
+    return status == CameraReadyStatus.OPEN || status == CameraReadyStatus.NEED_FIX;
   }
 
-  public CameraReadySubmission(
-      Long id,
-      Long submissionId,
-      String pdfFilePath,
-      Long fileSize,
-      String checksum,
-      ValidationStatus validationStatus,
-      String validationNotes,
-      Boolean approved,
-      LocalDateTime uploadedAt,
-      LocalDateTime updatedAt) {
-    this.id = id;
-    this.submissionId = submissionId;
-    this.pdfFilePath = pdfFilePath;
-    this.fileSize = fileSize;
-    this.checksum = checksum;
-    this.validationStatus = validationStatus != null ? validationStatus : ValidationStatus.PENDING;
-    this.validationNotes = validationNotes;
-    this.approved = approved != null ? approved : false;
-    this.uploadedAt = uploadedAt;
-    this.updatedAt = updatedAt;
+  public boolean canReview() {
+    return status == CameraReadyStatus.SUBMITTED;
   }
 
-  public Long getId() {
-    return id;
+  public void addVersion(CameraReadyVersion version) {
+    versions.add(version);
+    version.setSubmission(this);
+    this.currentVersion = version;
   }
 
-  public void setId(Long id) {
-    this.id = id;
+  public void setCurrentVersion(CameraReadyVersion version) {
+    this.currentVersion = version;
   }
 
-  public Long getSubmissionId() {
-    return submissionId;
+  public CameraReadyVersion getCurrentVersion() {
+    return currentVersion;
   }
 
-  public void setSubmissionId(Long submissionId) {
-    this.submissionId = submissionId;
+  public int getNextVersionNumber() {
+    return versions.size() + 1;
   }
 
-  public String getPdfFilePath() {
-    return pdfFilePath;
+  public void confirmCopyright(UUID userId) {
+    this.copyrightConfirmed = true;
+    this.copyrightConfirmedBy = userId;
+    this.copyrightConfirmedAt = LocalDateTime.now();
   }
 
-  public void setPdfFilePath(String pdfFilePath) {
-    this.pdfFilePath = pdfFilePath;
+  public void transitionTo(CameraReadyStatus newStatus) {
+    this.status = newStatus;
   }
 
-  public Long getFileSize() {
-    return fileSize;
+  public CameraReadyStatus getStatus() {
+    return status;
   }
 
-  public void setFileSize(Long fileSize) {
-    this.fileSize = fileSize;
+  public void setStatus(CameraReadyStatus status) {
+    this.status = status;
   }
 
-  public String getChecksum() {
-    return checksum;
-  }
-
-  public void setChecksum(String checksum) {
-    this.checksum = checksum;
-  }
-
-  public ValidationStatus getValidationStatus() {
-    return validationStatus;
-  }
-
-  public void setValidationStatus(ValidationStatus validationStatus) {
-    this.validationStatus = validationStatus;
-  }
-
-  public String getValidationNotes() {
-    return validationNotes;
-  }
-
-  public void setValidationNotes(String validationNotes) {
-    this.validationNotes = validationNotes;
-  }
-
-  public Boolean getApproved() {
-    return approved;
-  }
-
-  public void setApproved(Boolean approved) {
-    this.approved = approved;
-  }
-
-  public LocalDateTime getUploadedAt() {
-    return uploadedAt;
-  }
-
-  public void setUploadedAt(LocalDateTime uploadedAt) {
-    this.uploadedAt = uploadedAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(LocalDateTime updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public enum ValidationStatus {
-    PENDING,
-    VALID,
-    INVALID,
-    REQUIRES_REVISION
-  }
-
-  public static Builder builder() {
-    return new Builder();
-  }
-
-  public static class Builder {
-    private Long id;
-    private Long submissionId;
-    private String pdfFilePath;
-    private Long fileSize;
-    private String checksum;
-    private ValidationStatus validationStatus = ValidationStatus.PENDING;
-    private String validationNotes;
-    private Boolean approved = false;
-    private LocalDateTime uploadedAt;
-    private LocalDateTime updatedAt;
-
-    public Builder id(Long id) {
-      this.id = id;
-      return this;
-    }
-
-    public Builder submissionId(Long submissionId) {
-      this.submissionId = submissionId;
-      return this;
-    }
-
-    public Builder pdfFilePath(String pdfFilePath) {
-      this.pdfFilePath = pdfFilePath;
-      return this;
-    }
-
-    public Builder fileSize(Long fileSize) {
-      this.fileSize = fileSize;
-      return this;
-    }
-
-    public Builder checksum(String checksum) {
-      this.checksum = checksum;
-      return this;
-    }
-
-    public Builder validationStatus(ValidationStatus validationStatus) {
-      this.validationStatus =
-          validationStatus != null ? validationStatus : ValidationStatus.PENDING;
-      return this;
-    }
-
-    public Builder validationNotes(String validationNotes) {
-      this.validationNotes = validationNotes;
-      return this;
-    }
-
-    public Builder approved(Boolean approved) {
-      this.approved = approved != null ? approved : false;
-      return this;
-    }
-
-    public Builder uploadedAt(LocalDateTime uploadedAt) {
-      this.uploadedAt = uploadedAt;
-      return this;
-    }
-
-    public Builder updatedAt(LocalDateTime updatedAt) {
-      this.updatedAt = updatedAt;
-      return this;
-    }
-
-    public CameraReadySubmission build() {
-      return new CameraReadySubmission(
-          id,
-          submissionId,
-          pdfFilePath,
-          fileSize,
-          checksum,
-          validationStatus,
-          validationNotes,
-          approved,
-          uploadedAt,
-          updatedAt);
-    }
+  public UUID getTrackId() {
+    return trackId;
   }
 }
