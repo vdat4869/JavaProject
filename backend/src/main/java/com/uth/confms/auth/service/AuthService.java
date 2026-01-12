@@ -2,7 +2,7 @@ package com.uth.confms.auth.service;
 
 import com.uth.confms.auth.dto.LoginRequest;
 import com.uth.confms.auth.dto.LoginResponse;
-import com.uth.confms.auth.dto.SignupRequest;
+import com.uth.confms.auth.dto.RegisterRequest;
 import com.uth.confms.auth.entity.Role;
 import com.uth.confms.auth.entity.Role.RoleName;
 import com.uth.confms.auth.entity.User;
@@ -66,39 +66,36 @@ public class AuthService {
    * @throws NotFoundException Nếu không tìm thấy role AUTHOR
    */
   @Transactional
-  public LoginResponse signup(SignupRequest request) {
+  public LoginResponse register(RegisterRequest request) {
     if (userRepository.existsByEmail(request.getEmail())) {
       throw new BusinessException("Email already exists", "EMAIL_EXISTS");
     }
 
-    User user =
-        User.builder()
-            .email(request.getEmail())
-            .password(passwordEncoder.encode(request.getPassword()))
-            .firstName(request.getFirstName())
-            .lastName(request.getLastName())
-            .affiliation(request.getAffiliation())
-            .phone(request.getPhone())
-            .emailVerified(true)
-            .active(true)
-            .build();
+    User user = User.builder()
+        .email(request.getEmail())
+        .password(passwordEncoder.encode(request.getPassword()))
+        .firstName(request.getFirstName())
+        .lastName(request.getLastName())
+        .affiliation(request.getAffiliation())
+        .phone(request.getPhone())
+        .emailVerified(true)
+        .active(true)
+        .build();
 
     // Get or create AUTHOR role
-    Role authorRole =
-        roleRepository
-            .findByName(RoleName.AUTHOR)
-            .orElseGet(
-                () -> {
-                  // Auto-create AUTHOR role if not exists
-                  Role newRole =
-                      Role.builder()
-                          .name(RoleName.AUTHOR)
-                          .description("Role: AUTHOR")
-                          .build();
-                  @SuppressWarnings("null")
-                  Role savedRole = roleRepository.save(newRole);
-                  return savedRole;
-                });
+    Role authorRole = roleRepository
+        .findByName(RoleName.AUTHOR)
+        .orElseGet(
+            () -> {
+              // Auto-create AUTHOR role if not exists
+              Role newRole = Role.builder()
+                  .name(RoleName.AUTHOR)
+                  .description("Role: AUTHOR")
+                  .build();
+              @SuppressWarnings("null")
+              Role savedRole = roleRepository.save(newRole);
+              return savedRole;
+            });
     user.getRoles().add(authorRole);
 
     user = userRepository.save(user);
@@ -111,8 +108,7 @@ public class AuthService {
     String accessToken = jwtService.generateAccessToken(userDetails);
     String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-    Set<String> roles =
-        user.getRoles().stream().map(r -> r.getName().name()).collect(Collectors.toSet());
+    Set<String> roles = user.getRoles().stream().map(r -> r.getName().name()).collect(Collectors.toSet());
 
     return LoginResponse.builder()
         .accessToken(accessToken)
@@ -132,7 +128,7 @@ public class AuthService {
    * @param request Thông tin đăng nhập (email, password)
    * @return LoginResponse chứa access token, refresh token và thông tin user
    * @throws UnauthorizedException Nếu email/password sai hoặc account bị disable
-   * @throws NotFoundException Nếu không tìm thấy user
+   * @throws NotFoundException     Nếu không tìm thấy user
    */
   public LoginResponse login(LoginRequest request) {
     try {
@@ -142,10 +138,9 @@ public class AuthService {
       throw new UnauthorizedException("Invalid email or password");
     }
 
-    User user =
-        userRepository
-            .findByEmail(request.getEmail())
-            .orElseThrow(() -> new NotFoundException("User not found"));
+    User user = userRepository
+        .findByEmail(request.getEmail())
+        .orElseThrow(() -> new NotFoundException("User not found"));
 
     if (!user.getActive()) {
       throw new UnauthorizedException("User account is disabled");
@@ -153,15 +148,15 @@ public class AuthService {
 
     // TODO: Email verification required before login (temporarily disabled)
     // if (!user.getEmailVerified()) {
-    //   throw new UnauthorizedException("Email verification required. Please check your email.");
+    // throw new UnauthorizedException("Email verification required. Please check
+    // your email.");
     // }
 
     UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
     String accessToken = jwtService.generateAccessToken(userDetails);
     String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-    Set<String> roles =
-        user.getRoles().stream().map(r -> r.getName().name()).collect(Collectors.toSet());
+    Set<String> roles = user.getRoles().stream().map(r -> r.getName().name()).collect(Collectors.toSet());
 
     return LoginResponse.builder()
         .accessToken(accessToken)

@@ -16,7 +16,8 @@ public class UserDTO {
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
-  public UserDTO() {}
+  public UserDTO() {
+  }
 
   public UserDTO(
       Long id,

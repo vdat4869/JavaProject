@@ -2,7 +2,7 @@ package com.uth.confms.auth.controller;
 
 import com.uth.confms.auth.dto.LoginRequest;
 import com.uth.confms.auth.dto.LoginResponse;
-import com.uth.confms.auth.dto.SignupRequest;
+import com.uth.confms.auth.dto.RegisterRequest;
 import com.uth.confms.auth.dto.VerifyEmailRequest;
 import com.uth.confms.auth.service.AuthService;
 import com.uth.confms.auth.service.TokenService;
@@ -21,15 +21,16 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Controller xử lý các request liên quan đến xác thực (authentication)
  *
- * <p>Các endpoints:
+ * <p>
+ * Các endpoints:
  *
  * <ul>
- *   <li>POST /api/auth/signup - Đăng ký tài khoản mới
- *   <li>POST /api/auth/login - Đăng nhập
- *   <li>POST /api/auth/refresh - Refresh access token
- *   <li>POST /api/auth/verify-email - Xác thực email
- *   <li>POST /api/auth/resend-verification - Gửi lại email verification
- *   <li>POST /api/auth/logout - Đăng xuất
+ * <li>POST /api/auth/register - Đăng ký tài khoản mới
+ * <li>POST /api/auth/login - Đăng nhập
+ * <li>POST /api/auth/refresh - Refresh access token
+ * <li>POST /api/auth/verify-email - Xác thực email
+ * <li>POST /api/auth/resend-verification - Gửi lại email verification
+ * <li>POST /api/auth/logout - Đăng xuất
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -43,7 +44,8 @@ public class AuthController {
   @SuppressWarnings("unused")
   private final EmailVerificationService emailVerificationService;
 
-  public AuthController(AuthService authService, TokenService tokenService, EmailVerificationService emailVerificationService) {
+  public AuthController(AuthService authService, TokenService tokenService,
+      EmailVerificationService emailVerificationService) {
     this.authService = authService;
     this.tokenService = tokenService;
     this.emailVerificationService = emailVerificationService;
@@ -55,11 +57,11 @@ public class AuthController {
    * @param request Thông tin đăng ký (email, password, firstName, lastName, etc.)
    * @return ApiResponse chứa LoginResponse với access token và refresh token
    */
-  @PostMapping("/signup")
+  @PostMapping("/register")
   @NoAuth
-  public ResponseEntity<ApiResponse<LoginResponse>> signup(
-      @Valid @RequestBody SignupRequest request) {
-    LoginResponse response = authService.signup(request);
+  public ResponseEntity<ApiResponse<LoginResponse>> register(
+      @Valid @RequestBody RegisterRequest request) {
+    LoginResponse response = authService.register(request);
     return ResponseEntity.ok(
         ApiResponse.success("Registration successful. You can now login.", response));
   }
@@ -91,8 +93,7 @@ public class AuthController {
     String token = refreshToken.replace("Bearer ", "");
     String newAccessToken = tokenService.refreshAccessToken(token);
 
-    LoginResponse response =
-        LoginResponse.builder().accessToken(newAccessToken).tokenType("Bearer").build();
+    LoginResponse response = LoginResponse.builder().accessToken(newAccessToken).tokenType("Bearer").build();
 
     return ResponseEntity.ok(ApiResponse.success("Token refreshed", response));
   }
@@ -100,7 +101,8 @@ public class AuthController {
   /**
    * Xác thực email bằng token
    * 
-   * @deprecated Email verification is disabled. This endpoint is kept for backward compatibility.
+   * @deprecated Email verification is disabled. This endpoint is kept for
+   *             backward compatibility.
    * @param request Chứa verification token
    * @return ApiResponse xác nhận email đã được verify
    */
@@ -116,7 +118,8 @@ public class AuthController {
   /**
    * Gửi lại email verification
    * 
-   * @deprecated Email verification is disabled. This endpoint is kept for backward compatibility.
+   * @deprecated Email verification is disabled. This endpoint is kept for
+   *             backward compatibility.
    * @param email Email cần gửi lại verification
    * @return ApiResponse xác nhận email đã được gửi
    */
@@ -131,7 +134,8 @@ public class AuthController {
   /**
    * Đăng xuất khỏi hệ thống
    *
-   * <p>Lưu ý: Token invalidation được xử lý bởi frontend
+   * <p>
+   * Lưu ý: Token invalidation được xử lý bởi frontend
    *
    * @return ApiResponse xác nhận đã logout
    */
