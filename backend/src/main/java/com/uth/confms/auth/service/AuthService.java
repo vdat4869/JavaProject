@@ -1,19 +1,30 @@
 package com.uth.confms.auth.service;
 
+import com.uth.confms.auth.dto.ChangePasswordRequest;
 import com.uth.confms.auth.dto.LoginRequest;
 import com.uth.confms.auth.dto.LoginResponse;
 import com.uth.confms.auth.dto.RegisterRequest;
 import com.uth.confms.auth.entity.Role;
+import com.uth.confms.auth.entity.RefreshToken;
 import com.uth.confms.auth.entity.Role.RoleName;
 import com.uth.confms.auth.entity.User;
 import com.uth.confms.auth.repository.RoleRepository;
+import com.uth.confms.auth.repository.RefreshTokenRepository;
 import com.uth.confms.auth.repository.UserRepository;
 import com.uth.confms.common.exception.BusinessException;
 import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.email.service.EmailVerificationService;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.nio.charset.StandardCharsets;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -39,6 +50,7 @@ public class AuthService {
   private final UserDetailsService userDetailsService;
   @SuppressWarnings("unused")
   private final EmailVerificationService emailVerificationService;
+  private final RefreshTokenRepository refreshTokenRepository;
 
   public AuthService(
       UserRepository userRepository,
@@ -47,7 +59,8 @@ public class AuthService {
       JwtService jwtService,
       AuthenticationManager authenticationManager,
       UserDetailsService userDetailsService,
-      EmailVerificationService emailVerificationService) {
+      EmailVerificationService emailVerificationService,
+      RefreshTokenRepository refreshTokenRepository) {
     this.userRepository = userRepository;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
@@ -55,6 +68,7 @@ public class AuthService {
     this.authenticationManager = authenticationManager;
     this.userDetailsService = userDetailsService;
     this.emailVerificationService = emailVerificationService;
+    this.refreshTokenRepository = refreshTokenRepository;
   }
 
   /**
@@ -78,7 +92,7 @@ public class AuthService {
         .lastName(request.getLastName())
         .affiliation(request.getAffiliation())
         .phone(request.getPhone())
-        .emailVerified(true)
+        .emailVerified(false)
         .active(true)
         .build();
 
@@ -87,11 +101,7 @@ public class AuthService {
         .findByName(RoleName.AUTHOR)
         .orElseGet(
             () -> {
-              // Auto-create AUTHOR role if not exists
-              Role newRole = Role.builder()
-                  .name(RoleName.AUTHOR)
-                  .description("Role: AUTHOR")
-                  .build();
+              Role newRole = Role.builder().name(RoleName.AUTHOR).description("Role: AUTHOR").build();
               @SuppressWarnings("null")
               Role savedRole = roleRepository.save(newRole);
               return savedRole;
@@ -100,26 +110,73 @@ public class AuthService {
 
     user = userRepository.save(user);
 
-    // TODO: Email verification disabled - auto-verify on signup
-    // emailVerificationService.sendVerificationEmail(user);
+    // Send verification email (may log/warn if email sending fails)
+    try {
+      emailVerificationService.sendVerificationEmail(user);
+    } catch (Exception e) {
+      // swallow to avoid blocking registration
+    }
 
-    // Generate tokens immediately since email is auto-verified
-    UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-    String accessToken = jwtService.generateAccessToken(userDetails);
-    String refreshToken = jwtService.generateRefreshToken(userDetails);
-
+    // Return minimal response without tokens. Frontend expects to navigate to
+    // verify-email.
     Set<String> roles = user.getRoles().stream().map(r -> r.getName().name()).collect(Collectors.toSet());
 
     return LoginResponse.builder()
-        .accessToken(accessToken)
-        .refreshToken(refreshToken)
-        .tokenType("Bearer")
         .userId(user.getId())
         .email(user.getEmail())
         .fullName(user.getFullName())
         .roles(roles)
-        .emailVerified(true)
+        .emailVerified(user.getEmailVerified())
+        .tokenType("Bearer")
         .build();
+  }
+
+  /**
+   * Verify email using token and mark user as verified
+   */
+  @Transactional
+  public void verifyEmail(String token) {
+    emailVerificationService.verifyEmail(token);
+  }
+
+  /**
+   * Resend verification token to user email
+   */
+  @Transactional
+  public void resendVerification(String email) {
+    emailVerificationService.resendVerificationToken(email);
+  }
+
+  /**
+   * Change password for user
+   */
+  @Transactional
+  public void changePassword(Long userId, ChangePasswordRequest request) {
+    User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
+
+    if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+      throw new UnauthorizedException("Current password is incorrect");
+    }
+
+    user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+    userRepository.save(user);
+  }
+
+  /**
+   * Logout - currently a no-op because token invalidation is handled on the
+   * client or via token blacklist if implemented.
+   */
+  public void logout(String refreshToken) {
+    String tokenHash = sha256Hex(refreshToken);
+    refreshTokenRepository.revokeByTokenHash(tokenHash);
+  }
+
+  private String extractClientIp(HttpServletRequest request) {
+    String xff = request.getHeader("X-Forwarded-For");
+    if (xff != null && !xff.isBlank()) {
+      return xff.split(",")[0].trim();
+    }
+    return request.getRemoteAddr();
   }
 
   /**
@@ -130,14 +187,19 @@ public class AuthService {
    * @throws UnauthorizedException Nếu email/password sai hoặc account bị disable
    * @throws NotFoundException     Nếu không tìm thấy user
    */
-  public LoginResponse login(LoginRequest request) {
+  public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+
+    // 1. Authenticate
     try {
       authenticationManager.authenticate(
-          new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+          new UsernamePasswordAuthenticationToken(
+              request.getEmail(),
+              request.getPassword()));
     } catch (BadCredentialsException e) {
       throw new UnauthorizedException("Invalid email or password");
     }
 
+    // 2. Load user
     User user = userRepository
         .findByEmail(request.getEmail())
         .orElseThrow(() -> new NotFoundException("User not found"));
@@ -146,17 +208,45 @@ public class AuthService {
       throw new UnauthorizedException("User account is disabled");
     }
 
-    // TODO: Email verification required before login (temporarily disabled)
-    // if (!user.getEmailVerified()) {
-    // throw new UnauthorizedException("Email verification required. Please check
-    // your email.");
-    // }
-
+    // 3. Generate tokens
     UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
     String accessToken = jwtService.generateAccessToken(userDetails);
     String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-    Set<String> roles = user.getRoles().stream().map(r -> r.getName().name()).collect(Collectors.toSet());
+    // 4. Lấy device & IP
+    String deviceInfo = httpRequest.getHeader("User-Agent");
+    String ipAddress = extractClientIp(httpRequest);
+
+    // 5. Lưu refresh token (HASH)
+    try {
+      java.util.Date exp = jwtService.extractExpiration(refreshToken);
+      LocalDateTime expiresAt = exp.toInstant()
+          .atZone(ZoneId.systemDefault())
+          .toLocalDateTime();
+
+      String tokenHash = sha256Hex(refreshToken);
+
+      RefreshToken rt = RefreshToken.builder()
+          .tokenHash(tokenHash)
+          .user(user)
+          .expiresAt(expiresAt)
+          .createdAt(LocalDateTime.now())
+          .deviceInfo(deviceInfo)
+          .ipAddress(ipAddress)
+          .revoked(false)
+          .build();
+
+      refreshTokenRepository.save(rt);
+    } catch (Exception e) {
+      // Không block login nếu lỗi lưu token
+      // (có thể log warn)
+    }
+
+    // 6. Response
+    Set<String> roles = user.getRoles()
+        .stream()
+        .map(r -> r.getName().name())
+        .collect(Collectors.toSet());
 
     return LoginResponse.builder()
         .accessToken(accessToken)
@@ -168,5 +258,19 @@ public class AuthService {
         .roles(roles)
         .emailVerified(user.getEmailVerified())
         .build();
+  }
+
+  private static String sha256Hex(String input) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+      StringBuilder sb = new StringBuilder(hash.length * 2);
+      for (byte b : hash) {
+        sb.append(String.format("%02x", b));
+      }
+      return sb.toString();
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException("SHA-256 not available", e);
+    }
   }
 }

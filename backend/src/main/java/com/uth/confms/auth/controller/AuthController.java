@@ -6,9 +6,12 @@ import com.uth.confms.auth.dto.RegisterRequest;
 import com.uth.confms.auth.dto.VerifyEmailRequest;
 import com.uth.confms.auth.service.AuthService;
 import com.uth.confms.auth.service.TokenService;
+import com.uth.confms.auth.repository.RefreshTokenRepository;
 import com.uth.confms.common.annotations.NoAuth;
 import com.uth.confms.common.dto.ApiResponse;
 import com.uth.confms.email.service.EmailVerificationService;
+
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,12 +46,14 @@ public class AuthController {
   private final TokenService tokenService;
   @SuppressWarnings("unused")
   private final EmailVerificationService emailVerificationService;
+  private final RefreshTokenRepository refreshTokenRepository;
 
   public AuthController(AuthService authService, TokenService tokenService,
-      EmailVerificationService emailVerificationService) {
+      EmailVerificationService emailVerificationService, RefreshTokenRepository refreshTokenRepository) {
     this.authService = authService;
     this.tokenService = tokenService;
     this.emailVerificationService = emailVerificationService;
+    this.refreshTokenRepository = refreshTokenRepository;
   }
 
   /**
@@ -75,8 +80,9 @@ public class AuthController {
   @PostMapping("/login")
   @NoAuth
   public ResponseEntity<ApiResponse<LoginResponse>> login(
-      @Valid @RequestBody LoginRequest request) {
-    LoginResponse response = authService.login(request);
+      @Valid @RequestBody LoginRequest request,
+      HttpServletRequest httpRequest) {
+    LoginResponse response = authService.login(request, httpRequest);
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
@@ -140,8 +146,33 @@ public class AuthController {
    * @return ApiResponse xác nhận đã logout
    */
   @PostMapping("/logout")
-  public ResponseEntity<ApiResponse<Void>> logout() {
-    // Token invalidation handled by frontend
+  public ResponseEntity<ApiResponse<Void>> logout(
+      @RequestHeader(name = "Authorization", required = false) String authorization) {
+    if (authorization != null && authorization.startsWith("Bearer ")) {
+      String token = authorization.replace("Bearer ", "");
+      try {
+        // compute hash and revoke the refresh token record
+        String tokenHash = sha256Hex(token);
+        refreshTokenRepository.revokeByTokenHash(tokenHash);
+      } catch (Exception ignored) {
+        // ignore
+      }
+    }
+
     return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
+  }
+
+  private static String sha256Hex(String input) {
+    try {
+      java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+      StringBuilder sb = new StringBuilder(hash.length * 2);
+      for (byte b : hash) {
+        sb.append(String.format("%02x", b));
+      }
+      return sb.toString();
+    } catch (java.security.NoSuchAlgorithmException e) {
+      throw new RuntimeException("SHA-256 not available", e);
+    }
   }
 }
