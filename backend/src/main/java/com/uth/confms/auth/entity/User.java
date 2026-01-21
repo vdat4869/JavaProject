@@ -64,7 +64,7 @@ public class User {
   private Set<Role> roles = new HashSet<>();
 
   @Enumerated(EnumType.STRING)
-  @Column(nullable = false)
+  @Column(nullable = true)
   @Builder.Default
   private LoginProvider provider = LoginProvider.LOCAL;
 

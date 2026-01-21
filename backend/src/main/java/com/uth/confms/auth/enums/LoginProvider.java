@@ -1,6 +1,6 @@
 package com.uth.confms.auth.enums;
 
-public enum AuthProvider {
+public enum LoginProvider {
     LOCAL, // đăng ký thường
     GOOGLE, // Google SSO
     FACEBOOK,
