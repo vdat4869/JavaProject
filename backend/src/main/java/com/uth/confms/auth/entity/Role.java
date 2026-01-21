@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.util.HashSet;
 import java.util.Set;
+import com.uth.confms.auth.enums.RoleName;
 
 @Entity
 @Table(name = "roles")
@@ -26,13 +27,7 @@ public class Role {
 
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"))
+  @Builder.Default
   private Set<Permission> permissions = new HashSet<>();
 
-  public enum RoleName {
-    ADMIN,
-    CHAIR,
-    PC,
-    REVIEWER,
-    AUTHOR
-  }
 }

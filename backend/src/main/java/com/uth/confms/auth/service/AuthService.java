@@ -1,12 +1,13 @@
 package com.uth.confms.auth.service;
 
 import com.uth.confms.auth.dto.ChangePasswordRequest;
+import com.uth.confms.auth.dto.GoogleUserInfo;
 import com.uth.confms.auth.dto.LoginRequest;
 import com.uth.confms.auth.dto.LoginResponse;
 import com.uth.confms.auth.dto.RegisterRequest;
 import com.uth.confms.auth.entity.Role;
 import com.uth.confms.auth.entity.RefreshToken;
-import com.uth.confms.auth.entity.Role.RoleName;
+import com.uth.confms.auth.enums.RoleName;
 import com.uth.confms.auth.entity.User;
 import com.uth.confms.auth.repository.RoleRepository;
 import com.uth.confms.auth.repository.RefreshTokenRepository;
@@ -15,7 +16,8 @@ import com.uth.confms.common.exception.BusinessException;
 import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.email.service.EmailVerificationService;
-
+import com.uth.confms.auth.enums.LoginProvider;
+import com.uth.confms.auth.security.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Set;
@@ -51,6 +53,8 @@ public class AuthService {
   @SuppressWarnings("unused")
   private final EmailVerificationService emailVerificationService;
   private final RefreshTokenRepository refreshTokenRepository;
+  private final GoogleTokenService googleTokenService;
+  private final JwtUtil jwtUtil;
 
   public AuthService(
       UserRepository userRepository,
@@ -60,7 +64,9 @@ public class AuthService {
       AuthenticationManager authenticationManager,
       UserDetailsService userDetailsService,
       EmailVerificationService emailVerificationService,
-      RefreshTokenRepository refreshTokenRepository) {
+      RefreshTokenRepository refreshTokenRepository,
+      GoogleTokenService googleTokenService,
+      JwtUtil jwtUtil) {
     this.userRepository = userRepository;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
@@ -69,6 +75,8 @@ public class AuthService {
     this.userDetailsService = userDetailsService;
     this.emailVerificationService = emailVerificationService;
     this.refreshTokenRepository = refreshTokenRepository;
+    this.googleTokenService = googleTokenService;
+    this.jwtUtil = jwtUtil;
   }
 
   /**
@@ -273,4 +281,70 @@ public class AuthService {
       throw new RuntimeException("SHA-256 not available", e);
     }
   }
+
+  @Transactional
+  public LoginResponse loginWithGoogle(String idToken) throws Exception {
+
+    GoogleUserInfo info = googleTokenService.verifyIdToken(idToken);
+
+    String email = info.email();
+    String fullName = info.name(); // vd: "Nguyen Van A"
+    String googleId = info.sub();
+
+    String firstName = fullName;
+    String lastName = "";
+
+    if (fullName != null && fullName.contains(" ")) {
+      int idx = fullName.lastIndexOf(" ");
+      firstName = fullName.substring(0, idx);
+      lastName = fullName.substring(idx + 1);
+    }
+
+    User user = userRepository.findByEmail(email).orElse(null);
+
+    if (user == null) {
+      // 🔹 TẠO USER MỚI
+      user = User.builder()
+          .email(email)
+          .firstName(firstName)
+          .lastName(lastName)
+          .provider(LoginProvider.GOOGLE)
+          .providerId(googleId)
+          .emailVerified(true) // Google email đã verify
+          .active(true)
+          .build();
+
+      // 🔹 GÁN ROLE MẶC ĐỊNH: AUTHOR
+      Role authorRole = roleRepository.findByName(RoleName.AUTHOR)
+          .orElseThrow(() -> new RuntimeException("ROLE AUTHOR not found"));
+
+      user.getRoles().add(authorRole);
+
+      userRepository.save(user);
+    } else {
+      // 🔹 USER CŨ (đăng ký LOCAL)
+      if (user.getProvider() == LoginProvider.LOCAL) {
+        user.setProvider(LoginProvider.GOOGLE);
+        user.setProviderId(googleId);
+        user.setEmailVerified(true);
+      }
+    }
+
+    // 🔹 SINH JWT CHUNG
+    String token = jwtUtil.generateToken(user);
+
+    return LoginResponse.builder()
+        .accessToken(token)
+        .tokenType("Bearer")
+        .userId(user.getId())
+        .email(user.getEmail())
+        .fullName(user.getFullName())
+        .emailVerified(user.getEmailVerified())
+        .roles(
+            user.getRoles().stream()
+                .map(r -> r.getName().name()) // RoleName -> String
+                .collect(Collectors.toSet()))
+        .build();
+  }
+
 }

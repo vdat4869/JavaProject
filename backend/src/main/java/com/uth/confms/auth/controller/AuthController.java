@@ -10,6 +10,7 @@ import com.uth.confms.auth.repository.RefreshTokenRepository;
 import com.uth.confms.common.annotations.NoAuth;
 import com.uth.confms.common.dto.ApiResponse;
 import com.uth.confms.email.service.EmailVerificationService;
+import com.uth.confms.auth.dto.GoogleLoginRequest;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -175,4 +176,13 @@ public class AuthController {
       throw new RuntimeException("SHA-256 not available", e);
     }
   }
+
+  @PostMapping("/google")
+  public ResponseEntity<LoginResponse> googleLogin(
+      @RequestBody GoogleLoginRequest request) throws Exception {
+
+    return ResponseEntity.ok(
+        authService.loginWithGoogle(request.getIdToken()));
+  }
+
 }
