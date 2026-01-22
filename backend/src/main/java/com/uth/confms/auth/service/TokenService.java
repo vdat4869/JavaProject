@@ -1,6 +1,9 @@
 package com.uth.confms.auth.service;
 
+import com.uth.confms.auth.entity.User;
 import com.uth.confms.auth.repository.RefreshTokenRepository;
+import com.uth.confms.auth.repository.UserRepository;
+import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -32,13 +35,15 @@ public class TokenService {
   private final JwtService jwtService;
   private final UserDetailsService userDetailsService;
   private final RefreshTokenRepository refreshTokenRepository;
+  private final UserRepository userRepository;
 
   @Autowired
   public TokenService(JwtService jwtService, UserDetailsService userDetailsService,
-      RefreshTokenRepository refreshTokenRepository) {
+      RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
     this.jwtService = jwtService;
     this.userDetailsService = userDetailsService;
     this.refreshTokenRepository = refreshTokenRepository;
+    this.userRepository = userRepository;
   }
 
   public String refreshAccessToken(String refreshToken) {
@@ -60,7 +65,10 @@ public class TokenService {
       UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
       if (jwtService.validateToken(refreshToken, userDetails)) {
-        return jwtService.generateAccessToken(userDetails);
+        // Load User entity để lấy roles và generate token với roles
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+        return jwtService.generateAccessToken(user);
       }
 
       throw new UnauthorizedException("Invalid refresh token");

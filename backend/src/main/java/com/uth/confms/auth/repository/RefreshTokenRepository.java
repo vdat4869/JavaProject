@@ -23,10 +23,10 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Transactional
     @Query("""
                 update RefreshToken rt
-                set rt.revoked = true
+                set rt.revoked = true, rt.revokedAt = :revokedAt
                 where rt.tokenHash = :tokenHash
             """)
-    void revokeByTokenHash(String tokenHash);
+    void revokeByTokenHash(String tokenHash, java.time.LocalDateTime revokedAt);
 
     /**
      * Logout tất cả thiết bị / đổi mật khẩu
@@ -35,10 +35,10 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     @Transactional
     @Query("""
                 update RefreshToken rt
-                set rt.revoked = true
+                set rt.revoked = true, rt.revokedAt = :revokedAt
                 where rt.user = :user
             """)
-    void revokeAllByUser(User user);
+    void revokeAllByUser(User user, java.time.LocalDateTime revokedAt);
 
     /**
      * Cleanup token hết hạn (job định kỳ)
