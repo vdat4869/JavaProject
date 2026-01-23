@@ -1,13 +1,16 @@
 package com.uth.confms.auth.service;
 
+import com.uth.confms.auth.entity.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +72,27 @@ public class JwtService {
     return extractClaim(token, Claims::getExpiration);
   }
 
+  /**
+   * Extract roles từ JWT token
+   * 
+   * @param token JWT token
+   * @return List of role names, hoặc empty list nếu không có roles
+   */
+  @SuppressWarnings("unchecked")
+  public List<String> extractRoles(String token) {
+    try {
+      Claims claims = extractAllClaims(token);
+      Object rolesObj = claims.get("roles");
+      if (rolesObj instanceof List) {
+        return (List<String>) rolesObj;
+      }
+      return List.of();
+    } catch (Exception e) {
+      log.warn("Failed to extract roles from token: {}", e.getMessage());
+      return List.of();
+    }
+  }
+
   public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
     final Claims claims = extractAllClaims(token);
     return claimsResolver.apply(claims);
@@ -108,9 +132,41 @@ public class JwtService {
     return createToken(claims, userDetails.getUsername(), accessTokenValidity);
   }
 
+  /**
+   * Generate access token với roles từ User entity
+   * 
+   * @param user User entity để lấy roles
+   * @return JWT access token với roles trong claims
+   */
+  public String generateAccessToken(User user) {
+    Map<String, Object> claims = new HashMap<>();
+    // Thêm roles vào claims với prefix "ROLE_" để nhất quán với Spring Security
+    List<String> roles = user.getRoles().stream()
+        .map(role -> "ROLE_" + role.getName().name())
+        .collect(Collectors.toList());
+    claims.put("roles", roles);
+    return createToken(claims, user.getEmail(), accessTokenValidity);
+  }
+
   public String generateRefreshToken(UserDetails userDetails) {
     Map<String, Object> claims = new HashMap<>();
     return createToken(claims, userDetails.getUsername(), refreshTokenValidity);
+  }
+
+  /**
+   * Generate refresh token với roles từ User entity
+   * 
+   * @param user User entity để lấy roles
+   * @return JWT refresh token với roles trong claims
+   */
+  public String generateRefreshToken(User user) {
+    Map<String, Object> claims = new HashMap<>();
+    // Thêm roles vào claims với prefix "ROLE_" để nhất quán với Spring Security
+    List<String> roles = user.getRoles().stream()
+        .map(role -> "ROLE_" + role.getName().name())
+        .collect(Collectors.toList());
+    claims.put("roles", roles);
+    return createToken(claims, user.getEmail(), refreshTokenValidity);
   }
 
   private String createToken(Map<String, Object> claims, String subject, Long validity) {

@@ -19,17 +19,16 @@ public class EmailVerificationFilter extends OncePerRequestFilter {
   @SuppressWarnings("unused")
   private final UserRepository userRepository;
 
-  private static final Set<String> PUBLIC_ENDPOINTS =
-      Set.of(
-          "/api/auth/login",
-          "/api/auth/register",
-          "/api/auth/email-verification",
-          "/api/conferences/public",
-          "/swagger-ui",
-          "/swagger-ui.html",
-          "/api-docs",
-          "/v3/api-docs",
-          "/favicon.ico");
+  private static final Set<String> PUBLIC_ENDPOINTS = Set.of(
+      "/api/auth/login",
+      "/api/auth/register",
+      "/api/auth/email-verification",
+      "/api/conferences/public",
+      "/swagger-ui",
+      "/swagger-ui.html",
+      "/api-docs",
+      "/v3/api-docs",
+      "/favicon.ico");
 
   public EmailVerificationFilter(UserRepository userRepository) {
     this.userRepository = userRepository;
@@ -59,22 +58,23 @@ public class EmailVerificationFilter extends OncePerRequestFilter {
     // TODO: Email verification check (temporarily disabled)
     // Email verification filter is completely disabled
     // All requests are allowed through without checking email verification status
-    // 
+
     // Previous code (commented out):
-    // Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    // Authentication authentication =
+    // SecurityContextHolder.getContext().getAuthentication();
     // if (authentication != null && authentication.isAuthenticated()) {
-    //   String email = authentication.getName();
-    //   User user = userRepository.findByEmail(email).orElse(null);
-    //
-    //   if (user != null && !user.getEmailVerified()) {
-    //     // Check if this is a workflow endpoint that requires email verification
-    //     if (requiresEmailVerification(path)) {
-    //       response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-    //       response.setContentType("application/json");
-    //       response.getWriter().write("{\"error\":\"Email verification required\"}");
-    //       return;
-    //     }
-    //   }
+    // String email = authentication.getName();
+    // User user = userRepository.findByEmail(email).orElse(null);
+
+    // if (user != null && !user.getEmailVerified()) {
+    // // Check if this is a workflow endpoint that requires email verification
+    // if (requiresEmailVerification(path)) {
+    // response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+    // response.setContentType("application/json");
+    // response.getWriter().write("{\"error\":\"Email verification required\"}");
+    // return;
+    // }
+    // }
     // }
 
     filterChain.doFilter(request, response);

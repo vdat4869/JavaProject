@@ -70,7 +70,9 @@ public class GlobalExceptionHandler {
           .body(ApiResponse.error("Invalid token format"));
     }
     log.warn("Illegal argument: {}", message);
-    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(message != null ? message : "Invalid argument"));
+    log.warn("Stack trace: ", e);
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(ApiResponse.error(message != null ? message : "Invalid argument"));
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)

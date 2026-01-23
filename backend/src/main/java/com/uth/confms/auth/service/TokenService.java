@@ -1,6 +1,9 @@
 package com.uth.confms.auth.service;
 
+import com.uth.confms.auth.entity.User;
 import com.uth.confms.auth.repository.RefreshTokenRepository;
+import com.uth.confms.auth.repository.UserRepository;
+import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -32,14 +35,26 @@ public class TokenService {
   private final JwtService jwtService;
   private final UserDetailsService userDetailsService;
   private final RefreshTokenRepository refreshTokenRepository;
+<<<<<<< HEAD
   private final AuditLogService auditLogService;
+=======
+  private final UserRepository userRepository;
+>>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
 
   public TokenService(JwtService jwtService, UserDetailsService userDetailsService,
+<<<<<<< HEAD
       RefreshTokenRepository refreshTokenRepository, AuditLogService auditLogService) {
     this.jwtService = jwtService;
     this.userDetailsService = userDetailsService;
     this.refreshTokenRepository = refreshTokenRepository;
     this.auditLogService = auditLogService;
+=======
+      RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
+    this.jwtService = jwtService;
+    this.userDetailsService = userDetailsService;
+    this.refreshTokenRepository = refreshTokenRepository;
+    this.userRepository = userRepository;
+>>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
   }
 
   public String refreshAccessToken(String refreshToken, HttpServletRequest httpRequest) {
@@ -61,6 +76,7 @@ public class TokenService {
       UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
       if (jwtService.validateToken(refreshToken, userDetails)) {
+<<<<<<< HEAD
         String newAccessToken = jwtService.generateAccessToken(userDetails);
         
         // Audit log: Token refresh
@@ -81,6 +97,12 @@ public class TokenService {
         }
         
         return newAccessToken;
+=======
+        // Load User entity để lấy roles và generate token với roles
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+        return jwtService.generateAccessToken(user);
+>>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
       }
 
       throw new UnauthorizedException("Invalid refresh token");

@@ -1,12 +1,13 @@
 package com.uth.confms.auth.service;
 
 import com.uth.confms.auth.dto.ChangePasswordRequest;
+import com.uth.confms.auth.dto.GoogleUserInfo;
 import com.uth.confms.auth.dto.LoginRequest;
 import com.uth.confms.auth.dto.LoginResponse;
 import com.uth.confms.auth.dto.RegisterRequest;
 import com.uth.confms.auth.entity.Role;
 import com.uth.confms.auth.entity.RefreshToken;
-import com.uth.confms.auth.entity.Role.RoleName;
+import com.uth.confms.auth.enums.RoleName;
 import com.uth.confms.auth.entity.User;
 import com.uth.confms.auth.repository.RoleRepository;
 import com.uth.confms.auth.repository.RefreshTokenRepository;
@@ -15,7 +16,7 @@ import com.uth.confms.common.exception.BusinessException;
 import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.email.service.EmailVerificationService;
-
+import com.uth.confms.auth.enums.LoginProvider;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Set;
@@ -28,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -47,11 +47,16 @@ public class AuthService {
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final AuthenticationManager authenticationManager;
+  @SuppressWarnings("unused")
   private final UserDetailsService userDetailsService;
   @SuppressWarnings("unused")
   private final EmailVerificationService emailVerificationService;
   private final RefreshTokenRepository refreshTokenRepository;
+<<<<<<< HEAD
   private final AuditLogService auditLogService;
+=======
+  private final GoogleTokenService googleTokenService;
+>>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
 
   public AuthService(
       UserRepository userRepository,
@@ -62,7 +67,11 @@ public class AuthService {
       UserDetailsService userDetailsService,
       EmailVerificationService emailVerificationService,
       RefreshTokenRepository refreshTokenRepository,
+<<<<<<< HEAD
       AuditLogService auditLogService) {
+=======
+      GoogleTokenService googleTokenService) {
+>>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
     this.userRepository = userRepository;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
@@ -71,7 +80,11 @@ public class AuthService {
     this.userDetailsService = userDetailsService;
     this.emailVerificationService = emailVerificationService;
     this.refreshTokenRepository = refreshTokenRepository;
+<<<<<<< HEAD
     this.auditLogService = auditLogService;
+=======
+    this.googleTokenService = googleTokenService;
+>>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
   }
 
   /**
@@ -212,6 +225,7 @@ public class AuthService {
    */
   public void logout(String refreshToken, HttpServletRequest httpRequest) {
     String tokenHash = sha256Hex(refreshToken);
+<<<<<<< HEAD
     refreshTokenRepository.revokeByTokenHash(tokenHash);
 
     // Try to get user from refresh token for audit logging
@@ -235,6 +249,9 @@ public class AuthService {
     } catch (Exception e) {
       // Don't block logout if audit logging fails
     }
+=======
+    refreshTokenRepository.revokeByTokenHash(tokenHash, LocalDateTime.now());
+>>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
   }
 
   private String extractClientIp(HttpServletRequest request) {
@@ -315,10 +332,14 @@ public class AuthService {
       throw new UnauthorizedException("User account is disabled");
     }
 
-    // 3. Generate tokens
-    UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
-    String accessToken = jwtService.generateAccessToken(userDetails);
-    String refreshToken = jwtService.generateRefreshToken(userDetails);
+    // 2.5. Check if account registered with SSO (Google)
+    if (user.getProvider() == LoginProvider.GOOGLE) {
+      throw new UnauthorizedException("This account was registered with Google. Please login using Google Sign-In.");
+    }
+
+    // 3. Generate tokens với roles từ User entity
+    String accessToken = jwtService.generateAccessToken(user);
+    String refreshToken = jwtService.generateRefreshToken(user);
 
     // 4. Lấy device & IP
     String deviceInfo = httpRequest.getHeader("User-Agent");
@@ -496,4 +517,123 @@ public class AuthService {
       throw new RuntimeException("SHA-256 not available", e);
     }
   }
+
+  @Transactional
+  public LoginResponse loginWithGoogle(String idToken) throws Exception {
+
+    GoogleUserInfo info = googleTokenService.verifyIdToken(idToken);
+
+    String email = info.email();
+    String fullName = info.name(); // vd: "Nguyen Van A"
+    String googleId = info.sub();
+
+    String firstName = fullName;
+    String lastName = "";
+
+    if (fullName != null && fullName.contains(" ")) {
+      int idx = fullName.lastIndexOf(" ");
+      firstName = fullName.substring(0, idx);
+      lastName = fullName.substring(idx + 1);
+    }
+
+    User user = userRepository.findByEmail(email).orElse(null);
+
+    if (user == null) {
+      // 🔹 TẠO USER MỚI
+      user = User.builder()
+          .email(email)
+          .firstName(firstName)
+          .lastName(lastName)
+          .password(passwordEncoder.encode("GOOGLE_SSO_" + System.currentTimeMillis()))
+          .provider(LoginProvider.GOOGLE)
+          .providerId(googleId)
+          .emailVerified(true) // Google email đã verify
+          .active(true)
+          .build();
+
+      // 🔹 GÁN ROLE MẶC ĐỊNH: AUTHOR
+      Role authorRole = roleRepository.findByName(RoleName.AUTHOR)
+          .orElseThrow(() -> new RuntimeException("ROLE AUTHOR not found"));
+
+      user.getRoles().add(authorRole);
+
+      user = userRepository.save(user);
+    } else {
+      // 🔹 USER CŨ - Cập nhật thông tin
+      if (user.getProvider() == LoginProvider.LOCAL) {
+        // User đăng ký LOCAL, chuyển sang GOOGLE
+        user.setProvider(LoginProvider.GOOGLE);
+        user.setProviderId(googleId);
+        user.setEmailVerified(true);
+
+        if (user.getPassword() == null) {
+          user.setPassword(
+              passwordEncoder.encode("GOOGLE_SSO_" + System.currentTimeMillis()));
+        }
+
+        user = userRepository.save(user);
+      } else if (user.getProvider() == LoginProvider.GOOGLE) {
+        // User đã login với GOOGLE trước đó - đảm bảo password không null
+        if (user.getPassword() == null) {
+          user.setPassword(
+              passwordEncoder.encode("GOOGLE_SSO_" + System.currentTimeMillis()));
+          user = userRepository.save(user);
+        }
+        // Cập nhật providerId nếu cần
+        if (user.getProviderId() == null || !user.getProviderId().equals(googleId)) {
+          user.setProviderId(googleId);
+          user = userRepository.save(user);
+        }
+      }
+    }
+
+    // 🔹 SINH JWT TOKENS với roles từ User entity
+    String accessToken = jwtService.generateAccessToken(user);
+    String refreshToken = jwtService.generateRefreshToken(user);
+
+    // 🔹 LƯU REFRESH TOKEN VÀO DATABASE
+    try {
+      java.util.Date exp = jwtService.extractExpiration(refreshToken);
+      if (exp == null) {
+        throw new BusinessException("Failed to extract refresh token expiration", "TOKEN_INVALID");
+      }
+
+      LocalDateTime expiresAt = exp.toInstant()
+          .atZone(ZoneId.systemDefault())
+          .toLocalDateTime();
+
+      String tokenHash = sha256Hex(refreshToken);
+
+      RefreshToken rt = RefreshToken.builder()
+          .tokenHash(tokenHash)
+          .user(user)
+          .expiresAt(expiresAt)
+          .createdAt(LocalDateTime.now())
+          .deviceInfo("Google Sign-In")
+          .ipAddress("")
+          .revoked(false)
+          .build();
+
+      refreshTokenRepository.save(rt);
+    } catch (BusinessException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new BusinessException("Failed to save refresh token: " + e.getMessage(), "TOKEN_SAVE_FAILED");
+    }
+
+    return LoginResponse.builder()
+        .accessToken(accessToken)
+        .refreshToken(refreshToken)
+        .tokenType("Bearer")
+        .userId(user.getId())
+        .email(user.getEmail())
+        .fullName(user.getFullName())
+        .emailVerified(user.getEmailVerified())
+        .roles(
+            user.getRoles().stream()
+                .map(r -> r.getName().name())
+                .collect(Collectors.toSet()))
+        .build();
+  }
+
 }

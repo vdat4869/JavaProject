@@ -1,12 +1,14 @@
 package com.uth.confms.auth.controller;
 
+import com.uth.confms.auth.dto.GoogleLoginRequest;
 import com.uth.confms.auth.dto.LoginRequest;
 import com.uth.confms.auth.dto.LoginResponse;
+import com.uth.confms.auth.dto.LogoutRequest;
 import com.uth.confms.auth.dto.RegisterRequest;
 import com.uth.confms.auth.dto.VerifyEmailRequest;
+import com.uth.confms.auth.repository.RefreshTokenRepository;
 import com.uth.confms.auth.service.AuthService;
 import com.uth.confms.auth.service.TokenService;
-import com.uth.confms.auth.repository.RefreshTokenRepository;
 import com.uth.confms.common.annotations.NoAuth;
 import com.uth.confms.common.dto.ApiResponse;
 import com.uth.confms.email.service.EmailVerificationService;
@@ -46,14 +48,12 @@ public class AuthController {
   private final TokenService tokenService;
   @SuppressWarnings("unused")
   private final EmailVerificationService emailVerificationService;
-  private final RefreshTokenRepository refreshTokenRepository;
 
   public AuthController(AuthService authService, TokenService tokenService,
       EmailVerificationService emailVerificationService, RefreshTokenRepository refreshTokenRepository) {
     this.authService = authService;
     this.tokenService = tokenService;
     this.emailVerificationService = emailVerificationService;
-    this.refreshTokenRepository = refreshTokenRepository;
   }
 
   /**
@@ -142,12 +142,16 @@ public class AuthController {
    * Đăng xuất khỏi hệ thống
    *
    * <p>
-   * Lưu ý: Token invalidation được xử lý bởi frontend
+   * Revokes the refresh token in the database so it cannot be used anymore.
+   * Frontend should also clear local stored tokens after successful logout.
    *
-   * @return ApiResponse xác nhận đã logout
+   * @param request LogoutRequest chứa refresh token
+   * @return ApiResponse xác nhận đã logout thành công
    */
   @PostMapping("/logout")
+  @NoAuth
   public ResponseEntity<ApiResponse<Void>> logout(
+<<<<<<< HEAD
       @RequestHeader(name = "Authorization", required = false) String authorization,
       HttpServletRequest httpRequest) {
     if (authorization != null && authorization.startsWith("Bearer ")) {
@@ -163,20 +167,26 @@ public class AuthController {
       }
     }
 
+=======
+      @Valid @RequestBody LogoutRequest request) {
+    authService.logout(request.getRefreshToken());
+>>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
     return ResponseEntity.ok(ApiResponse.success("Logged out successfully", null));
   }
 
-  private static String sha256Hex(String input) {
-    try {
-      java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
-      byte[] hash = digest.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-      StringBuilder sb = new StringBuilder(hash.length * 2);
-      for (byte b : hash) {
-        sb.append(String.format("%02x", b));
-      }
-      return sb.toString();
-    } catch (java.security.NoSuchAlgorithmException e) {
-      throw new RuntimeException("SHA-256 not available", e);
-    }
+  /**
+   * Google Sign-In endpoint
+   * 
+   * @param request GoogleLoginRequest chứa idToken từ Google
+   * @return ApiResponse chứa LoginResponse với access token và refresh token
+   */
+  @PostMapping("/google")
+  @NoAuth
+  public ResponseEntity<ApiResponse<LoginResponse>> googleLogin(
+      @Valid @RequestBody GoogleLoginRequest request) throws Exception {
+
+    LoginResponse response = authService.loginWithGoogle(request.getIdToken());
+    return ResponseEntity.ok(ApiResponse.success("Google login successful", response));
   }
+
 }

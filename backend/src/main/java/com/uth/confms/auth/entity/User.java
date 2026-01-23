@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import com.uth.confms.auth.enums.LoginProvider;
 
 /**
  * Entity đại diện cho người dùng trong hệ thống
@@ -36,7 +37,7 @@ public class User {
   @Column(unique = true, nullable = false)
   private String email;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private String password;
 
   @Column(nullable = false)
@@ -61,6 +62,17 @@ public class User {
   @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
   @Builder.Default
   private Set<Role> roles = new HashSet<>();
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = true)
+  @Builder.Default
+  private LoginProvider provider = LoginProvider.LOCAL;
+
+  /**
+   * ID user từ Google (sub trong id_token)
+   */
+  @Column(unique = true)
+  private String providerId;
 
   @CreatedDate
   @Column(nullable = false, updatable = false)

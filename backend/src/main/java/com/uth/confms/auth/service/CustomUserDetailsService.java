@@ -25,9 +25,17 @@ public class CustomUserDetailsService implements UserDetailsService {
             .findByEmail(email)
             .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
+    // Đảm bảo password không null (cho trường hợp Google SSO)
+    String password = user.getPassword();
+    if (password == null) {
+      // Nếu password null, dùng một giá trị mặc định (sẽ không bao giờ match)
+      // Vì user này chỉ login qua SSO, không dùng password authentication
+      password = "{noop}GOOGLE_SSO_NO_PASSWORD";
+    }
+
     return org.springframework.security.core.userdetails.User.builder()
         .username(user.getEmail())
-        .password(user.getPassword())
+        .password(password)
         .authorities(getAuthorities(user))
         .accountExpired(false)
         .accountLocked(!user.getActive())
@@ -37,6 +45,7 @@ public class CustomUserDetailsService implements UserDetailsService {
   }
 
   private Collection<? extends GrantedAuthority> getAuthorities(User user) {
+<<<<<<< HEAD
     java.util.Set<GrantedAuthority> authorities = new java.util.HashSet<>();
 
     // Add roles as authorities (for @PreAuthorize hasRole())
@@ -54,6 +63,19 @@ public class CustomUserDetailsService implements UserDetailsService {
               authorities.add(new SimpleGrantedAuthority(permission.getName()));
             });
 
+=======
+    // Thêm roles với prefix "ROLE_" để hasRole() hoạt động
+    Collection<GrantedAuthority> authorities = user.getRoles().stream()
+        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
+        .collect(Collectors.toList());
+    
+    // Thêm permissions
+    user.getRoles().stream()
+        .flatMap(role -> role.getPermissions().stream())
+        .map(permission -> new SimpleGrantedAuthority(permission.getName()))
+        .forEach(authorities::add);
+    
+>>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
     return authorities;
   }
 }

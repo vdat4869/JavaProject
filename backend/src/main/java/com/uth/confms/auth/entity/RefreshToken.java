@@ -64,6 +64,12 @@ public class RefreshToken {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * Thời điểm token bị revoke (logout)
+     */
+    @Column(name = "revoked_at")
+    private LocalDateTime revokedAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
