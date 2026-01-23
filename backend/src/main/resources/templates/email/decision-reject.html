@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông báo Quyết định - UTH-ConfMS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #dc3545;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 30px;
+            border: 1px solid #ddd;
+        }
+        .info-box {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .footer {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>UTH-ConfMS</h1>
+        <p>Hệ thống Quản lý Hội nghị Khoa học</p>
+    </div>
+    
+    <div class="content">
+        <h2>Thông báo Quyết định</h2>
+        <p>Xin chào <span th:text="${authorName}"></span>,</p>
+        
+        <p>Chúng tôi xin thông báo về quyết định đối với bài nộp của bạn:</p>
+        <p style="font-weight: bold; font-size: 18px;" th:text="${submissionTitle}"></p>
+        
+        <div class="info-box">
+            <p style="margin: 0; font-weight: bold;">Quyết định: Từ chối</p>
+        </div>
+        
+        <p>Rất tiếc, sau khi xem xét kỹ lưỡng, bài nộp của bạn không được chấp nhận cho hội nghị <span th:text="${conferenceName}"></span>.</p>
+        
+        <div th:if="${comments != null and !comments.isEmpty()}">
+            <h3>Feedback từ Ban Tổ chức:</h3>
+            <p style="background-color: #fff; padding: 15px; border-left: 4px solid #dc3545;" th:text="${comments}"></p>
+        </div>
+        
+        <div th:if="${anonymizedFeedback != null and !anonymizedFeedback.isEmpty()}">
+            <h3>Phản hồi từ Reviewers (đã ẩn danh):</h3>
+            <div style="background-color: #fff; padding: 15px; border-left: 4px solid #6c757d;" th:utext="${anonymizedFeedback}"></div>
+        </div>
+        
+        <p>Chúng tôi cảm ơn bạn đã quan tâm và đóng góp cho hội nghị. Chúng tôi hy vọng sẽ nhận được bài nộp của bạn trong các hội nghị tiếp theo.</p>
+        
+        <p>Trân trọng,<br>
+        <strong>Ban Tổ chức Hội nghị</strong><br>
+        <span th:text="${conferenceName}"></span></p>
+    </div>
+    
+    <div class="footer">
+        <p>Email này được gửi tự động, vui lòng không trả lời.</p>
+        <p>&copy; 2024 UTH-ConfMS. All rights reserved.</p>
+    </div>
+</body>
+</html>
+

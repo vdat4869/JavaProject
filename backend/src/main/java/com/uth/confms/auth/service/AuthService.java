@@ -51,6 +51,7 @@ public class AuthService {
   @SuppressWarnings("unused")
   private final EmailVerificationService emailVerificationService;
   private final RefreshTokenRepository refreshTokenRepository;
+  private final AuditLogService auditLogService;
 
   public AuthService(
       UserRepository userRepository,
@@ -60,7 +61,8 @@ public class AuthService {
       AuthenticationManager authenticationManager,
       UserDetailsService userDetailsService,
       EmailVerificationService emailVerificationService,
-      RefreshTokenRepository refreshTokenRepository) {
+      RefreshTokenRepository refreshTokenRepository,
+      AuditLogService auditLogService) {
     this.userRepository = userRepository;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
@@ -69,6 +71,7 @@ public class AuthService {
     this.userDetailsService = userDetailsService;
     this.emailVerificationService = emailVerificationService;
     this.refreshTokenRepository = refreshTokenRepository;
+    this.auditLogService = auditLogService;
   }
 
   /**
@@ -117,6 +120,20 @@ public class AuthService {
       // swallow to avoid blocking registration
     }
 
+    // Audit log: Registration
+    try {
+      auditLogService.logAction(
+          user.getId(),
+          user.getEmail(),
+          "REGISTER",
+          "AUTH",
+          null,
+          "User registered successfully",
+          null);
+    } catch (Exception e) {
+      // Don't block registration if audit logging fails
+    }
+
     // Return minimal response without tokens. Frontend expects to navigate to
     // verify-email.
     Set<String> roles = user.getRoles().stream().map(r -> r.getName().name()).collect(Collectors.toSet());
@@ -151,24 +168,73 @@ public class AuthService {
    * Change password for user
    */
   @Transactional
-  public void changePassword(Long userId, ChangePasswordRequest request) {
+  public void changePassword(Long userId, ChangePasswordRequest request, HttpServletRequest httpRequest) {
     User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
 
     if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+      // Audit log: Password change failure
+      try {
+        auditLogService.logAction(
+            userId,
+            user.getEmail(),
+            "PASSWORD_CHANGE_FAILED",
+            "AUTH",
+            null,
+            "Current password is incorrect",
+            httpRequest);
+      } catch (Exception e) {
+        // Don't block if audit logging fails
+      }
       throw new UnauthorizedException("Current password is incorrect");
     }
 
     user.setPassword(passwordEncoder.encode(request.getNewPassword()));
     userRepository.save(user);
+
+    // Audit log: Password change success
+    try {
+      auditLogService.logAction(
+          userId,
+          user.getEmail(),
+          "PASSWORD_CHANGED",
+          "AUTH",
+          null,
+          "Password changed successfully",
+          httpRequest);
+    } catch (Exception e) {
+      // Don't block if audit logging fails
+    }
   }
 
   /**
    * Logout - currently a no-op because token invalidation is handled on the
    * client or via token blacklist if implemented.
    */
-  public void logout(String refreshToken) {
+  public void logout(String refreshToken, HttpServletRequest httpRequest) {
     String tokenHash = sha256Hex(refreshToken);
     refreshTokenRepository.revokeByTokenHash(tokenHash);
+
+    // Try to get user from refresh token for audit logging
+    try {
+      // Find refresh token to get user
+      var refreshTokenOpt = refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash);
+      if (refreshTokenOpt.isPresent()) {
+        var rt = refreshTokenOpt.get();
+        User user = rt.getUser();
+        if (user != null) {
+          auditLogService.logAction(
+              user.getId(),
+              user.getEmail(),
+              "LOGOUT",
+              "AUTH",
+              null,
+              "User logged out successfully",
+              httpRequest);
+        }
+      }
+    } catch (Exception e) {
+      // Don't block logout if audit logging fails
+    }
   }
 
   private String extractClientIp(HttpServletRequest request) {
@@ -188,23 +254,64 @@ public class AuthService {
    * @throws NotFoundException     Nếu không tìm thấy user
    */
   public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+    String email = request.getEmail();
+    User user = null;
 
     // 1. Authenticate
     try {
       authenticationManager.authenticate(
           new UsernamePasswordAuthenticationToken(
-              request.getEmail(),
+              email,
               request.getPassword()));
     } catch (BadCredentialsException e) {
+      // Audit log: Login failure
+      try {
+        user = userRepository.findByEmail(email).orElse(null);
+        if (user != null) {
+          auditLogService.logAction(
+              user.getId(),
+              email,
+              "LOGIN_FAILED",
+              "AUTH",
+              null,
+              "Invalid email or password",
+              httpRequest);
+        } else {
+          // User not found - log with email only
+          auditLogService.logAction(
+              null,
+              email,
+              "LOGIN_FAILED",
+              "AUTH",
+              null,
+              "User not found",
+              httpRequest);
+        }
+      } catch (Exception ex) {
+        // Don't block if audit logging fails
+      }
       throw new UnauthorizedException("Invalid email or password");
     }
 
     // 2. Load user
-    User user = userRepository
-        .findByEmail(request.getEmail())
+    user = userRepository
+        .findByEmail(email)
         .orElseThrow(() -> new NotFoundException("User not found"));
 
     if (!user.getActive()) {
+      // Audit log: Login failure - account disabled
+      try {
+        auditLogService.logAction(
+            user.getId(),
+            email,
+            "LOGIN_FAILED",
+            "AUTH",
+            null,
+            "User account is disabled",
+            httpRequest);
+      } catch (Exception e) {
+        // Don't block if audit logging fails
+      }
       throw new UnauthorizedException("User account is disabled");
     }
 
@@ -242,7 +349,21 @@ public class AuthService {
       // (có thể log warn)
     }
 
-    // 6. Response
+    // 6. Audit log: Login success
+    try {
+      auditLogService.logAction(
+          user.getId(),
+          user.getEmail(),
+          "LOGIN_SUCCESS",
+          "AUTH",
+          null,
+          "User logged in successfully",
+          httpRequest);
+    } catch (Exception e) {
+      // Don't block login if audit logging fails
+    }
+
+    // 7. Response
     Set<String> roles = user.getRoles()
         .stream()
         .map(r -> r.getName().name())
@@ -258,6 +379,108 @@ public class AuthService {
         .roles(roles)
         .emailVerified(user.getEmailVerified())
         .build();
+  }
+
+  /**
+   * Tạo hoặc cập nhật user từ OAuth2 provider (Google, Microsoft, etc.)
+   *
+   * <p>Method này được gọi khi user đăng nhập lần đầu qua OAuth2.
+   * Nếu user đã tồn tại, sẽ cập nhật thông tin (nếu cần).
+   * Nếu user chưa tồn tại, sẽ tạo user mới với:
+   * - emailVerified = true (vì OAuth2 provider đã verify email)
+   * - role AUTHOR (mặc định)
+   * - password được generate random (không thể login bằng password)
+   *
+   * @param email Email từ OAuth2 provider
+   * @param fullName Tên đầy đủ từ OAuth2 provider
+   * @param provider Tên provider (google, azure, etc.)
+   * @return User đã được tạo hoặc cập nhật
+   */
+  @Transactional
+  public User createOrUpdateOAuth2User(String email, String fullName, String provider) {
+    // Tìm user hiện có
+    User user = userRepository.findByEmail(email).orElse(null);
+
+    // Split fullName thành firstName và lastName
+    String firstName;
+    String lastName;
+    if (fullName != null && !fullName.trim().isEmpty()) {
+      String[] nameParts = fullName.trim().split("\\s+", 2);
+      firstName = nameParts[0];
+      lastName = nameParts.length > 1 ? nameParts[1] : "";
+    } else {
+      // Nếu không có fullName, sử dụng email prefix làm firstName
+      firstName = email.split("@")[0];
+      lastName = "";
+    }
+
+    if (user == null) {
+      // Tạo user mới
+      // Generate random password (user không thể login bằng password, chỉ OAuth2)
+      String randomPassword = generateRandomPassword();
+
+      user = User.builder()
+          .email(email)
+          .password(passwordEncoder.encode(randomPassword))
+          .firstName(firstName)
+          .lastName(lastName)
+          .emailVerified(true) // OAuth2 providers đã verify email
+          .active(true)
+          .build();
+
+      // Get or create AUTHOR role
+      Role authorRole = roleRepository
+          .findByName(RoleName.AUTHOR)
+          .orElseGet(
+              () -> {
+                Role newRole = Role.builder().name(RoleName.AUTHOR).description("Role: AUTHOR").build();
+                @SuppressWarnings("null")
+                Role savedRole = roleRepository.save(newRole);
+                return savedRole;
+              });
+      user.getRoles().add(authorRole);
+
+      user = userRepository.save(user);
+    } else {
+      // Cập nhật user hiện có (nếu cần)
+      // Chỉ cập nhật nếu thông tin mới hơn
+      boolean updated = false;
+      if (user.getFirstName() == null || user.getFirstName().isEmpty()) {
+        user.setFirstName(firstName);
+        updated = true;
+      }
+      if (user.getLastName() == null || user.getLastName().isEmpty()) {
+        user.setLastName(lastName);
+        updated = true;
+      }
+      // Đảm bảo emailVerified = true cho OAuth2 users
+      if (!user.getEmailVerified()) {
+        user.setEmailVerified(true);
+        updated = true;
+      }
+      // Đảm bảo user active
+      if (!user.getActive()) {
+        user.setActive(true);
+        updated = true;
+      }
+
+      if (updated) {
+        user = userRepository.save(user);
+      }
+    }
+
+    return user;
+  }
+
+  /**
+   * Generate random password cho OAuth2 users
+   * OAuth2 users không thể login bằng password, chỉ có thể login qua OAuth2
+   */
+  private String generateRandomPassword() {
+    // Generate random password (32 characters)
+    // OAuth2 users không cần password để login, nhưng User entity yêu cầu password không null
+    java.util.UUID uuid = java.util.UUID.randomUUID();
+    return uuid.toString().replace("-", "") + uuid.toString().replace("-", "");
   }
 
   private static String sha256Hex(String input) {

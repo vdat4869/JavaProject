@@ -95,9 +95,10 @@ public class AuthController {
   @PostMapping("/refresh")
   @NoAuth
   public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(
-      @RequestHeader("Authorization") String refreshToken) {
+      @RequestHeader("Authorization") String refreshToken,
+      HttpServletRequest httpRequest) {
     String token = refreshToken.replace("Bearer ", "");
-    String newAccessToken = tokenService.refreshAccessToken(token);
+    String newAccessToken = tokenService.refreshAccessToken(token, httpRequest);
 
     LoginResponse response = LoginResponse.builder().accessToken(newAccessToken).tokenType("Bearer").build();
 
@@ -147,13 +148,16 @@ public class AuthController {
    */
   @PostMapping("/logout")
   public ResponseEntity<ApiResponse<Void>> logout(
-      @RequestHeader(name = "Authorization", required = false) String authorization) {
+      @RequestHeader(name = "Authorization", required = false) String authorization,
+      HttpServletRequest httpRequest) {
     if (authorization != null && authorization.startsWith("Bearer ")) {
       String token = authorization.replace("Bearer ", "");
       try {
         // compute hash and revoke the refresh token record
         String tokenHash = sha256Hex(token);
         refreshTokenRepository.revokeByTokenHash(tokenHash);
+        // Logout through AuthService for audit logging
+        authService.logout(token, httpRequest);
       } catch (Exception ignored) {
         // ignore
       }

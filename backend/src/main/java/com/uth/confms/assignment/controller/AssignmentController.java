@@ -3,6 +3,13 @@ package com.uth.confms.assignment.controller;
 import com.uth.confms.assignment.dto.AssignmentCreateDTO;
 import com.uth.confms.assignment.dto.AssignmentResponseDTO;
 import com.uth.confms.assignment.dto.AssignmentSuggestionDTO;
+import com.uth.confms.assignment.dto.AssignmentStatisticsDTO;
+import com.uth.confms.assignment.dto.AssignmentQualityMetricsDTO;
+import com.uth.confms.assignment.dto.AutoAssignRequestDTO;
+import com.uth.confms.assignment.dto.AutoAssignResponseDTO;
+import com.uth.confms.assignment.dto.BulkAssignRequestDTO;
+import com.uth.confms.assignment.dto.BulkAssignResponseDTO;
+import com.uth.confms.assignment.dto.ReassignRequestDTO;
 import com.uth.confms.assignment.service.AssignmentService;
 import com.uth.confms.assignment.service.AssignmentSuggestionService;
 import com.uth.confms.auth.service.UserService;
@@ -16,6 +23,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -120,6 +128,51 @@ public class AssignmentController {
   public ResponseEntity<ApiResponse<List<AssignmentSuggestionDTO>>> getSuggestions(
       @PathVariable Long submissionId) {
     return ResponseEntity.ok(ApiResponse.success(suggestionService.getSuggestions(submissionId)));
+  }
+
+  @PostMapping("/auto-assign")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<AutoAssignResponseDTO>> autoAssign(
+      @Valid @RequestBody AutoAssignRequestDTO dto, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(assignmentService.autoAssign(dto, chairId)));
+  }
+
+  @PostMapping("/bulk")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<BulkAssignResponseDTO>> bulkAssign(
+      @Valid @RequestBody BulkAssignRequestDTO dto, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(assignmentService.bulkAssign(dto, chairId)));
+  }
+
+  @PutMapping("/{id}/reassign")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<AssignmentResponseDTO>> reassignAssignment(
+      @PathVariable Long id,
+      @Valid @RequestBody ReassignRequestDTO dto,
+      Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(assignmentService.reassignAssignment(id, dto, chairId)));
+  }
+
+  @GetMapping("/conference/{conferenceId}/statistics")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<AssignmentStatisticsDTO>> getAssignmentStatistics(
+      @PathVariable Long conferenceId, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(assignmentService.getAssignmentStatistics(conferenceId, chairId)));
+  }
+
+  @GetMapping("/conference/{conferenceId}/quality-metrics")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<AssignmentQualityMetricsDTO>> getAssignmentQualityMetrics(
+      @PathVariable Long conferenceId, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(assignmentService.getAssignmentQualityMetrics(conferenceId, chairId)));
   }
 
   private Long getUserIdFromAuthentication(Authentication authentication) {

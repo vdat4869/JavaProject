@@ -46,6 +46,33 @@ public class Conference {
   @Column(nullable = false)
   private Boolean published = false;
 
+  @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
+  private ReviewMode reviewMode = ReviewMode.DOUBLE_BLIND;
+
+  @Column(nullable = true)
+  @Enumerated(EnumType.STRING)
+  private AssignmentStrategy assignmentStrategy; // Assignment strategy preference
+
+  @Column(columnDefinition = "TEXT")
+  private String assignmentRules; // JSON string for assignment rules (e.g., {"requireExpertiseMatch": true, "preferLowWorkload": true})
+
+  @Column(nullable = true)
+  private Integer minReviewersPerSubmission = 3; // Minimum reviewers per submission
+
+  @Column(nullable = true)
+  private Integer maxReviewersPerSubmission = 5; // Maximum reviewers per submission
+
+  @OneToMany(mappedBy = "conference", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<Topic> topics = new ArrayList<>();
+
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "conference_keywords",
+      joinColumns = @JoinColumn(name = "conference_id"),
+      inverseJoinColumns = @JoinColumn(name = "keyword_id"))
+  private List<Keyword> keywords = new ArrayList<>();
+
   @OneToMany(mappedBy = "conference", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Track> tracks = new ArrayList<>();
 
@@ -70,6 +97,9 @@ public class Conference {
       String description,
       Long chairId,
       Boolean published,
+      ReviewMode reviewMode,
+      List<Topic> topics,
+      List<Keyword> keywords,
       List<Track> tracks,
       List<Deadline> deadlines,
       CFP cfp,
@@ -81,6 +111,9 @@ public class Conference {
     this.description = description;
     this.chairId = chairId;
     this.published = published;
+    this.reviewMode = reviewMode != null ? reviewMode : ReviewMode.DOUBLE_BLIND;
+    this.topics = topics != null ? topics : new ArrayList<>();
+    this.keywords = keywords != null ? keywords : new ArrayList<>();
     this.tracks = tracks;
     this.deadlines = deadlines;
     this.cfp = cfp;
@@ -140,6 +173,62 @@ public class Conference {
     this.published = published;
   }
 
+  public ReviewMode getReviewMode() {
+    return reviewMode;
+  }
+
+  public void setReviewMode(ReviewMode reviewMode) {
+    this.reviewMode = reviewMode != null ? reviewMode : ReviewMode.DOUBLE_BLIND;
+  }
+
+  public AssignmentStrategy getAssignmentStrategy() {
+    return assignmentStrategy;
+  }
+
+  public void setAssignmentStrategy(AssignmentStrategy assignmentStrategy) {
+    this.assignmentStrategy = assignmentStrategy;
+  }
+
+  public String getAssignmentRules() {
+    return assignmentRules;
+  }
+
+  public void setAssignmentRules(String assignmentRules) {
+    this.assignmentRules = assignmentRules;
+  }
+
+  public Integer getMinReviewersPerSubmission() {
+    return minReviewersPerSubmission;
+  }
+
+  public void setMinReviewersPerSubmission(Integer minReviewersPerSubmission) {
+    this.minReviewersPerSubmission = minReviewersPerSubmission;
+  }
+
+  public Integer getMaxReviewersPerSubmission() {
+    return maxReviewersPerSubmission;
+  }
+
+  public void setMaxReviewersPerSubmission(Integer maxReviewersPerSubmission) {
+    this.maxReviewersPerSubmission = maxReviewersPerSubmission;
+  }
+
+  public List<Topic> getTopics() {
+    return topics;
+  }
+
+  public void setTopics(List<Topic> topics) {
+    this.topics = topics != null ? topics : new ArrayList<>();
+  }
+
+  public List<Keyword> getKeywords() {
+    return keywords;
+  }
+
+  public void setKeywords(List<Keyword> keywords) {
+    this.keywords = keywords != null ? keywords : new ArrayList<>();
+  }
+
   public List<Track> getTracks() {
     return tracks;
   }
@@ -180,6 +269,23 @@ public class Conference {
     this.updatedAt = updatedAt;
   }
 
+  public enum ReviewMode {
+    SINGLE_BLIND,  // Reviewer knows author, author doesn't know reviewer
+    DOUBLE_BLIND   // Neither knows the other
+  }
+
+  /** Enum định nghĩa assignment strategy */
+  public enum AssignmentStrategy {
+    /** Balance workload evenly among reviewers */
+    BALANCED,
+    /** Prefer reviewers with expertise matching submission */
+    EXPERTISE_BASED,
+    /** Prefer reviewers with low current workload */
+    WORKLOAD_BASED,
+    /** Use combination of expertise and workload */
+    HYBRID
+  }
+
   public static class Builder {
     private Long id;
     private String name;
@@ -187,6 +293,13 @@ public class Conference {
     private String description;
     private Long chairId;
     private Boolean published = false;
+    private ReviewMode reviewMode = ReviewMode.DOUBLE_BLIND;
+    private AssignmentStrategy assignmentStrategy;
+    private String assignmentRules;
+    private Integer minReviewersPerSubmission = 3;
+    private Integer maxReviewersPerSubmission = 5;
+    private List<Topic> topics = new ArrayList<>();
+    private List<Keyword> keywords = new ArrayList<>();
     private List<Track> tracks = new ArrayList<>();
     private List<Deadline> deadlines = new ArrayList<>();
     private CFP cfp;
@@ -223,6 +336,41 @@ public class Conference {
       return this;
     }
 
+    public Builder reviewMode(ReviewMode reviewMode) {
+      this.reviewMode = reviewMode != null ? reviewMode : ReviewMode.DOUBLE_BLIND;
+      return this;
+    }
+
+    public Builder assignmentStrategy(AssignmentStrategy assignmentStrategy) {
+      this.assignmentStrategy = assignmentStrategy;
+      return this;
+    }
+
+    public Builder assignmentRules(String assignmentRules) {
+      this.assignmentRules = assignmentRules;
+      return this;
+    }
+
+    public Builder minReviewersPerSubmission(Integer minReviewersPerSubmission) {
+      this.minReviewersPerSubmission = minReviewersPerSubmission;
+      return this;
+    }
+
+    public Builder maxReviewersPerSubmission(Integer maxReviewersPerSubmission) {
+      this.maxReviewersPerSubmission = maxReviewersPerSubmission;
+      return this;
+    }
+
+    public Builder topics(List<Topic> topics) {
+      this.topics = topics != null ? topics : new ArrayList<>();
+      return this;
+    }
+
+    public Builder keywords(List<Keyword> keywords) {
+      this.keywords = keywords != null ? keywords : new ArrayList<>();
+      return this;
+    }
+
     public Builder tracks(List<Track> tracks) {
       this.tracks = tracks;
       return this;
@@ -249,8 +397,14 @@ public class Conference {
     }
 
     public Conference build() {
-      return new Conference(
-          id, name, acronym, description, chairId, published, tracks, deadlines, cfp, createdAt, updatedAt);
+      Conference conference = new Conference(
+          id, name, acronym, description, chairId, published, reviewMode, topics, keywords, tracks, deadlines, cfp, createdAt, updatedAt);
+      // Set assignment preferences
+      conference.setAssignmentStrategy(assignmentStrategy);
+      conference.setAssignmentRules(assignmentRules);
+      conference.setMinReviewersPerSubmission(minReviewersPerSubmission);
+      conference.setMaxReviewersPerSubmission(maxReviewersPerSubmission);
+      return conference;
     }
   }
 }

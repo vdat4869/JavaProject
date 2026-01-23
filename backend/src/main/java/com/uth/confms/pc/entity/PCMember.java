@@ -2,6 +2,8 @@ package com.uth.confms.pc.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -40,6 +42,19 @@ public class PCMember {
   @Enumerated(EnumType.STRING)
   private PCMemberStatus status = PCMemberStatus.PENDING;
 
+  @Column(columnDefinition = "TEXT")
+  private String expertiseKeywords; // Comma-separated keywords that reviewer has expertise in
+
+  @ManyToMany(fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "pc_member_expertise_topics",
+      joinColumns = @JoinColumn(name = "pc_member_id"),
+      inverseJoinColumns = @JoinColumn(name = "topic_id"))
+  private java.util.List<com.uth.confms.conference.entity.Topic> expertiseTopics;
+
+  @Column(nullable = true)
+  private Integer preferredMaxAssignments; // Reviewer's preferred maximum number of assignments
+
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
@@ -53,12 +68,18 @@ public class PCMember {
       Long conferenceId,
       Long userId,
       PCMemberStatus status,
+      String expertiseKeywords,
+      List<com.uth.confms.conference.entity.Topic> expertiseTopics,
+      Integer preferredMaxAssignments,
       LocalDateTime createdAt,
       LocalDateTime updatedAt) {
     this.id = id;
     this.conferenceId = conferenceId;
     this.userId = userId;
     this.status = status;
+    this.expertiseKeywords = expertiseKeywords;
+    this.expertiseTopics = expertiseTopics != null ? expertiseTopics : new ArrayList<>();
+    this.preferredMaxAssignments = preferredMaxAssignments;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
   }
@@ -115,6 +136,30 @@ public class PCMember {
     this.updatedAt = updatedAt;
   }
 
+  public String getExpertiseKeywords() {
+    return expertiseKeywords;
+  }
+
+  public void setExpertiseKeywords(String expertiseKeywords) {
+    this.expertiseKeywords = expertiseKeywords;
+  }
+
+  public List<com.uth.confms.conference.entity.Topic> getExpertiseTopics() {
+    return expertiseTopics != null ? expertiseTopics : new ArrayList<>();
+  }
+
+  public void setExpertiseTopics(List<com.uth.confms.conference.entity.Topic> expertiseTopics) {
+    this.expertiseTopics = expertiseTopics != null ? expertiseTopics : new ArrayList<>();
+  }
+
+  public Integer getPreferredMaxAssignments() {
+    return preferredMaxAssignments;
+  }
+
+  public void setPreferredMaxAssignments(Integer preferredMaxAssignments) {
+    this.preferredMaxAssignments = preferredMaxAssignments;
+  }
+
   /** Enum định nghĩa các trạng thái của PC member */
   public enum PCMemberStatus {
     /** Đã được mời, chờ accept/decline */
@@ -130,6 +175,9 @@ public class PCMember {
     private Long conferenceId;
     private Long userId;
     private PCMemberStatus status = PCMemberStatus.PENDING;
+    private String expertiseKeywords;
+    private List<com.uth.confms.conference.entity.Topic> expertiseTopics;
+    private Integer preferredMaxAssignments;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -153,6 +201,21 @@ public class PCMember {
       return this;
     }
 
+    public Builder expertiseKeywords(String expertiseKeywords) {
+      this.expertiseKeywords = expertiseKeywords;
+      return this;
+    }
+
+    public Builder expertiseTopics(List<com.uth.confms.conference.entity.Topic> expertiseTopics) {
+      this.expertiseTopics = expertiseTopics;
+      return this;
+    }
+
+    public Builder preferredMaxAssignments(Integer preferredMaxAssignments) {
+      this.preferredMaxAssignments = preferredMaxAssignments;
+      return this;
+    }
+
     public Builder createdAt(LocalDateTime createdAt) {
       this.createdAt = createdAt;
       return this;
@@ -164,7 +227,8 @@ public class PCMember {
     }
 
     public PCMember build() {
-      return new PCMember(id, conferenceId, userId, status, createdAt, updatedAt);
+      return new PCMember(
+          id, conferenceId, userId, status, expertiseKeywords, expertiseTopics, preferredMaxAssignments, createdAt, updatedAt);
     }
   }
 }

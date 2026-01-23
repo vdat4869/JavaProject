@@ -4,10 +4,12 @@ import com.uth.confms.auth.entity.Role;
 import com.uth.confms.auth.entity.User;
 import com.uth.confms.auth.repository.UserRepository;
 import com.uth.confms.common.dto.ApiResponse;
+import com.uth.confms.review.dto.AverageScoreDTO;
 import com.uth.confms.review.dto.RebuttalDTO;
 import com.uth.confms.review.dto.RebuttalSubmitDTO;
 import com.uth.confms.review.dto.ReviewCommentDTO;
 import com.uth.confms.review.dto.ReviewResponseDTO;
+import com.uth.confms.review.dto.ReviewStatisticsDTO;
 import com.uth.confms.review.dto.ReviewSubmitDTO;
 import com.uth.confms.review.service.DiscussionService;
 import com.uth.confms.review.service.ReviewService;
@@ -32,9 +34,11 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>POST /api/reviews/draft - Tạo/cập nhật draft review (PC/REVIEWER)
  *   <li>POST /api/reviews/{id}/submit - Submit review (PC/REVIEWER)
  *   <li>GET /api/reviews/assignment/{id} - Lấy review của assignment (PC/REVIEWER)
- *   <li>GET /api/reviews/submission/{id} - Lấy reviews của submission (authenticated)
- *   <li>GET /api/reviews/{id} - Lấy review by ID (authenticated)
- *   <li>POST /api/reviews/submission/{id}/comments - Thêm internal comment (PC/REVIEWER)
+   *   <li>GET /api/reviews/submission/{id} - Lấy reviews của submission (authenticated)
+   *   <li>GET /api/reviews/{id} - Lấy review by ID (authenticated)
+   *   <li>GET /api/reviews/submission/{id}/average-score - Lấy average score (authenticated)
+   *   <li>GET /api/reviews/conference/{id}/statistics - Lấy review statistics (CHAIR/ADMIN)
+   *   <li>POST /api/reviews/submission/{id}/comments - Thêm internal comment (PC/REVIEWER)
  *   <li>GET /api/reviews/submission/{id}/comments - Lấy internal comments (PC/REVIEWER/CHAIR/ADMIN)
  *   <li>POST /api/reviews/rebuttal - Tạo/cập nhật rebuttal (AUTHOR)
  *   <li>POST /api/reviews/rebuttal/{id}/submit - Submit rebuttal (AUTHOR)
@@ -105,6 +109,23 @@ public class ReviewController {
     boolean isChairOrAdmin = isChairOrAdmin(userId);
     return ResponseEntity.ok(
         ApiResponse.success(reviewService.getReview(id, userId, isChairOrAdmin)));
+  }
+
+  @GetMapping("/submission/{submissionId}/average-score")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<ApiResponse<AverageScoreDTO>> getAverageScore(
+      @PathVariable Long submissionId, Authentication authentication) {
+    return ResponseEntity.ok(
+        ApiResponse.success(reviewService.getAverageScore(submissionId)));
+  }
+
+  @GetMapping("/conference/{conferenceId}/statistics")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<ReviewStatisticsDTO>> getReviewStatistics(
+      @PathVariable Long conferenceId, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(reviewService.getReviewStatistics(conferenceId, chairId)));
   }
 
   // Internal Discussion

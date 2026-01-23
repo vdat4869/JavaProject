@@ -62,6 +62,15 @@ public class Review {
   @Column(nullable = false)
   private Boolean isConfidential = false;
 
+  @Column(nullable = true)
+  private Integer overallRating; // Overall rating (1-5)
+
+  @Column(nullable = true)
+  private Integer confidence; // Confidence level (1-5)
+
+  @Column(nullable = true)
+  private Integer numericScore; // Numeric score (1-7): STRONG_ACCEPT=7, STRONG_REJECT=1
+
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
@@ -82,6 +91,9 @@ public class Review {
       ReviewScore score,
       ReviewStatus status,
       Boolean isConfidential,
+      Integer overallRating,
+      Integer confidence,
+      Integer numericScore,
       LocalDateTime createdAt,
       LocalDateTime submittedAt) {
     this.id = id;
@@ -95,6 +107,9 @@ public class Review {
     this.score = score;
     this.status = status;
     this.isConfidential = isConfidential;
+    this.overallRating = overallRating;
+    this.confidence = confidence;
+    this.numericScore = numericScore;
     this.createdAt = createdAt;
     this.submittedAt = submittedAt;
   }
@@ -191,6 +206,30 @@ public class Review {
     this.isConfidential = isConfidential;
   }
 
+  public Integer getOverallRating() {
+    return overallRating;
+  }
+
+  public void setOverallRating(Integer overallRating) {
+    this.overallRating = overallRating;
+  }
+
+  public Integer getConfidence() {
+    return confidence;
+  }
+
+  public void setConfidence(Integer confidence) {
+    this.confidence = confidence;
+  }
+
+  public Integer getNumericScore() {
+    return numericScore;
+  }
+
+  public void setNumericScore(Integer numericScore) {
+    this.numericScore = numericScore;
+  }
+
   public LocalDateTime getCreatedAt() {
     return createdAt;
   }
@@ -222,7 +261,24 @@ public class Review {
     /** Từ chối */
     REJECT,
     /** Từ chối mạnh mẽ */
-    STRONG_REJECT
+    STRONG_REJECT;
+
+    /**
+     * Map ReviewScore enum sang numeric score (1-7)
+     *
+     * @return Numeric score: STRONG_ACCEPT=7, STRONG_REJECT=1
+     */
+    public int toNumericScore() {
+      return switch (this) {
+        case STRONG_ACCEPT -> 7;
+        case ACCEPT -> 6;
+        case WEAK_ACCEPT -> 5;
+        case BORDERLINE -> 4;
+        case WEAK_REJECT -> 3;
+        case REJECT -> 2;
+        case STRONG_REJECT -> 1;
+      };
+    }
   }
 
   /** Enum định nghĩa các trạng thái của review */
@@ -245,6 +301,9 @@ public class Review {
     private ReviewScore score;
     private ReviewStatus status = ReviewStatus.DRAFT;
     private Boolean isConfidential = false;
+    private Integer overallRating;
+    private Integer confidence;
+    private Integer numericScore;
     private LocalDateTime createdAt;
     private LocalDateTime submittedAt;
 
@@ -303,6 +362,21 @@ public class Review {
       return this;
     }
 
+    public Builder overallRating(Integer overallRating) {
+      this.overallRating = overallRating;
+      return this;
+    }
+
+    public Builder confidence(Integer confidence) {
+      this.confidence = confidence;
+      return this;
+    }
+
+    public Builder numericScore(Integer numericScore) {
+      this.numericScore = numericScore;
+      return this;
+    }
+
     public Builder createdAt(LocalDateTime createdAt) {
       this.createdAt = createdAt;
       return this;
@@ -326,6 +400,9 @@ public class Review {
           score,
           status,
           isConfidential,
+          overallRating,
+          confidence,
+          numericScore,
           createdAt,
           submittedAt);
     }

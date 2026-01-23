@@ -7,6 +7,9 @@ public class ConferenceUpdateDTO {
   private String acronym;
   private String description;
   private Boolean published;
+  private String reviewMode; // SINGLE_BLIND or DOUBLE_BLIND
+  private List<TopicDTO> topics;
+  private List<Long> keywordIds; // Reference to existing keywords
   private List<TrackDTO> tracks;
   private List<DeadlineDTO> deadlines;
 
@@ -40,6 +43,30 @@ public class ConferenceUpdateDTO {
 
   public void setPublished(Boolean published) {
     this.published = published;
+  }
+
+  public String getReviewMode() {
+    return reviewMode;
+  }
+
+  public void setReviewMode(String reviewMode) {
+    this.reviewMode = reviewMode;
+  }
+
+  public List<TopicDTO> getTopics() {
+    return topics;
+  }
+
+  public void setTopics(List<TopicDTO> topics) {
+    this.topics = topics;
+  }
+
+  public List<Long> getKeywordIds() {
+    return keywordIds;
+  }
+
+  public void setKeywordIds(List<Long> keywordIds) {
+    this.keywordIds = keywordIds;
   }
 
   public List<TrackDTO> getTracks() {

@@ -6,7 +6,9 @@ import com.uth.confms.common.exception.BusinessException;
 import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.conference.entity.Conference;
+import com.uth.confms.conference.entity.Deadline;
 import com.uth.confms.conference.repository.ConferenceRepository;
+import com.uth.confms.conference.repository.DeadlineRepository;
 import com.uth.confms.pc.entity.PCMember;
 import com.uth.confms.pc.repository.PCMemberRepository;
 import com.uth.confms.review.dto.RebuttalDTO;
@@ -48,6 +50,7 @@ public class DiscussionService {
   private final UserRepository userRepository;
   private final PCMemberRepository pcMemberRepository;
   private final ConferenceRepository conferenceRepository;
+  private final DeadlineRepository deadlineRepository;
 
   public DiscussionService(
       ReviewCommentRepository commentRepository,
@@ -55,13 +58,15 @@ public class DiscussionService {
       SubmissionRepository submissionRepository,
       UserRepository userRepository,
       PCMemberRepository pcMemberRepository,
-      ConferenceRepository conferenceRepository) {
+      ConferenceRepository conferenceRepository,
+      DeadlineRepository deadlineRepository) {
     this.commentRepository = commentRepository;
     this.rebuttalRepository = rebuttalRepository;
     this.submissionRepository = submissionRepository;
     this.userRepository = userRepository;
     this.pcMemberRepository = pcMemberRepository;
     this.conferenceRepository = conferenceRepository;
+    this.deadlineRepository = deadlineRepository;
   }
 
   /**
@@ -91,6 +96,9 @@ public class DiscussionService {
     if (pcMember.getStatus() != PCMember.PCMemberStatus.ACCEPTED) {
       throw new UnauthorizedException("PC member must be accepted");
     }
+
+    // Check review deadline
+    checkReviewDeadline(submission.getConferenceId());
 
     ReviewComment comment =
         ReviewComment.builder()
@@ -239,6 +247,27 @@ public class DiscussionService {
     }
 
     return mapRebuttalToDTO(rebuttal);
+  }
+
+  /**
+   * Check if review deadline has passed
+   *
+   * @param conferenceId Conference ID
+   * @throws BusinessException If deadline has passed and is hard deadline
+   */
+  private void checkReviewDeadline(Long conferenceId) {
+    List<Deadline> deadlines = deadlineRepository.findByConferenceId(conferenceId);
+    Deadline reviewDeadline =
+        deadlines.stream()
+            .filter(d -> d.getType() == Deadline.DeadlineType.REVIEW)
+            .findFirst()
+            .orElse(null);
+
+    if (reviewDeadline != null && reviewDeadline.getDueDate().isBefore(LocalDateTime.now())) {
+      if (reviewDeadline.getHardDeadline()) {
+        throw new BusinessException("Review deadline has passed. Cannot add internal comment.");
+      }
+    }
   }
 
   private ReviewCommentDTO mapCommentToDTO(ReviewComment comment, boolean showReviewerName) {

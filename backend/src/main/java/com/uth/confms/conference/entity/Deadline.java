@@ -98,8 +98,10 @@ public class Deadline {
   public enum DeadlineType {
     SUBMISSION,
     REVIEW,
+    REBUTTAL,
     DECISION,
-    CAMERA_READY
+    CAMERA_READY,
+    PUBLICATION
   }
 
   public static class Builder {

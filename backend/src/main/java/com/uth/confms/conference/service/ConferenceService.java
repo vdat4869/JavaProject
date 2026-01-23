@@ -5,12 +5,19 @@ import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.conference.dto.ConferenceCreateDTO;
 import com.uth.confms.conference.dto.ConferenceResponseDTO;
 import com.uth.confms.conference.dto.ConferenceUpdateDTO;
+import com.uth.confms.common.exception.BusinessException;
 import com.uth.confms.conference.dto.DeadlineDTO;
+import com.uth.confms.conference.dto.KeywordDTO;
+import com.uth.confms.conference.dto.TopicDTO;
 import com.uth.confms.conference.dto.TrackDTO;
 import com.uth.confms.conference.entity.Conference;
 import com.uth.confms.conference.entity.Deadline;
+import com.uth.confms.conference.entity.Keyword;
+import com.uth.confms.conference.entity.Topic;
 import com.uth.confms.conference.entity.Track;
 import com.uth.confms.conference.repository.ConferenceRepository;
+import com.uth.confms.conference.repository.KeywordRepository;
+import com.uth.confms.submission.repository.SubmissionRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -34,9 +41,16 @@ import org.springframework.transaction.annotation.Transactional;
 @SuppressWarnings("null")
 public class ConferenceService {
   private final ConferenceRepository conferenceRepository;
+  private final KeywordRepository keywordRepository;
+  private final SubmissionRepository submissionRepository;
 
-  public ConferenceService(ConferenceRepository conferenceRepository) {
+  public ConferenceService(
+      ConferenceRepository conferenceRepository,
+      KeywordRepository keywordRepository,
+      SubmissionRepository submissionRepository) {
     this.conferenceRepository = conferenceRepository;
+    this.keywordRepository = keywordRepository;
+    this.submissionRepository = submissionRepository;
   }
 
   /**
@@ -48,6 +62,10 @@ public class ConferenceService {
    */
   @Transactional
   public ConferenceResponseDTO createConference(ConferenceCreateDTO dto, Long chairId) {
+    Conference.ReviewMode reviewMode = dto.getReviewMode() != null
+        ? Conference.ReviewMode.valueOf(dto.getReviewMode())
+        : Conference.ReviewMode.DOUBLE_BLIND;
+
     Conference conference =
         Conference.builder()
             .name(dto.getName())
@@ -55,10 +73,42 @@ public class ConferenceService {
             .description(dto.getDescription())
             .chairId(chairId)
             .published(false)
+            .reviewMode(reviewMode)
             .build();
 
     Conference savedConference = conferenceRepository.save(conference);
     final Conference finalConference = savedConference;
+
+    // Add keywords if provided
+    if (dto.getKeywordIds() != null && !dto.getKeywordIds().isEmpty()) {
+      List<Keyword> keywords =
+          dto.getKeywordIds().stream()
+              .map(
+                  keywordId ->
+                      keywordRepository
+                          .findById(keywordId)
+                          .orElseThrow(
+                              () ->
+                                  new NotFoundException(
+                                      "Keyword with id " + keywordId + " not found")))
+              .collect(Collectors.toList());
+      finalConference.setKeywords(keywords);
+    }
+
+    // Add topics if provided
+    if (dto.getTopics() != null) {
+      List<Topic> topics =
+          dto.getTopics().stream()
+              .map(
+                  topicDTO ->
+                      Topic.builder()
+                          .conference(finalConference)
+                          .name(topicDTO.getName())
+                          .description(topicDTO.getDescription())
+                          .build())
+              .collect(Collectors.toList());
+      finalConference.setTopics(topics);
+    }
 
     // Add tracks if provided
     if (dto.getTracks() != null) {
@@ -149,6 +199,42 @@ public class ConferenceService {
     if (dto.getPublished() != null) {
       conference.setPublished(dto.getPublished());
     }
+    if (dto.getReviewMode() != null) {
+      conference.setReviewMode(Conference.ReviewMode.valueOf(dto.getReviewMode()));
+    }
+
+    // Update topics if provided
+    if (dto.getTopics() != null) {
+      conference.getTopics().clear();
+      final Conference finalConferenceForTopics = conference;
+      List<Topic> topics =
+          dto.getTopics().stream()
+              .map(
+                  topicDTO ->
+                      Topic.builder()
+                          .conference(finalConferenceForTopics)
+                          .name(topicDTO.getName())
+                          .description(topicDTO.getDescription())
+                          .build())
+              .collect(Collectors.toList());
+      conference.setTopics(topics);
+    }
+
+    // Update keywords if provided
+    if (dto.getKeywordIds() != null) {
+      List<Keyword> keywords =
+          dto.getKeywordIds().stream()
+              .map(
+                  keywordId ->
+                      keywordRepository
+                          .findById(keywordId)
+                          .orElseThrow(
+                              () ->
+                                  new NotFoundException(
+                                      "Keyword with id " + keywordId + " not found")))
+              .collect(Collectors.toList());
+      conference.setKeywords(keywords);
+    }
 
     // Update tracks if provided
     if (dto.getTracks() != null) {
@@ -205,10 +291,41 @@ public class ConferenceService {
       throw new UnauthorizedException("Only conference chair can delete this conference");
     }
 
+    // Check if conference has submissions
+    long submissionCount = submissionRepository.findByConferenceId(id).size();
+    if (submissionCount > 0) {
+      throw new BusinessException(
+          "Cannot delete conference. Conference has "
+              + submissionCount
+              + " submission(s). Please delete or reassign submissions first.");
+    }
+
     conferenceRepository.delete(conference);
   }
 
   private ConferenceResponseDTO mapToDTO(Conference conference) {
+    List<TopicDTO> topics =
+        conference.getTopics().stream()
+            .map(
+                topic ->
+                    TopicDTO.builder()
+                        .id(topic.getId())
+                        .name(topic.getName())
+                        .description(topic.getDescription())
+                        .build())
+            .collect(Collectors.toList());
+
+    List<KeywordDTO> keywords =
+        conference.getKeywords().stream()
+            .map(
+                keyword ->
+                    KeywordDTO.builder()
+                        .id(keyword.getId())
+                        .name(keyword.getName())
+                        .description(keyword.getDescription())
+                        .build())
+            .collect(Collectors.toList());
+
     List<TrackDTO> tracks =
         conference.getTracks().stream()
             .map(
@@ -241,6 +358,9 @@ public class ConferenceService {
         .description(conference.getDescription())
         .chairId(conference.getChairId())
         .published(conference.getPublished())
+        .reviewMode(conference.getReviewMode().name())
+        .topics(topics)
+        .keywords(keywords)
         .tracks(tracks)
         .deadlines(deadlines)
         .createdAt(conference.getCreatedAt())

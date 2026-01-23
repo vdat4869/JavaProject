@@ -3,10 +3,16 @@ spring:
     name: uth-confms
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/uth_confms
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/uth_confms}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:ngocanh293}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   
   jpa:
     hibernate:
@@ -18,17 +24,17 @@ spring:
         format_sql: true
     open-in-view: false
   
-  # Cache configuration - comment out if Redis is not available
-  # cache:
-  #   type: redis
-  #   redis:
-  #     time-to-live: 3600000
   
-  # data:
-  #   redis:
-  #     host: ${REDIS_HOST:localhost}
-  #     port: ${REDIS_PORT:6379}
-  #     password: ${REDIS_PASSWORD:}
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   
   mail:
     host: ${SMTP_HOST:smtp.gmail.com}
@@ -46,37 +52,31 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  
+  # OAuth2 Configuration (chỉ khi app.oauth2.enabled=true)
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope: openid,profile,email
+            redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:8080/login/oauth2/code/google}
 
 server:
   port: ${SERVER_PORT:8080}
   error:
     include-message: always
     include-binding-errors: always
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
 
 jwt:
   secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production-minimum-32-characters}
   access-token-validity: 3600000
   refresh-token-validity: 86400000
-
-app:
-  file-storage:
-    path: ${FILE_STORAGE_PATH:./uploads}
-    max-size: 10485760
-  storage:
-    base-dir: ${STORAGE_BASE_DIR:/data/uploads}
-    max-file-size-mb: ${STORAGE_MAX_FILE_SIZE_MB:20}
-  email:
-    verification:
-      expiration-hours: 24
-    from-name: ${EMAIL_FROM_NAME:UTH-ConfMS}
-  ai:
-    enabled: ${AI_ENABLED:true}
-    confidence-threshold: ${AI_CONFIDENCE_THRESHOLD:0.5}
-  frontend:
-    url: ${FRONTEND_URL:http://localhost:3000}
-  pc:
-    invitation:
-      expiration-days: 7
 
 springdoc:
   api-docs:
@@ -97,6 +97,55 @@ springdoc:
 
 logging:
   level:
+    root: INFO
     com.uth: DEBUG
     org.springframework.security: DEBUG
+    org.springframework.web: INFO
+    org.hibernate: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE_PATH:./logs/application.log}
+    max-size: 10MB
+    max-history: 7
+
+app:
+  file-storage:
+    path: ${FILE_STORAGE_PATH:./uploads}
+    max-size: 10485760
+  storage:
+    base-dir: ${STORAGE_BASE_DIR:/data/uploads}
+    max-file-size-mb: ${STORAGE_MAX_FILE_SIZE_MB:20}
+  email:
+    verification:
+      expiration-hours: 24
+    from-name: ${EMAIL_FROM_NAME:UTH-ConfMS}
+  ai:
+    enabled: ${AI_ENABLED:true}
+    confidence-threshold: ${AI_CONFIDENCE_THRESHOLD:0.5}
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
+  pc:
+    invitation:
+      expiration-days: 7
+    workload:
+      max-assignments: ${PC_MAX_ASSIGNMENTS:8}
+      warning-threshold: ${PC_WARNING_THRESHOLD:0.8}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173}
+  rate-limiting:
+    enabled: ${RATE_LIMITING_ENABLED:true}
+    use-redis: ${RATE_LIMITING_USE_REDIS:true}
+    auth:
+      max-requests: ${RATE_LIMITING_AUTH_MAX:5}
+      window-seconds: ${RATE_LIMITING_AUTH_WINDOW:60}
+    api:
+      max-requests: ${RATE_LIMITING_API_MAX:100}
+      window-seconds: ${RATE_LIMITING_API_WINDOW:60}
+  oauth2:
+    enabled: ${OAUTH2_ENABLED:false}
+    providers:
+      google:
+        client-id: ${GOOGLE_CLIENT_ID:}
+        client-secret: ${GOOGLE_CLIENT_SECRET:}
 

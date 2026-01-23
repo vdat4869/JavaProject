@@ -10,6 +10,9 @@ public class ConferenceResponseDTO {
   private String description;
   private Long chairId;
   private Boolean published;
+  private String reviewMode;
+  private List<TopicDTO> topics;
+  private List<KeywordDTO> keywords;
   private List<TrackDTO> tracks;
   private List<DeadlineDTO> deadlines;
   private CFPResponseDTO cfp;
@@ -25,6 +28,9 @@ public class ConferenceResponseDTO {
       String description,
       Long chairId,
       Boolean published,
+      String reviewMode,
+      List<TopicDTO> topics,
+      List<KeywordDTO> keywords,
       List<TrackDTO> tracks,
       List<DeadlineDTO> deadlines,
       CFPResponseDTO cfp,
@@ -36,6 +42,9 @@ public class ConferenceResponseDTO {
     this.description = description;
     this.chairId = chairId;
     this.published = published;
+    this.reviewMode = reviewMode;
+    this.topics = topics;
+    this.keywords = keywords;
     this.tracks = tracks;
     this.deadlines = deadlines;
     this.cfp = cfp;
@@ -95,6 +104,30 @@ public class ConferenceResponseDTO {
     this.published = published;
   }
 
+  public String getReviewMode() {
+    return reviewMode;
+  }
+
+  public void setReviewMode(String reviewMode) {
+    this.reviewMode = reviewMode;
+  }
+
+  public List<TopicDTO> getTopics() {
+    return topics;
+  }
+
+  public void setTopics(List<TopicDTO> topics) {
+    this.topics = topics;
+  }
+
+  public List<KeywordDTO> getKeywords() {
+    return keywords;
+  }
+
+  public void setKeywords(List<KeywordDTO> keywords) {
+    this.keywords = keywords;
+  }
+
   public List<TrackDTO> getTracks() {
     return tracks;
   }
@@ -142,6 +175,9 @@ public class ConferenceResponseDTO {
     private String description;
     private Long chairId;
     private Boolean published;
+    private String reviewMode;
+    private List<TopicDTO> topics;
+    private List<KeywordDTO> keywords;
     private List<TrackDTO> tracks;
     private List<DeadlineDTO> deadlines;
     private CFPResponseDTO cfp;
@@ -178,6 +214,21 @@ public class ConferenceResponseDTO {
       return this;
     }
 
+    public Builder reviewMode(String reviewMode) {
+      this.reviewMode = reviewMode;
+      return this;
+    }
+
+    public Builder topics(List<TopicDTO> topics) {
+      this.topics = topics;
+      return this;
+    }
+
+    public Builder keywords(List<KeywordDTO> keywords) {
+      this.keywords = keywords;
+      return this;
+    }
+
     public Builder tracks(List<TrackDTO> tracks) {
       this.tracks = tracks;
       return this;
@@ -205,7 +256,7 @@ public class ConferenceResponseDTO {
 
     public ConferenceResponseDTO build() {
       return new ConferenceResponseDTO(
-          id, name, acronym, description, chairId, published, tracks, deadlines, cfp, createdAt, updatedAt);
+          id, name, acronym, description, chairId, published, reviewMode, topics, keywords, tracks, deadlines, cfp, createdAt, updatedAt);
     }
   }
 }

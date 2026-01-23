@@ -6,6 +6,9 @@ import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.conference.entity.Deadline;
 import com.uth.confms.conference.entity.Deadline.DeadlineType;
 import com.uth.confms.conference.repository.DeadlineRepository;
+import com.uth.confms.pc.entity.PCMember;
+import com.uth.confms.pc.repository.PCMemberRepository;
+import com.uth.confms.pc.service.COIService;
 import com.uth.confms.storage.service.StorageService;
 import com.uth.confms.submission.dto.SubmissionAuthorDTO;
 import com.uth.confms.submission.dto.SubmissionCreateDTO;
@@ -52,18 +55,24 @@ public class SubmissionService {
   private final SubmissionFileRepository submissionFileRepository;
   private final DeadlineRepository deadlineRepository;
   private final StorageService storageService;
+  private final COIService coiService;
+  private final PCMemberRepository pcMemberRepository;
 
   public SubmissionService(
       SubmissionRepository submissionRepository,
       SubmissionAuthorRepository submissionAuthorRepository,
       SubmissionFileRepository submissionFileRepository,
       DeadlineRepository deadlineRepository,
-      StorageService storageService) {
+      StorageService storageService,
+      COIService coiService,
+      PCMemberRepository pcMemberRepository) {
     this.submissionRepository = submissionRepository;
     this.submissionAuthorRepository = submissionAuthorRepository;
     this.submissionFileRepository = submissionFileRepository;
     this.deadlineRepository = deadlineRepository;
     this.storageService = storageService;
+    this.coiService = coiService;
+    this.pcMemberRepository = pcMemberRepository;
   }
 
   /**
@@ -117,6 +126,9 @@ public class SubmissionService {
               .collect(Collectors.toList());
       submissionAuthorRepository.saveAll(authors);
     }
+
+    // Automatic COI detection: Check if any PC members are authors of this submission
+    detectCOIForSubmission(savedSubmission);
 
     return mapToDTO(savedSubmission);
   }
@@ -229,7 +241,45 @@ public class SubmissionService {
     submission.setStatus(Submission.SubmissionStatus.SUBMITTED);
     Submission updatedSubmission = submissionRepository.save(submission);
 
+    // Automatic COI detection: Check if any PC members are authors of this submission
+    detectCOIForSubmission(updatedSubmission);
+
     return mapToDTO(updatedSubmission);
+  }
+
+  /**
+   * Tự động phát hiện COI cho submission: Check nếu PC members là authors của submission
+   *
+   * @param submission Submission cần check
+   */
+  private void detectCOIForSubmission(Submission submission) {
+    try {
+      // Get all PC members for this conference
+      List<PCMember> pcMembers =
+          pcMemberRepository.findByConferenceIdAndStatus(
+              submission.getConferenceId(), PCMember.PCMemberStatus.ACCEPTED);
+
+      // Get all authors of this submission
+      List<SubmissionAuthor> authors = submissionAuthorRepository.findBySubmission(submission);
+
+      // For each PC member, check if they are an author
+      for (PCMember pcMember : pcMembers) {
+        boolean isAuthor =
+            authors.stream().anyMatch(author -> author.getUserId().equals(pcMember.getUserId()));
+
+        if (isAuthor) {
+          // Auto-detect COI
+          coiService.detectAndSuggestCOI(pcMember.getUserId(), submission.getId());
+        }
+      }
+    } catch (Exception e) {
+      // Log error but don't fail submission creation/submission
+      System.err.println(
+          "Failed to auto-detect COI for submission "
+              + submission.getId()
+              + ": "
+              + e.getMessage());
+    }
   }
 
   @Transactional

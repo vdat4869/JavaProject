@@ -42,6 +42,12 @@ public class ReviewSubmitDTO {
   @NotNull(message = "Is confidential flag is required")
   private Boolean isConfidential;
 
+  private Integer overallRating; // Overall rating (1-5)
+
+  private Integer confidence; // Confidence level (1-5)
+
+  private Long templateId; // Optional: Review template ID to apply
+
   public Long getAssignmentId() {
     return assignmentId;
   }
@@ -96,5 +102,29 @@ public class ReviewSubmitDTO {
 
   public void setIsConfidential(Boolean isConfidential) {
     this.isConfidential = isConfidential;
+  }
+
+  public Integer getOverallRating() {
+    return overallRating;
+  }
+
+  public void setOverallRating(Integer overallRating) {
+    this.overallRating = overallRating;
+  }
+
+  public Integer getConfidence() {
+    return confidence;
+  }
+
+  public void setConfidence(Integer confidence) {
+    this.confidence = confidence;
+  }
+
+  public Long getTemplateId() {
+    return templateId;
+  }
+
+  public void setTemplateId(Long templateId) {
+    this.templateId = templateId;
   }
 }

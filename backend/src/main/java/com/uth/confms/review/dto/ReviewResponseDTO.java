@@ -15,6 +15,9 @@ public class ReviewResponseDTO {
   private String score;
   private String status;
   private Boolean isConfidential;
+  private Integer overallRating; // Overall rating (1-5)
+  private Integer confidence; // Confidence level (1-5)
+  private Integer numericScore; // Numeric score (1-7)
   private LocalDateTime createdAt;
   private LocalDateTime submittedAt;
 
@@ -33,6 +36,9 @@ public class ReviewResponseDTO {
       String score,
       String status,
       Boolean isConfidential,
+      Integer overallRating,
+      Integer confidence,
+      Integer numericScore,
       LocalDateTime createdAt,
       LocalDateTime submittedAt) {
     this.id = id;
@@ -47,6 +53,9 @@ public class ReviewResponseDTO {
     this.score = score;
     this.status = status;
     this.isConfidential = isConfidential;
+    this.overallRating = overallRating;
+    this.confidence = confidence;
+    this.numericScore = numericScore;
     this.createdAt = createdAt;
     this.submittedAt = submittedAt;
   }
@@ -151,6 +160,30 @@ public class ReviewResponseDTO {
     this.isConfidential = isConfidential;
   }
 
+  public Integer getOverallRating() {
+    return overallRating;
+  }
+
+  public void setOverallRating(Integer overallRating) {
+    this.overallRating = overallRating;
+  }
+
+  public Integer getConfidence() {
+    return confidence;
+  }
+
+  public void setConfidence(Integer confidence) {
+    this.confidence = confidence;
+  }
+
+  public Integer getNumericScore() {
+    return numericScore;
+  }
+
+  public void setNumericScore(Integer numericScore) {
+    this.numericScore = numericScore;
+  }
+
   public LocalDateTime getCreatedAt() {
     return createdAt;
   }
@@ -180,6 +213,9 @@ public class ReviewResponseDTO {
     private String score;
     private String status;
     private Boolean isConfidential;
+    private Integer overallRating;
+    private Integer confidence;
+    private Integer numericScore;
     private LocalDateTime createdAt;
     private LocalDateTime submittedAt;
 
@@ -243,6 +279,21 @@ public class ReviewResponseDTO {
       return this;
     }
 
+    public Builder overallRating(Integer overallRating) {
+      this.overallRating = overallRating;
+      return this;
+    }
+
+    public Builder confidence(Integer confidence) {
+      this.confidence = confidence;
+      return this;
+    }
+
+    public Builder numericScore(Integer numericScore) {
+      this.numericScore = numericScore;
+      return this;
+    }
+
     public Builder createdAt(LocalDateTime createdAt) {
       this.createdAt = createdAt;
       return this;
@@ -267,6 +318,9 @@ public class ReviewResponseDTO {
           score,
           status,
           isConfidential,
+          overallRating,
+          confidence,
+          numericScore,
           createdAt,
           submittedAt);
     }

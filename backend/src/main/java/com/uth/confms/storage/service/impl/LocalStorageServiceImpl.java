@@ -1,5 +1,6 @@
 package com.uth.confms.storage.service.impl;
 
+import com.uth.confms.common.util.FileUtil;
 import com.uth.confms.storage.service.StorageService;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,7 +43,6 @@ public class LocalStorageServiceImpl implements StorageService {
 
   private static final Logger log = LoggerFactory.getLogger(LocalStorageServiceImpl.class);
 
-  private static final String PDF_CONTENT_TYPE = "application/pdf";
   private static final DateTimeFormatter TIMESTAMP_FORMATTER =
       DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
@@ -54,25 +54,25 @@ public class LocalStorageServiceImpl implements StorageService {
 
   @Override
   public String storeSubmissionPdf(Long submissionId, MultipartFile file) {
-    validatePdfFile(file);
+    FileUtil.validatePdfFile(file, maxFileSizeMB);
     String relativePath =
         String.format(
             "submissions/%d/%s_%s",
             submissionId,
             LocalDateTime.now().format(TIMESTAMP_FORMATTER),
-            sanitizeFilename(file.getOriginalFilename()));
+            FileUtil.sanitizeFilename(file.getOriginalFilename(), FileUtil.PDF_EXTENSION));
     return storeFile(relativePath, file);
   }
 
   @Override
   public String storeCameraReadyPdf(Long paperId, MultipartFile file) {
-    validatePdfFile(file);
+    FileUtil.validatePdfFile(file, maxFileSizeMB);
     String relativePath =
         String.format(
             "camera-ready/%d/%s_%s",
             paperId,
             LocalDateTime.now().format(TIMESTAMP_FORMATTER),
-            sanitizeFilename(file.getOriginalFilename()));
+            FileUtil.sanitizeFilename(file.getOriginalFilename(), FileUtil.PDF_EXTENSION));
     return storeFile(relativePath, file);
   }
 
@@ -152,62 +152,6 @@ public class LocalStorageServiceImpl implements StorageService {
     }
   }
 
-  /**
-   * Validate PDF file
-   *
-   * @param file File cần validate
-   * @throws IllegalArgumentException Nếu file không hợp lệ
-   */
-  private void validatePdfFile(MultipartFile file) {
-    if (file == null || file.isEmpty()) {
-      throw new IllegalArgumentException("File is null or empty");
-    }
-
-    // Check content type
-    String contentType = file.getContentType();
-    if (contentType == null || !contentType.equals(PDF_CONTENT_TYPE)) {
-      throw new IllegalArgumentException("Only PDF files are allowed. Received: " + contentType);
-    }
-
-    // Check file size
-    long fileSize = file.getSize();
-    long maxSize = maxFileSizeMB * 1024 * 1024;
-    if (fileSize > maxSize) {
-      throw new IllegalArgumentException(
-          String.format(
-              "File size exceeds maximum allowed size. Max: %d MB, Actual: %.2f MB",
-              maxFileSizeMB, fileSize / (1024.0 * 1024.0)));
-    }
-
-    // Check filename extension
-    String filename = file.getOriginalFilename();
-    if (filename == null || !filename.toLowerCase().endsWith(".pdf")) {
-      throw new IllegalArgumentException("File must have .pdf extension");
-    }
-  }
-
-  /**
-   * Sanitize filename để tránh path traversal và các ký tự không hợp lệ
-   *
-   * @param filename Tên file gốc
-   * @return Tên file đã được sanitize
-   */
-  private String sanitizeFilename(String filename) {
-    if (filename == null) {
-      return "file.pdf";
-    }
-
-    // Remove path traversal attempts
-    String sanitized =
-        filename.replaceAll("\\.\\.", "").replaceAll("/", "_").replaceAll("\\\\", "_");
-
-    // Ensure .pdf extension
-    if (!sanitized.toLowerCase().endsWith(".pdf")) {
-      sanitized += ".pdf";
-    }
-
-    return sanitized;
-  }
 
   /**
    * Lấy full path từ relative path

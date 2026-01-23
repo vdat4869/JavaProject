@@ -13,14 +13,24 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
   cache:
     type: none
+  # Disable features that may attempt external connections in dev
+  mail:
+    host: ""
+  data:
+    redis:
+      host: ""
+
 server:
   port: 8080
+
 logging:
   level:
     com.uth: DEBUG
+    root: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
-# Disable features that may attempt external connections in dev
-  mail:
-    host: ""
-  redis:
-    host: ""
+app:
+  rate-limiting:
+    enabled: false
+    use-redis: false

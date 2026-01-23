@@ -1,6 +1,6 @@
 package com.uth.confms.auth.controller;
 
-import com.uth.confms.auth.dto.ApiResponse;
+import com.uth.confms.common.dto.ApiResponse;
 import com.uth.confms.auth.dto.EmailVerificationRequest;
 import com.uth.confms.email.service.EmailVerificationService;
 import jakarta.validation.Valid;

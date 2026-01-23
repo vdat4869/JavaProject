@@ -60,18 +60,101 @@ public class DataInitializer implements CommandLineRunner {
 
     for (String permName : permissionNames) {
       if (permissionRepository.findByName(permName).isEmpty()) {
+        String[] parts = permName.split(":");
         Permission perm =
-            Permission.builder().name(permName).description("Permission: " + permName).build();
+            Permission.builder()
+                .name(permName)
+                .description("Permission: " + permName)
+                .resource(parts.length > 0 ? parts[0] : null)
+                .action(parts.length > 1 ? parts[1] : null)
+                .build();
         permissionRepository.save(perm);
       }
     }
 
-    // Create roles
+    // Create roles and assign permissions
     for (RoleName roleName : RoleName.values()) {
-      if (roleRepository.findByName(roleName).isEmpty()) {
-        Role role = Role.builder().name(roleName).description("Role: " + roleName).build();
-        roleRepository.save(role);
+      Role role = roleRepository.findByName(roleName).orElse(null);
+      if (role == null) {
+        role = Role.builder().name(roleName).description("Role: " + roleName).build();
+        role = roleRepository.save(role);
       }
+
+      // Assign permissions to roles
+      assignPermissionsToRole(role, roleName);
+    }
+  }
+
+  private void assignPermissionsToRole(Role role, RoleName roleName) {
+    List<Permission> permissionsToAssign = new java.util.ArrayList<>();
+
+    switch (roleName) {
+      case ADMIN:
+        // ADMIN has all permissions
+        permissionsToAssign.addAll(permissionRepository.findAll());
+        break;
+
+      case CHAIR:
+        // CHAIR can manage conferences, submissions, decisions, and PC
+        permissionsToAssign.addAll(
+            permissionRepository.findAll().stream()
+                .filter(
+                    p ->
+                        p.getName().startsWith("conference:")
+                            || p.getName().startsWith("submission:")
+                            || p.getName().startsWith("decision:")
+                            || p.getName().startsWith("pc:"))
+                .toList());
+        break;
+
+      case PC:
+        // PC can read conferences, manage submissions, create/read reviews, and manage PC
+        permissionsToAssign.addAll(
+            permissionRepository.findAll().stream()
+                .filter(
+                    p ->
+                        p.getName().equals("conference:read")
+                            || p.getName().startsWith("submission:")
+                            || p.getName().startsWith("review:")
+                            || p.getName().equals("pc:manage"))
+                .toList());
+        break;
+
+      case REVIEWER:
+        // REVIEWER can read conferences, read submissions, and create/read reviews
+        permissionsToAssign.addAll(
+            permissionRepository.findAll().stream()
+                .filter(
+                    p ->
+                        p.getName().equals("conference:read")
+                            || p.getName().equals("submission:read")
+                            || p.getName().startsWith("review:"))
+                .toList());
+        break;
+
+      case AUTHOR:
+        // AUTHOR can read conferences and manage their own submissions
+        permissionsToAssign.addAll(
+            permissionRepository.findAll().stream()
+                .filter(
+                    p ->
+                        p.getName().equals("conference:read")
+                            || p.getName().startsWith("submission:"))
+                .toList());
+        break;
+    }
+
+    // Add permissions to role if not already present
+    boolean updated = false;
+    for (Permission perm : permissionsToAssign) {
+      if (!role.getPermissions().contains(perm)) {
+        role.getPermissions().add(perm);
+        updated = true;
+      }
+    }
+
+    if (updated) {
+      roleRepository.save(role);
     }
   }
 

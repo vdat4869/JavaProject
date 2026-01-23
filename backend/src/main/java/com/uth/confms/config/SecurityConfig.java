@@ -1,6 +1,7 @@
 package com.uth.confms.config;
 
 import com.uth.confms.auth.security.EmailVerificationFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,7 +15,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
@@ -26,6 +31,12 @@ public class SecurityConfig {
   private final EmailVerificationFilter emailVerificationFilter;
   private final UserDetailsService userDetailsService;
   private final CorsConfigurationSource corsConfigurationSource;
+  
+  @Autowired(required = false)
+  private OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService;
+  
+  @Autowired(required = false)
+  private AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
 
   public SecurityConfig(
       JwtAuthenticationFilter jwtAuthFilter,
@@ -47,6 +58,8 @@ public class SecurityConfig {
                 auth.requestMatchers(
                         "/api/auth/**",
                         "/api/conferences/public",
+                        "/oauth2/**",
+                        "/login/oauth2/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/api-docs/**",
@@ -58,8 +71,17 @@ public class SecurityConfig {
                     .authenticated())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authenticationProvider(authenticationProvider())
-        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+        .authenticationProvider(authenticationProvider());
+    
+    // Tích hợp OAuth2 nếu được bật
+    if (oidcUserService != null && oauth2AuthenticationSuccessHandler != null) {
+      http.oauth2Login(oauth2 -> oauth2
+          .userInfoEndpoint(userInfo -> userInfo
+              .oidcUserService(oidcUserService))
+          .successHandler(oauth2AuthenticationSuccessHandler));
+    }
+    
+    http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterAfter(emailVerificationFilter, JwtAuthenticationFilter.class);
 
     return http.build();

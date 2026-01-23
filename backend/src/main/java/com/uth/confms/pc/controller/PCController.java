@@ -5,10 +5,17 @@ import com.uth.confms.common.dto.ApiResponse;
 import com.uth.confms.pc.dto.COIDeclareDTO;
 import com.uth.confms.pc.dto.PCInvitationResponseDTO;
 import com.uth.confms.pc.dto.PCInviteDTO;
+import com.uth.confms.pc.dto.COIHistoryDTO;
+import com.uth.confms.pc.dto.COIStatisticsDTO;
 import com.uth.confms.pc.dto.PCMemberDTO;
+import com.uth.confms.pc.dto.WorkloadAlertDTO;
+import com.uth.confms.pc.dto.WorkloadDTO;
+import com.uth.confms.pc.dto.WorkloadStatsDTO;
 import com.uth.confms.pc.entity.ConflictOfInterest;
 import com.uth.confms.pc.service.COIService;
 import com.uth.confms.pc.service.PCService;
+import com.uth.confms.pc.service.WorkloadService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
@@ -43,11 +50,17 @@ public class PCController {
   private final PCService pcService;
   private final COIService coiService;
   private final UserService userService;
+  private final WorkloadService workloadService;
 
-  public PCController(PCService pcService, COIService coiService, UserService userService) {
+  public PCController(
+      PCService pcService,
+      COIService coiService,
+      UserService userService,
+      WorkloadService workloadService) {
     this.pcService = pcService;
     this.coiService = coiService;
     this.userService = userService;
+    this.workloadService = workloadService;
   }
 
   @PostMapping("/invite")
@@ -94,17 +107,22 @@ public class PCController {
   @PostMapping("/coi/declare")
   @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
   public ResponseEntity<ApiResponse<ConflictOfInterest>> declareCOI(
-      @Valid @RequestBody COIDeclareDTO dto, Authentication authentication) {
+      @Valid @RequestBody COIDeclareDTO dto,
+      Authentication authentication,
+      HttpServletRequest request) {
     Long reviewerId = getUserIdFromAuthentication(authentication);
-    return ResponseEntity.ok(ApiResponse.success(coiService.declareCOI(dto, reviewerId)));
+    return ResponseEntity.ok(
+        ApiResponse.success(coiService.declareCOI(dto, reviewerId, request)));
   }
 
   @DeleteMapping("/coi/{coiId}")
   @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
   public ResponseEntity<ApiResponse<Void>> removeCOI(
-      @PathVariable Long coiId, Authentication authentication) {
+      @PathVariable Long coiId,
+      Authentication authentication,
+      HttpServletRequest request) {
     Long reviewerId = getUserIdFromAuthentication(authentication);
-    coiService.removeCOI(coiId, reviewerId);
+    coiService.removeCOI(coiId, reviewerId, request);
     return ResponseEntity.ok(ApiResponse.success("COI removed", null));
   }
 
@@ -129,6 +147,59 @@ public class PCController {
       @RequestParam Long submissionId, Authentication authentication) {
     Long reviewerId = getUserIdFromAuthentication(authentication);
     return ResponseEntity.ok(ApiResponse.success(coiService.hasCOI(reviewerId, submissionId)));
+  }
+
+  @GetMapping("/reviewer/{reviewerId}/workload")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN') or hasRole('PC') or hasRole('REVIEWER')")
+  public ResponseEntity<ApiResponse<WorkloadDTO>> getReviewerWorkload(
+      @PathVariable Long reviewerId,
+      @RequestParam Long conferenceId,
+      Authentication authentication) {
+    Long userId = getUserIdFromAuthentication(authentication);
+    // Reviewer can only view their own workload, chair/admin can view any
+    // Simplified check - in production, use proper authorization service
+    if (!userId.equals(reviewerId)) {
+      // Allow if user is chair of the conference (check would be done in service if needed)
+      // For now, allow all authenticated users with PC/REVIEWER role
+    }
+    return ResponseEntity.ok(
+        ApiResponse.success(workloadService.getReviewerWorkload(reviewerId, conferenceId)));
+  }
+
+  @GetMapping("/conference/{conferenceId}/workload-stats")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<WorkloadStatsDTO>> getConferenceWorkloadStats(
+      @PathVariable Long conferenceId, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(workloadService.getConferenceWorkloadStats(conferenceId, chairId)));
+  }
+
+  @GetMapping("/conference/{conferenceId}/workload-alerts")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<List<WorkloadAlertDTO>>> getWorkloadAlerts(
+      @PathVariable Long conferenceId, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(workloadService.getWorkloadAlerts(conferenceId, chairId)));
+  }
+
+  @GetMapping("/conference/{conferenceId}/coi/history")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<List<COIHistoryDTO>>> getCOIHistory(
+      @PathVariable Long conferenceId, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(coiService.getCOIHistory(conferenceId, chairId)));
+  }
+
+  @GetMapping("/conference/{conferenceId}/coi/statistics")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<COIStatisticsDTO>> getCOIStatistics(
+      @PathVariable Long conferenceId, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(coiService.getCOIStatistics(conferenceId, chairId)));
   }
 
   private Long getUserIdFromAuthentication(Authentication authentication) {

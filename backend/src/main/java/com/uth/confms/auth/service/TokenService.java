@@ -2,10 +2,10 @@ package com.uth.confms.auth.service;
 
 import com.uth.confms.auth.repository.RefreshTokenRepository;
 import com.uth.confms.common.exception.UnauthorizedException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.security.MessageDigest;
@@ -32,16 +32,17 @@ public class TokenService {
   private final JwtService jwtService;
   private final UserDetailsService userDetailsService;
   private final RefreshTokenRepository refreshTokenRepository;
+  private final AuditLogService auditLogService;
 
-  @Autowired
   public TokenService(JwtService jwtService, UserDetailsService userDetailsService,
-      RefreshTokenRepository refreshTokenRepository) {
+      RefreshTokenRepository refreshTokenRepository, AuditLogService auditLogService) {
     this.jwtService = jwtService;
     this.userDetailsService = userDetailsService;
     this.refreshTokenRepository = refreshTokenRepository;
+    this.auditLogService = auditLogService;
   }
 
-  public String refreshAccessToken(String refreshToken) {
+  public String refreshAccessToken(String refreshToken, HttpServletRequest httpRequest) {
     try {
       // verify refresh token exists in DB and not expired (compare by hash)
       String tokenHash = sha256Hex(refreshToken);
@@ -60,7 +61,26 @@ public class TokenService {
       UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
       if (jwtService.validateToken(refreshToken, userDetails)) {
-        return jwtService.generateAccessToken(userDetails);
+        String newAccessToken = jwtService.generateAccessToken(userDetails);
+        
+        // Audit log: Token refresh
+        try {
+          if (rtOpt.isPresent() && rtOpt.get().getUser() != null) {
+            var user = rtOpt.get().getUser();
+            auditLogService.logAction(
+                user.getId(),
+                email,
+                "TOKEN_REFRESHED",
+                "AUTH",
+                null,
+                "Access token refreshed successfully",
+                httpRequest);
+          }
+        } catch (Exception e) {
+          // Don't block token refresh if audit logging fails
+        }
+        
+        return newAccessToken;
       }
 
       throw new UnauthorizedException("Invalid refresh token");

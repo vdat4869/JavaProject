@@ -1,13 +1,17 @@
 package com.uth.confms.conference.dto;
 
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 
 public class CFPDTO {
   @NotNull private Long conferenceId;
 
   private String callForPapers;
 
-  private String topics;
+  @Deprecated
+  private String topics; // Deprecated: Use topicIds instead
+
+  private List<Long> topicIds; // Reference to Conference.topics
 
   private String submissionGuidelines;
 
@@ -19,11 +23,13 @@ public class CFPDTO {
       Long conferenceId,
       String callForPapers,
       String topics,
+      List<Long> topicIds,
       String submissionGuidelines,
       Boolean open) {
     this.conferenceId = conferenceId;
     this.callForPapers = callForPapers;
     this.topics = topics;
+    this.topicIds = topicIds;
     this.submissionGuidelines = submissionGuidelines;
     this.open = open;
   }
@@ -48,12 +54,22 @@ public class CFPDTO {
     this.callForPapers = callForPapers;
   }
 
+  @Deprecated
   public String getTopics() {
     return topics;
   }
 
+  @Deprecated
   public void setTopics(String topics) {
     this.topics = topics;
+  }
+
+  public List<Long> getTopicIds() {
+    return topicIds;
+  }
+
+  public void setTopicIds(List<Long> topicIds) {
+    this.topicIds = topicIds;
   }
 
   public String getSubmissionGuidelines() {
@@ -75,7 +91,9 @@ public class CFPDTO {
   public static class Builder {
     private Long conferenceId;
     private String callForPapers;
+    @Deprecated
     private String topics;
+    private List<Long> topicIds;
     private String submissionGuidelines;
     private Boolean open;
 
@@ -89,8 +107,14 @@ public class CFPDTO {
       return this;
     }
 
+    @Deprecated
     public Builder topics(String topics) {
       this.topics = topics;
+      return this;
+    }
+
+    public Builder topicIds(List<Long> topicIds) {
+      this.topicIds = topicIds;
       return this;
     }
 
@@ -105,7 +129,7 @@ public class CFPDTO {
     }
 
     public CFPDTO build() {
-      return new CFPDTO(conferenceId, callForPapers, topics, submissionGuidelines, open);
+      return new CFPDTO(conferenceId, callForPapers, topics, topicIds, submissionGuidelines, open);
     }
   }
 }

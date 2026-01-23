@@ -3,7 +3,6 @@ package com.uth.confms.auth.service;
 import com.uth.confms.auth.entity.User;
 import com.uth.confms.auth.repository.UserRepository;
 import java.util.Collection;
-import java.util.stream.Collectors;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -38,11 +37,23 @@ public class CustomUserDetailsService implements UserDetailsService {
   }
 
   private Collection<? extends GrantedAuthority> getAuthorities(User user) {
-    return user.getRoles().stream()
-        .flatMap(
-            role ->
-                role.getPermissions().stream()
-                    .map(permission -> new SimpleGrantedAuthority(permission.getName())))
-        .collect(Collectors.toList());
+    java.util.Set<GrantedAuthority> authorities = new java.util.HashSet<>();
+
+    // Add roles as authorities (for @PreAuthorize hasRole())
+    user.getRoles().forEach(
+        role -> {
+          // Add role without ROLE_ prefix (MethodSecurityConfig sets defaultRolePrefix to "")
+          authorities.add(new SimpleGrantedAuthority(role.getName().name()));
+        });
+
+    // Add permissions as authorities (for @PreAuthorize hasAuthority())
+    user.getRoles().stream()
+        .flatMap(role -> role.getPermissions().stream())
+        .forEach(
+            permission -> {
+              authorities.add(new SimpleGrantedAuthority(permission.getName()));
+            });
+
+    return authorities;
   }
 }

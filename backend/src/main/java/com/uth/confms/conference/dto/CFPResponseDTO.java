@@ -1,11 +1,14 @@
 package com.uth.confms.conference.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class CFPResponseDTO {
   private Long id;
   private String callForPapers;
-  private String topics;
+  @Deprecated
+  private String topics; // Deprecated: Use topicsList instead
+  private List<TopicDTO> topicsList; // Structured topics from Conference
   private String submissionGuidelines;
   private Boolean open;
   private LocalDateTime createdAt;
@@ -17,6 +20,7 @@ public class CFPResponseDTO {
       Long id,
       String callForPapers,
       String topics,
+      List<TopicDTO> topicsList,
       String submissionGuidelines,
       Boolean open,
       LocalDateTime createdAt,
@@ -24,6 +28,7 @@ public class CFPResponseDTO {
     this.id = id;
     this.callForPapers = callForPapers;
     this.topics = topics;
+    this.topicsList = topicsList;
     this.submissionGuidelines = submissionGuidelines;
     this.open = open;
     this.createdAt = createdAt;
@@ -50,12 +55,22 @@ public class CFPResponseDTO {
     this.callForPapers = callForPapers;
   }
 
+  @Deprecated
   public String getTopics() {
     return topics;
   }
 
+  @Deprecated
   public void setTopics(String topics) {
     this.topics = topics;
+  }
+
+  public List<TopicDTO> getTopicsList() {
+    return topicsList;
+  }
+
+  public void setTopicsList(List<TopicDTO> topicsList) {
+    this.topicsList = topicsList;
   }
 
   public String getSubmissionGuidelines() {
@@ -93,7 +108,9 @@ public class CFPResponseDTO {
   public static class Builder {
     private Long id;
     private String callForPapers;
+    @Deprecated
     private String topics;
+    private List<TopicDTO> topicsList;
     private String submissionGuidelines;
     private Boolean open;
     private LocalDateTime createdAt;
@@ -109,8 +126,14 @@ public class CFPResponseDTO {
       return this;
     }
 
+    @Deprecated
     public Builder topics(String topics) {
       this.topics = topics;
+      return this;
+    }
+
+    public Builder topicsList(List<TopicDTO> topicsList) {
+      this.topicsList = topicsList;
       return this;
     }
 
@@ -135,7 +158,7 @@ public class CFPResponseDTO {
     }
 
     public CFPResponseDTO build() {
-      return new CFPResponseDTO(id, callForPapers, topics, submissionGuidelines, open, createdAt, updatedAt);
+      return new CFPResponseDTO(id, callForPapers, topics, topicsList, submissionGuidelines, open, createdAt, updatedAt);
     }
   }
 }

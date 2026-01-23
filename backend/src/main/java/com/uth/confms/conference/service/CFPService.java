@@ -4,10 +4,15 @@ import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.conference.dto.CFPDTO;
 import com.uth.confms.conference.dto.CFPResponseDTO;
+import com.uth.confms.conference.dto.TopicDTO;
 import com.uth.confms.conference.entity.CFP;
 import com.uth.confms.conference.entity.Conference;
+import com.uth.confms.conference.entity.Topic;
 import com.uth.confms.conference.repository.CFPRepository;
 import com.uth.confms.conference.repository.ConferenceRepository;
+import com.uth.confms.conference.repository.TopicRepository;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,10 +21,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class CFPService {
   private final CFPRepository cfpRepository;
   private final ConferenceRepository conferenceRepository;
+  @SuppressWarnings("unused")
+  private final TopicRepository topicRepository; // Reserved for future use
 
-  public CFPService(CFPRepository cfpRepository, ConferenceRepository conferenceRepository) {
+  public CFPService(
+      CFPRepository cfpRepository,
+      ConferenceRepository conferenceRepository,
+      TopicRepository topicRepository) {
     this.cfpRepository = cfpRepository;
     this.conferenceRepository = conferenceRepository;
+    this.topicRepository = topicRepository;
   }
 
   public CFPResponseDTO getCFPByConference(Long conferenceId) {
@@ -52,13 +63,27 @@ public class CFPService {
 
     CFP cfp = cfpRepository.findByConference(conference).orElse(null);
 
+    // Handle topicIds: Link CFP to Conference topics
+    if (dto.getTopicIds() != null && !dto.getTopicIds().isEmpty()) {
+      // Validate that all topicIds belong to this conference
+      List<Topic> conferenceTopics = conference.getTopics();
+      List<Long> validTopicIds =
+          conferenceTopics.stream().map(Topic::getId).collect(Collectors.toList());
+      for (Long topicId : dto.getTopicIds()) {
+        if (!validTopicIds.contains(topicId)) {
+          throw new com.uth.confms.common.exception.BusinessException(
+              "Topic with id " + topicId + " does not belong to this conference");
+        }
+      }
+    }
+
     if (cfp == null) {
       // Create new CFP
       cfp =
           CFP.builder()
               .conference(conference)
               .callForPapers(dto.getCallForPapers())
-              .topics(dto.getTopics())
+              .topics(dto.getTopics()) // Keep for backward compatibility
               .submissionGuidelines(dto.getSubmissionGuidelines())
               .open(dto.getOpen() != null ? dto.getOpen() : false)
               .build();
@@ -68,7 +93,7 @@ public class CFPService {
         cfp.setCallForPapers(dto.getCallForPapers());
       }
       if (dto.getTopics() != null) {
-        cfp.setTopics(dto.getTopics());
+        cfp.setTopics(dto.getTopics()); // Keep for backward compatibility
       }
       if (dto.getSubmissionGuidelines() != null) {
         cfp.setSubmissionGuidelines(dto.getSubmissionGuidelines());
@@ -131,10 +156,24 @@ public class CFPService {
   }
 
   private CFPResponseDTO mapToDTO(CFP cfp) {
+    // Get structured topics from Conference
+    Conference conference = cfp.getConference();
+    List<TopicDTO> topicsList =
+        conference.getTopics().stream()
+            .map(
+                topic ->
+                    TopicDTO.builder()
+                        .id(topic.getId())
+                        .name(topic.getName())
+                        .description(topic.getDescription())
+                        .build())
+            .collect(Collectors.toList());
+
     return CFPResponseDTO.builder()
         .id(cfp.getId())
         .callForPapers(cfp.getCallForPapers())
-        .topics(cfp.getTopics())
+        .topics(cfp.getTopics()) // Keep for backward compatibility
+        .topicsList(topicsList) // Structured topics from Conference
         .submissionGuidelines(cfp.getSubmissionGuidelines())
         .open(cfp.getOpen())
         .createdAt(cfp.getCreatedAt())
