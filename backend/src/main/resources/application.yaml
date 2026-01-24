@@ -148,4 +148,8 @@ app:
       google:
         client-id: ${GOOGLE_CLIENT_ID:}
         client-secret: ${GOOGLE_CLIENT_SECRET:}
+  submission:
+    deadline:
+      grace-period-hours: ${SUBMISSION_GRACE_PERIOD_HOURS:24}
+      enable-logging: ${SUBMISSION_DEADLINE_LOGGING:true}
 
