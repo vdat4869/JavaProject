@@ -1,5 +1,7 @@
 package com.uth.confms.submission.service;
 
+import com.uth.confms.assignment.entity.Assignment;
+import com.uth.confms.assignment.repository.AssignmentRepository;
 import com.uth.confms.common.exception.BusinessException;
 import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
@@ -27,8 +29,12 @@ import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -50,6 +56,8 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @SuppressWarnings("null")
 public class SubmissionService {
+  private static final Logger log = LoggerFactory.getLogger(SubmissionService.class);
+
   private final SubmissionRepository submissionRepository;
   private final SubmissionAuthorRepository submissionAuthorRepository;
   private final SubmissionFileRepository submissionFileRepository;
@@ -57,6 +65,13 @@ public class SubmissionService {
   private final StorageService storageService;
   private final COIService coiService;
   private final PCMemberRepository pcMemberRepository;
+  private final AssignmentRepository assignmentRepository;
+
+  @Value("${app.submission.deadline.grace-period-hours:24}")
+  private int gracePeriodHours;
+
+  @Value("${app.submission.deadline.enable-logging:true}")
+  private boolean enableDeadlineLogging;
 
   public SubmissionService(
       SubmissionRepository submissionRepository,
@@ -65,7 +80,8 @@ public class SubmissionService {
       DeadlineRepository deadlineRepository,
       StorageService storageService,
       COIService coiService,
-      PCMemberRepository pcMemberRepository) {
+      PCMemberRepository pcMemberRepository,
+      AssignmentRepository assignmentRepository) {
     this.submissionRepository = submissionRepository;
     this.submissionAuthorRepository = submissionAuthorRepository;
     this.submissionFileRepository = submissionFileRepository;
@@ -73,6 +89,7 @@ public class SubmissionService {
     this.storageService = storageService;
     this.coiService = coiService;
     this.pcMemberRepository = pcMemberRepository;
+    this.assignmentRepository = assignmentRepository;
   }
 
   /**
@@ -175,11 +192,44 @@ public class SubmissionService {
           "Cannot edit submission in current status: " + submission.getStatus());
     }
 
+    // Fix 1.2: Check if submission has been assigned to reviewers
+    if (submission.getStatus() == Submission.SubmissionStatus.SUBMITTED) {
+      List<Assignment> assignments = assignmentRepository.findBySubmissionId(id);
+      boolean hasAcceptedAssignment =
+          assignments.stream()
+              .anyMatch(
+                  a ->
+                      a.getStatus() == Assignment.AssignmentStatus.ACCEPTED
+                          || a.getStatus() == Assignment.AssignmentStatus.COMPLETED);
+      if (hasAcceptedAssignment) {
+        throw new BusinessException(
+            "Cannot edit submission that has been assigned to reviewers. "
+                + "Please withdraw the submission first if you need to make changes.");
+      }
+    }
+
+    // Fix 1.3: Validate title and abstract are not empty after update
     if (dto.getTitle() != null) {
-      submission.setTitle(dto.getTitle());
+      String title = dto.getTitle().trim();
+      if (!StringUtils.hasText(title)) {
+        throw new BusinessException("Title cannot be empty");
+      }
+      submission.setTitle(title);
     }
     if (dto.getAbstractText() != null) {
-      submission.setAbstractText(dto.getAbstractText());
+      String abstractText = dto.getAbstractText().trim();
+      if (!StringUtils.hasText(abstractText)) {
+        throw new BusinessException("Abstract cannot be empty");
+      }
+      submission.setAbstractText(abstractText);
+    }
+
+    // Validate final state: title and abstract must not be empty
+    if (submission.getTitle() == null || submission.getTitle().trim().isEmpty()) {
+      throw new BusinessException("Title is required and cannot be empty");
+    }
+    if (submission.getAbstractText() == null || submission.getAbstractText().trim().isEmpty()) {
+      throw new BusinessException("Abstract is required and cannot be empty");
     }
     if (dto.getTrackId() != null) {
       submission.setTrackId(dto.getTrackId());
@@ -366,6 +416,20 @@ public class SubmissionService {
     return mapFileToDTO(savedFile);
   }
 
+  /**
+   * Kiểm tra deadline cho submission
+   *
+   * <p>Fix 1.1: Cải thiện logic deadline với grace period và logging
+   *
+   * <ul>
+   *   <li>Hard deadline: Chặn hoàn toàn sau deadline
+   *   <li>Soft deadline: Cho phép trong grace period (mặc định 24 giờ)
+   *   <li>Logging khi bypass deadline (nếu enable)
+   * </ul>
+   *
+   * @param conferenceId ID của conference
+   * @throws BusinessException Nếu deadline đã qua và không có grace period
+   */
   private void checkSubmissionDeadline(Long conferenceId) {
     List<Deadline> deadlines = deadlineRepository.findByConferenceId(conferenceId);
     Deadline submissionDeadline =
@@ -374,10 +438,48 @@ public class SubmissionService {
             .findFirst()
             .orElse(null);
 
-    if (submissionDeadline != null
-        && submissionDeadline.getDueDate().isBefore(LocalDateTime.now())) {
+    if (submissionDeadline == null) {
+      // Không có deadline, cho phép
+      return;
+    }
+
+    LocalDateTime now = LocalDateTime.now();
+    LocalDateTime dueDate = submissionDeadline.getDueDate();
+
+    if (dueDate.isBefore(now)) {
+      // Deadline đã qua
       if (submissionDeadline.getHardDeadline()) {
+        // Hard deadline: Chặn hoàn toàn
         throw new BusinessException("Submission deadline has passed");
+      } else {
+        // Soft deadline: Kiểm tra grace period
+        LocalDateTime gracePeriodEnd = dueDate.plusHours(gracePeriodHours);
+        if (now.isAfter(gracePeriodEnd)) {
+          // Đã qua cả grace period
+          if (enableDeadlineLogging) {
+            log.warn(
+                "Submission deadline passed for conference {}: deadline={}, now={}, gracePeriodEnd={}",
+                conferenceId,
+                dueDate,
+                now,
+                gracePeriodEnd);
+          }
+          throw new BusinessException(
+              String.format(
+                  "Submission deadline has passed. Grace period of %d hours has also expired.",
+                  gracePeriodHours));
+        } else {
+          // Vẫn trong grace period, cho phép nhưng log warning
+          if (enableDeadlineLogging) {
+            log.warn(
+                "Submission operation allowed within grace period for conference {}: deadline={}, now={}, gracePeriodEnd={}",
+                conferenceId,
+                dueDate,
+                now,
+                gracePeriodEnd);
+          }
+          // Cho phép thao tác trong grace period
+        }
       }
     }
   }

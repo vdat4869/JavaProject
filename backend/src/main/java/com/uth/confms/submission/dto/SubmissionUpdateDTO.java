@@ -1,13 +1,31 @@
 package com.uth.confms.submission.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 
+/**
+ * DTO cho request cập nhật submission
+ *
+ * <p>Fix 1.3: Thêm validation annotations để đảm bảo metadata không rỗng
+ *
+ * @author UTH-ConfMS Team
+ * @version 1.0
+ */
 public class SubmissionUpdateDTO {
+  @Size(min = 1, max = 500, message = "Title must be between 1 and 500 characters")
   private String title;
+
+  @Size(min = 1, max = 5000, message = "Abstract must be between 1 and 5000 characters")
   private String abstractText;
+
   private Long trackId;
+
+  @Size(max = 1000, message = "Keywords must not exceed 1000 characters")
   private String keywords;
-  private List<SubmissionAuthorDTO> authors;
+
+  @Valid private List<SubmissionAuthorDTO> authors;
 
   public SubmissionUpdateDTO() {}
 
