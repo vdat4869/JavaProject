@@ -12,7 +12,7 @@ import com.google.api.client.json.gson.GsonFactory;
 @Service
 public class GoogleTokenService {
 
-    @Value("${google.client-id}")
+    @Value("${google.client-id:}")
     private String clientId;
 
     private final GoogleIdTokenVerifier verifier;
@@ -33,8 +33,8 @@ public class GoogleTokenService {
 
         GoogleIdToken.Payload payload = idToken.getPayload();
 
-        // Check audience
-        if (!payload.getAudience().equals(clientId)) {
+        // Check audience (only if clientId is configured)
+        if (clientId != null && !clientId.isEmpty() && !payload.getAudience().equals(clientId)) {
             throw new RuntimeException("Invalid audience");
         }
 

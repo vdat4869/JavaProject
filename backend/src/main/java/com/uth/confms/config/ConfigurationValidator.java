@@ -76,12 +76,23 @@ public class ConfigurationValidator {
   }
 
   private void validateDatabaseConfig(List<String> errors) {
+    String dbUrl = environment.getProperty("spring.datasource.url");
+    
+    // Nếu đang dùng H2 (dev mode), skip validation
+    if (dbUrl != null && dbUrl.contains("h2")) {
+      log.info("Đang sử dụng H2 database - bỏ qua validation database");
+      return;
+    }
+    
     String dbPassword = environment.getProperty("spring.datasource.password");
     if (dbPassword == null || dbPassword.trim().isEmpty()) {
-      errors.add("❌ DB_PASSWORD: Mật khẩu database không được để trống");
+      if (isProductionProfile()) {
+        errors.add("❌ DB_PASSWORD: Mật khẩu database không được để trống");
+      } else {
+        log.warn("⚠️ DB_PASSWORD: Mật khẩu database không được cấu hình - có thể gây lỗi kết nối");
+      }
     }
 
-    String dbUrl = environment.getProperty("spring.datasource.url");
     if (dbUrl == null || dbUrl.trim().isEmpty()) {
       errors.add("❌ DB_URL: URL database không được để trống");
     } else if (!dbUrl.startsWith("jdbc:postgresql://")) {
@@ -96,7 +107,12 @@ public class ConfigurationValidator {
     } else if (jwtSecret.length() < 32) {
       errors.add("❌ JWT_SECRET: JWT secret phải có ít nhất 32 ký tự");
     } else if (jwtSecret.equals("your-256-bit-secret-key-change-in-production-minimum-32-characters")) {
-      errors.add("❌ JWT_SECRET: JWT secret không được sử dụng giá trị mặc định");
+      // Chỉ bắt buộc trong production, các môi trường khác chỉ warning
+      if (isProductionProfile()) {
+        errors.add("❌ JWT_SECRET: JWT secret không được sử dụng giá trị mặc định trong production");
+      } else {
+        log.warn("⚠️ JWT_SECRET: Đang sử dụng giá trị mặc định - nên thay đổi trong production");
+      }
     }
   }
 

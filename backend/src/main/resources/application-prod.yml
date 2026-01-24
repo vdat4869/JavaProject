@@ -4,7 +4,7 @@ spring:
   
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/uth_confms}
-    username: ${DB_USERNAME:postgres}
+    username: ${DB_USERNAME:}
     password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
@@ -39,8 +39,8 @@ spring:
   mail:
     host: ${SMTP_HOST:smtp.gmail.com}
     port: ${SMTP_PORT:587}
-    username: ${SMTP_USERNAME:nguyenvietdat027@gmail.com}
-    password: ${SMTP_PASSWORD:bdmfszmwwveplzjd}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -62,7 +62,7 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID:}
             client-secret: ${GOOGLE_CLIENT_SECRET:}
             scope: openid,profile,email
-            redirect-uri: ${OAUTH2_REDIRECT_URI:https://confms.uth.edu.vn/login/oauth2/code/google}
+            redirect-uri: ${OAUTH2_REDIRECT_URI:}
 
 server:
   port: ${SERVER_PORT:8080}

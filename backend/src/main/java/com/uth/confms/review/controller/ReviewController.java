@@ -1,7 +1,7 @@
 package com.uth.confms.review.controller;
 
-import com.uth.confms.auth.enums.RoleName;
 import com.uth.confms.auth.entity.User;
+import com.uth.confms.auth.enums.RoleName;
 import com.uth.confms.auth.repository.UserRepository;
 import com.uth.confms.common.dto.ApiResponse;
 import com.uth.confms.review.dto.AverageScoreDTO;
@@ -28,11 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Controller quản lý reviews và discussions
  *
- * <p>
- * Các endpoints:
+ * <p>Các endpoints:
  *
  * <ul>
-<<<<<<< HEAD
  *   <li>POST /api/reviews/draft - Tạo/cập nhật draft review (PC/REVIEWER)
  *   <li>POST /api/reviews/{id}/submit - Submit review (PC/REVIEWER)
  *   <li>GET /api/reviews/assignment/{id} - Lấy review của assignment (PC/REVIEWER)
@@ -45,22 +43,6 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>POST /api/reviews/rebuttal - Tạo/cập nhật rebuttal (AUTHOR)
  *   <li>POST /api/reviews/rebuttal/{id}/submit - Submit rebuttal (AUTHOR)
  *   <li>GET /api/reviews/rebuttal/submission/{id} - Lấy rebuttal (authenticated)
-=======
- * <li>POST /api/reviews/draft - Tạo/cập nhật draft review (PC/REVIEWER)
- * <li>POST /api/reviews/{id}/submit - Submit review (PC/REVIEWER)
- * <li>GET /api/reviews/assignment/{id} - Lấy review của assignment
- * (PC/REVIEWER)
- * <li>GET /api/reviews/submission/{id} - Lấy reviews của submission
- * (authenticated)
- * <li>GET /api/reviews/{id} - Lấy review by ID (authenticated)
- * <li>POST /api/reviews/submission/{id}/comments - Thêm internal comment
- * (PC/REVIEWER)
- * <li>GET /api/reviews/submission/{id}/comments - Lấy internal comments
- * (PC/REVIEWER/CHAIR/ADMIN)
- * <li>POST /api/reviews/rebuttal - Tạo/cập nhật rebuttal (AUTHOR)
- * <li>POST /api/reviews/rebuttal/{id}/submit - Submit rebuttal (AUTHOR)
- * <li>GET /api/reviews/rebuttal/submission/{id} - Lấy rebuttal (authenticated)
->>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -194,13 +176,15 @@ public class ReviewController {
       @PathVariable Long submissionId, Authentication authentication) {
     Long userId = getUserIdFromAuthentication(authentication);
     boolean isChairOrAdmin = isChairOrAdmin(userId);
-    RebuttalDTO rebuttal = discussionService.getRebuttalBySubmission(submissionId, userId, isChairOrAdmin);
+    RebuttalDTO rebuttal =
+        discussionService.getRebuttalBySubmission(submissionId, userId, isChairOrAdmin);
     return ResponseEntity.ok(ApiResponse.success(rebuttal));
   }
 
   private Long getUserIdFromAuthentication(Authentication authentication) {
     String email = authentication.getName();
-    User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+    User user =
+        userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
     return user.getId();
   }
 
@@ -212,8 +196,9 @@ public class ReviewController {
     }
     return user.getRoles().stream()
         .anyMatch(
-            role -> role != null
-                && (role.getName() == RoleName.CHAIR
-                    || role.getName() == RoleName.ADMIN));
+            role ->
+                role != null
+                    && (role.getName() == RoleName.CHAIR
+                        || role.getName() == RoleName.ADMIN));
   }
 }

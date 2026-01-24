@@ -62,7 +62,7 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID:}
             client-secret: ${GOOGLE_CLIENT_SECRET:}
             scope: openid,profile,email
-            redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:8080/login/oauth2/code/google}
+            redirect-uri: ${OAUTH2_REDIRECT_URI:}
 
 server:
   port: ${SERVER_PORT:8080}
@@ -149,3 +149,6 @@ app:
         client-id: ${GOOGLE_CLIENT_ID:}
         client-secret: ${GOOGLE_CLIENT_SECRET:}
 
+# Google OAuth2 Configuration (for GoogleTokenService)
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}

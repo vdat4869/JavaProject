@@ -52,11 +52,8 @@ public class AuthService {
   @SuppressWarnings("unused")
   private final EmailVerificationService emailVerificationService;
   private final RefreshTokenRepository refreshTokenRepository;
-<<<<<<< HEAD
   private final AuditLogService auditLogService;
-=======
   private final GoogleTokenService googleTokenService;
->>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
 
   public AuthService(
       UserRepository userRepository,
@@ -67,11 +64,8 @@ public class AuthService {
       UserDetailsService userDetailsService,
       EmailVerificationService emailVerificationService,
       RefreshTokenRepository refreshTokenRepository,
-<<<<<<< HEAD
-      AuditLogService auditLogService) {
-=======
+      AuditLogService auditLogService,
       GoogleTokenService googleTokenService) {
->>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
     this.userRepository = userRepository;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
@@ -80,11 +74,8 @@ public class AuthService {
     this.userDetailsService = userDetailsService;
     this.emailVerificationService = emailVerificationService;
     this.refreshTokenRepository = refreshTokenRepository;
-<<<<<<< HEAD
     this.auditLogService = auditLogService;
-=======
     this.googleTokenService = googleTokenService;
->>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
   }
 
   /**
@@ -225,8 +216,7 @@ public class AuthService {
    */
   public void logout(String refreshToken, HttpServletRequest httpRequest) {
     String tokenHash = sha256Hex(refreshToken);
-<<<<<<< HEAD
-    refreshTokenRepository.revokeByTokenHash(tokenHash);
+    refreshTokenRepository.revokeByTokenHash(tokenHash, LocalDateTime.now());
 
     // Try to get user from refresh token for audit logging
     try {
@@ -249,9 +239,6 @@ public class AuthService {
     } catch (Exception e) {
       // Don't block logout if audit logging fails
     }
-=======
-    refreshTokenRepository.revokeByTokenHash(tokenHash, LocalDateTime.now());
->>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
   }
 
   private String extractClientIp(HttpServletRequest request) {

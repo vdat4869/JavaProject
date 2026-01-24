@@ -59,7 +59,6 @@ public class DataInitializer implements CommandLineRunner {
 
     for (String permName : permissionNames) {
       if (permissionRepository.findByName(permName).isEmpty()) {
-<<<<<<< HEAD
         String[] parts = permName.split(":");
         Permission perm =
             Permission.builder()
@@ -68,9 +67,6 @@ public class DataInitializer implements CommandLineRunner {
                 .resource(parts.length > 0 ? parts[0] : null)
                 .action(parts.length > 1 ? parts[1] : null)
                 .build();
-=======
-        Permission perm = Permission.builder().name(permName).description("Permission: " + permName).build();
->>>>>>> 8dc352787c60bcc2c30894e3d3dab6d5850520af
         permissionRepository.save(perm);
       }
     }
