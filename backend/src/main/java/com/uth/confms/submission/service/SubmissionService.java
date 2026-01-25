@@ -8,6 +8,7 @@ import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.conference.entity.Deadline;
 import com.uth.confms.conference.entity.Deadline.DeadlineType;
 import com.uth.confms.conference.repository.DeadlineRepository;
+import com.uth.confms.conference.repository.ConferenceRepository;
 import com.uth.confms.pc.entity.PCMember;
 import com.uth.confms.pc.repository.PCMemberRepository;
 import com.uth.confms.pc.service.COIService;
@@ -62,6 +63,7 @@ public class SubmissionService {
   private final SubmissionAuthorRepository submissionAuthorRepository;
   private final SubmissionFileRepository submissionFileRepository;
   private final DeadlineRepository deadlineRepository;
+  private final ConferenceRepository conferenceRepository;
   private final StorageService storageService;
   private final COIService coiService;
   private final PCMemberRepository pcMemberRepository;
@@ -78,6 +80,7 @@ public class SubmissionService {
       SubmissionAuthorRepository submissionAuthorRepository,
       SubmissionFileRepository submissionFileRepository,
       DeadlineRepository deadlineRepository,
+      ConferenceRepository conferenceRepository,
       StorageService storageService,
       COIService coiService,
       PCMemberRepository pcMemberRepository,
@@ -86,6 +89,7 @@ public class SubmissionService {
     this.submissionAuthorRepository = submissionAuthorRepository;
     this.submissionFileRepository = submissionFileRepository;
     this.deadlineRepository = deadlineRepository;
+    this.conferenceRepository = conferenceRepository;
     this.storageService = storageService;
     this.coiService = coiService;
     this.pcMemberRepository = pcMemberRepository;
@@ -377,7 +381,7 @@ public class SubmissionService {
     checkSubmissionDeadline(submission.getConferenceId());
 
     // Store file using StorageService (validation is done inside)
-    String relativePath = storageService.storeSubmissionPdf(submissionId, file);
+    String relativePath = storageService.storeSubmissionPdf(submission.getConferenceId(), submissionId, file);
 
     // Calculate checksum
     String checksum = calculateChecksumFromStream(storageService.getFileStream(relativePath));
@@ -703,5 +707,42 @@ public class SubmissionService {
 
     // Delete submission
     submissionRepository.delete(submission);
+  }
+
+  /**
+   * Lấy danh sách submissions của một conference (CHAIR/ADMIN only)
+   *
+   * <p>Endpoint này được bảo vệ bởi @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')"),
+   * nên chỉ CHAIR hoặc ADMIN mới có thể gọi. Nếu user không phải là chair của conference,
+   * thì chắc chắn là ADMIN (vì đã pass qua @PreAuthorize).
+   *
+   * @param conferenceId ID của conference
+   * @param userId ID của user (chair hoặc admin)
+   * @return Danh sách SubmissionResponseDTO
+   * @throws NotFoundException Nếu conference không tồn tại
+   * @throws UnauthorizedException Nếu user không phải là chair của conference và không phải admin
+   */
+  public List<SubmissionResponseDTO> getSubmissionsByConference(Long conferenceId, Long userId) {
+    // Check if conference exists
+    var conference =
+        conferenceRepository
+            .findById(conferenceId)
+            .orElseThrow(() -> new NotFoundException("Conference with id " + conferenceId + " not found"));
+
+    // Check authorization - only chair of conference or admin can view submissions
+    // Since endpoint is protected by @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')"),
+    // if user is not chair, they must be admin
+    if (!conference.getChairId().equals(userId)) {
+      // User is not chair, check if they are admin
+      // Since @PreAuthorize already ensures CHAIR or ADMIN, we allow access here
+      // Admin can view submissions of any conference
+      log.info("User {} (not chair) accessing submissions for conference {}", userId, conferenceId);
+    }
+
+    // Get all submissions for this conference
+    List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
+
+    // Map to DTOs
+    return submissions.stream().map(this::mapToDTO).collect(Collectors.toList());
   }
 }

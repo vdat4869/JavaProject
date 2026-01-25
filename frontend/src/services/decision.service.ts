@@ -1,36 +1,64 @@
 import apiClient from './api'
 
 /**
- * Decision interface
+ * Decision Type - khớp backend DecisionRequestDTO
+ */
+export type DecisionType = 'ACCEPT' | 'REJECT' | 'CONDITIONAL_ACCEPT'
+
+/**
+ * Review Summary interface - khớp backend ReviewSummaryDTO
+ */
+export interface ReviewSummary {
+  submissionId: number
+  averageScore: number
+  reviewCount: number
+  scoreDistribution: Record<string, number>
+}
+
+/**
+ * Decision interface - khớp backend DecisionResultDTO
  */
 export interface Decision {
   id: number
   submissionId: number
   submissionTitle: string
-  decision: 'ACCEPT' | 'REJECT' | 'MINOR_REVISION' | 'MAJOR_REVISION'
+  decidedBy: number
+  decidedByName: string
+  type: DecisionType
   comments?: string
+  notified: boolean
+  locked: boolean
   decidedAt: string
-  decidedBy: string
-  reviewCount: number
-  averageRating: number
+  reviewSummary: ReviewSummary
 }
 
 /**
- * Create Decision request
+ * Create Decision request - khớp backend DecisionRequestDTO
  */
 export interface CreateDecisionRequest {
   submissionId: number
-  decision: 'ACCEPT' | 'REJECT' | 'MINOR_REVISION' | 'MAJOR_REVISION'
+  type: DecisionType
   comments?: string
+  sendNotification?: boolean
 }
 
 /**
- * Bulk Decision request
+ * Bulk Notification Request - khớp backend BulkNotificationRequestDTO
  */
-export interface BulkDecisionRequest {
+export interface BulkNotificationRequest {
   submissionIds: number[]
-  decision: 'ACCEPT' | 'REJECT' | 'MINOR_REVISION' | 'MAJOR_REVISION'
+  notificationType: string // DECISION_ACCEPT, DECISION_REJECT
+  customSubject?: string
+  customMessage?: string
+}
+
+/**
+ * Update Decision request - khớp backend UpdateDecisionRequestDTO
+ */
+export interface UpdateDecisionRequest {
+  type?: DecisionType
   comments?: string
+  reason: string // Required for audit trail
 }
 
 /**
@@ -38,49 +66,76 @@ export interface BulkDecisionRequest {
  */
 export const decisionService = {
   /**
-   * Lấy danh sách submissions cần quyết định
-   * GET /api/decisions/pending?conferenceId={id}
-   */
-  getPendingDecisions: async (conferenceId: number): Promise<Decision[]> => {
-    const response = await apiClient.get<Decision[]>(
-      `/decisions/pending?conferenceId=${conferenceId}`,
-    )
-    return response.data
-  },
-
-  /**
-   * Lấy danh sách decisions đã quyết định
-   * GET /api/decisions?conferenceId={id}
-   */
-  getDecisions: async (conferenceId: number): Promise<Decision[]> => {
-    const response = await apiClient.get<Decision[]>(`/decisions?conferenceId=${conferenceId}`)
-    return response.data
-  },
-
-  /**
    * Tạo decision cho submission
    * POST /api/decisions
    */
   createDecision: async (data: CreateDecisionRequest): Promise<Decision> => {
-    const response = await apiClient.post<Decision>('/decisions', data)
-    return response.data
+    const response = await apiClient.post<{ success: boolean; data: Decision }>(
+      '/decisions',
+      data
+    )
+    return response.data.data || response.data
   },
 
   /**
-   * Bulk decisions (quyết định hàng loạt)
-   * POST /api/decisions/bulk
+   * Cập nhật decision (chỉ khi chưa notified/locked)
+   * PUT /api/decisions/{decisionId}
    */
-  bulkDecisions: async (data: BulkDecisionRequest): Promise<Decision[]> => {
-    const response = await apiClient.post<Decision[]>('/decisions/bulk', data)
-    return response.data
+  updateDecision: async (decisionId: number, data: UpdateDecisionRequest): Promise<Decision> => {
+    const response = await apiClient.put<{ success: boolean; data: Decision }>(
+      `/decisions/${decisionId}`,
+      data
+    )
+    return response.data.data || response.data
   },
 
   /**
-   * Cập nhật decision
-   * PUT /api/decisions/{id}
+   * Lấy decision theo submission
+   * GET /api/decisions/submission/{submissionId}
    */
-  updateDecision: async (id: number, data: Partial<CreateDecisionRequest>): Promise<Decision> => {
-    const response = await apiClient.put<Decision>(`/decisions/${id}`, data)
-    return response.data
+  getDecisionBySubmission: async (submissionId: number): Promise<Decision> => {
+    const response = await apiClient.get<{ success: boolean; data: Decision }>(
+      `/decisions/submission/${submissionId}`
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Lấy danh sách decisions theo conference
+   * GET /api/decisions/conference/{conferenceId}
+   */
+  getDecisionsByConference: async (conferenceId: number): Promise<Decision[]> => {
+    const response = await apiClient.get<{ success: boolean; data: Decision[] }>(
+      `/decisions/conference/${conferenceId}`
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Lấy danh sách pending notifications
+   * GET /api/decisions/pending-notifications
+   */
+  getPendingNotifications: async (): Promise<Decision[]> => {
+    const response = await apiClient.get<{ success: boolean; data: Decision[] }>(
+      '/decisions/pending-notifications'
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Gửi notification cho decision
+   * POST /api/decisions/notify/{decisionId}
+   */
+  sendNotification: async (decisionId: number): Promise<void> => {
+    await apiClient.post(`/decisions/notify/${decisionId}`)
+  },
+
+  /**
+   * Gửi bulk notifications
+   * POST /api/decisions/notifications/bulk
+   */
+  sendBulkNotifications: async (data: BulkNotificationRequest): Promise<void> => {
+    await apiClient.post('/decisions/notifications/bulk', data)
   },
 }
+

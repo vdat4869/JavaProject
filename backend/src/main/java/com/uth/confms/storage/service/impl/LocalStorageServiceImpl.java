@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,6 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
  * @version 1.0
  */
 @Service
+@ConditionalOnProperty(name = "app.storage.backend", havingValue = "local", matchIfMissing = true)
 public class LocalStorageServiceImpl implements StorageService {
 
   private static final Logger log = LoggerFactory.getLogger(LocalStorageServiceImpl.class);
@@ -53,11 +55,12 @@ public class LocalStorageServiceImpl implements StorageService {
   private long maxFileSizeMB;
 
   @Override
-  public String storeSubmissionPdf(Long submissionId, MultipartFile file) {
+  public String storeSubmissionPdf(Long conferenceId, Long submissionId, MultipartFile file) {
     FileUtil.validatePdfFile(file, maxFileSizeMB);
     String relativePath =
         String.format(
-            "submissions/%d/%s_%s",
+            "conferences/%d/submissions/%d/%s_%s",
+            conferenceId,
             submissionId,
             LocalDateTime.now().format(TIMESTAMP_FORMATTER),
             FileUtil.sanitizeFilename(file.getOriginalFilename(), FileUtil.PDF_EXTENSION));
@@ -65,11 +68,12 @@ public class LocalStorageServiceImpl implements StorageService {
   }
 
   @Override
-  public String storeCameraReadyPdf(Long paperId, MultipartFile file) {
+  public String storeCameraReadyPdf(Long conferenceId, Long paperId, MultipartFile file) {
     FileUtil.validatePdfFile(file, maxFileSizeMB);
     String relativePath =
         String.format(
-            "camera-ready/%d/%s_%s",
+            "conferences/%d/camera-ready/%d/%s_%s",
+            conferenceId,
             paperId,
             LocalDateTime.now().format(TIMESTAMP_FORMATTER),
             FileUtil.sanitizeFilename(file.getOriginalFilename(), FileUtil.PDF_EXTENSION));
@@ -152,6 +156,34 @@ public class LocalStorageServiceImpl implements StorageService {
     }
   }
 
+
+  @Override
+  public boolean verifyChecksum(String filePath, String expectedChecksum) {
+    try {
+      InputStream inputStream = getFileStream(filePath);
+      String actualChecksum = FileUtil.calculateChecksum(inputStream);
+      inputStream.close();
+      
+      boolean matches = actualChecksum.equalsIgnoreCase(expectedChecksum);
+      if (!matches) {
+        log.warn("Checksum mismatch for file: {} (expected: {}, actual: {})", 
+                filePath, expectedChecksum, actualChecksum);
+      }
+      return matches;
+    } catch (Exception e) {
+      log.error("Error verifying checksum for file: {}", filePath, e);
+      return false;
+    }
+  }
+
+  /**
+   * Lấy base directory (for backup service access)
+   *
+   * @return Base directory path
+   */
+  public String getBaseDir() {
+    return baseDir;
+  }
 
   /**
    * Lấy full path từ relative path

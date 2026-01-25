@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { CCard, CCardHeader, CButton } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
-import { reviewService } from '../../services/review.service'
+import { reviewService, ReviewSubmitDTO } from '../../services/review.service'
 import ReviewForm from '../../components/review/ReviewForm'
 
 /**
@@ -25,29 +25,12 @@ const ReviewFormPage: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
-  const handleSubmit = async (data: {
-    overallRating: number
-    confidence: number
-    comments: string
-    strengths: string
-    weaknesses: string
-    recommendation: 'ACCEPT' | 'REJECT' | 'MINOR_REVISION' | 'MAJOR_REVISION'
-  }) => {
+  const handleSubmit = async (data: ReviewSubmitDTO) => {
     try {
       setLoading(true)
 
-      if (reviewId) {
-        // Update existing review
-        await reviewService.updateReview(reviewId, data)
-      } else if (assignmentId) {
-        // Create new review
-        await reviewService.createReview({
-          assignmentId,
-          ...data,
-        })
-      } else {
-        throw new Error('Missing assignmentId or reviewId')
-      }
+      // Use createOrUpdateDraft for both create and update
+      await reviewService.createOrUpdateDraft(data)
 
       navigate('/pc/assignments')
     } catch (error: any) {

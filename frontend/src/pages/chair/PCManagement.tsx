@@ -21,8 +21,14 @@ import {
   CAlert,
   CSpinner,
   CBadge,
+  CNav,
+  CNavItem,
+  CNavLink,
+  CTabs,
+  CTabContent,
+  CTabPane,
 } from '@coreui/react'
-import { pcService, PCMember, InvitePCRequest } from '../../services/pc.service'
+import { pcService, PCMember, InvitePCRequest, PCInvitation } from '../../services/pc.service'
 
 /**
  * PCManagement - Trang quản lý PC members
@@ -38,21 +44,26 @@ const PCManagement: React.FC = () => {
     ? parseInt(searchParams.get('conferenceId')!)
     : null
   const [members, setMembers] = useState<PCMember[]>([])
+  const [invitations, setInvitations] = useState<PCInvitation[]>([])
   const [loading, setLoading] = useState(true)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteName, setInviteName] = useState('')
   const [inviting, setInviting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [activeTab, setActiveTab] = useState<'members' | 'invitations'>('members')
 
   const loadMembers = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await pcService.getPCMembers(conferenceId!)
-      setMembers(data)
+      const [membersData, invitationsData] = await Promise.all([
+        pcService.getPCMembers(conferenceId!),
+        pcService.getInvitations(conferenceId!),
+      ])
+      setMembers(membersData)
+      setInvitations(invitationsData)
     } catch (error) {
-      console.error('Error loading PC members:', error)
+      console.error('Error loading PC data:', error)
     } finally {
       setLoading(false)
     }
@@ -76,11 +87,9 @@ const PCManagement: React.FC = () => {
       await pcService.invitePC({
         conferenceId: conferenceId!,
         email: inviteEmail.trim(),
-        fullName: inviteName.trim() || undefined,
       })
       setSuccess('Đã gửi lời mời')
       setInviteEmail('')
-      setInviteName('')
       setShowInviteModal(false)
       await loadMembers()
     } catch (error: any) {
@@ -129,6 +138,25 @@ const PCManagement: React.FC = () => {
           </div>
         </CCardHeader>
         <CCardBody>
+          <CTabs activeTab={activeTab} onActiveTabChange={setActiveTab}>
+            <CNav variant="tabs">
+              <CNavItem>
+                <CNavLink>PC Members ({members.length})</CNavLink>
+              </CNavItem>
+              <CNavItem>
+                <CNavLink>
+                  Invitations ({invitations.length})
+                  {invitations.filter((i) => i.status === 'PENDING').length > 0 && (
+                    <CBadge color="warning" className="ms-2">
+                      {invitations.filter((i) => i.status === 'PENDING').length} pending
+                    </CBadge>
+                  )}
+                </CNavLink>
+              </CNavItem>
+            </CNav>
+            <CTabContent>
+              <CTabPane>
+                <div className="mt-3">
           {error && (
             <CAlert color="danger" className="mb-3">
               {error}
@@ -169,9 +197,63 @@ const PCManagement: React.FC = () => {
                     </CTableDataCell>
                   </CTableRow>
                 ))}
-              </CTableBody>
-            </CTable>
+            </CTableBody>
+          </CTable>
           )}
+                </div>
+              </CTabPane>
+              <CTabPane>
+                <div className="mt-3">
+                  {invitations.length === 0 ? (
+                    <p className="text-muted">Chưa có invitation nào</p>
+                  ) : (
+                    <CTable hover>
+                      <CTableHead>
+                        <CTableRow>
+                          <CTableHeaderCell>Email</CTableHeaderCell>
+                          <CTableHeaderCell>Trạng thái</CTableHeaderCell>
+                          <CTableHeaderCell>Ngày mời</CTableHeaderCell>
+                          <CTableHeaderCell>Hết hạn</CTableHeaderCell>
+                        </CTableRow>
+                      </CTableHead>
+                      <CTableBody>
+                        {invitations.map((invitation) => (
+                          <CTableRow key={invitation.id}>
+                            <CTableDataCell>{invitation.invitedUserEmail}</CTableDataCell>
+                            <CTableDataCell>
+                              <CBadge
+                                color={
+                                  invitation.status === 'PENDING'
+                                    ? 'warning'
+                                    : invitation.status === 'ACCEPTED'
+                                    ? 'success'
+                                    : 'danger'
+                                }
+                              >
+                                {invitation.status}
+                              </CBadge>
+                            </CTableDataCell>
+                            <CTableDataCell>
+                              {new Date(invitation.createdAt).toLocaleDateString('vi-VN')}
+                            </CTableDataCell>
+                            <CTableDataCell>
+                              {new Date(invitation.expiresAt).toLocaleDateString('vi-VN')}
+                              {new Date(invitation.expiresAt) < new Date() &&
+                                invitation.status === 'PENDING' && (
+                                  <CBadge color="danger" className="ms-2">
+                                    Hết hạn
+                                  </CBadge>
+                                )}
+                            </CTableDataCell>
+                          </CTableRow>
+                        ))}
+                      </CTableBody>
+                    </CTable>
+                  )}
+                </div>
+              </CTabPane>
+            </CTabContent>
+          </CTabs>
         </CCardBody>
       </CCard>
 
@@ -194,15 +276,6 @@ const PCManagement: React.FC = () => {
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteEmail(e.target.value)}
               placeholder="email@example.com"
               required
-            />
-          </div>
-          <div className="mb-3">
-            <CFormLabel>Họ tên (tùy chọn)</CFormLabel>
-            <CFormInput
-              type="text"
-              value={inviteName}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInviteName(e.target.value)}
-              placeholder="Họ và tên"
             />
           </div>
         </CModalBody>

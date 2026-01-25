@@ -34,9 +34,10 @@ public interface EmailService {
   void sendEmail(String to, String subject, String templateName, Map<String, Object> model);
 
   /**
-   * Gửi bulk emails sử dụng template
+   * Gửi bulk emails sử dụng template (synchronous)
    *
    * <p>Mỗi recipient sẽ nhận email với cùng template và model.
+   * Process emails in batches với rate limiting và delays.
    *
    * @param recipients Danh sách email người nhận
    * @param subject Tiêu đề email
@@ -46,6 +47,21 @@ public interface EmailService {
    * @throws RuntimeException Nếu có lỗi khi gửi email
    */
   int sendBulkEmail(
+      List<String> recipients, String subject, String templateName, Map<String, Object> model);
+
+  /**
+   * Gửi bulk emails sử dụng template (asynchronous)
+   *
+   * <p>Mỗi recipient sẽ nhận email với cùng template và model.
+   * Process emails asynchronously với thread pool.
+   *
+   * @param recipients Danh sách email người nhận
+   * @param subject Tiêu đề email
+   * @param templateName Tên template (không bao gồm extension)
+   * @param model Map chứa các biến để render template
+   * @return CompletableFuture với số lượng email đã gửi thành công
+   */
+  java.util.concurrent.CompletableFuture<Integer> sendBulkEmailAsync(
       List<String> recipients, String subject, String templateName, Map<String, Object> model);
 
   /**

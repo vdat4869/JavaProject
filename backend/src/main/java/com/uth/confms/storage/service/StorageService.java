@@ -30,28 +30,30 @@ public interface StorageService {
   /**
    * Lưu PDF file cho submission
    *
-   * <p>File sẽ được lưu với path pattern: submissions/{submissionId}/{timestamp}_{originalFilename}
+   * <p>File sẽ được lưu với path pattern: conferences/{conferenceId}/submissions/{submissionId}/{timestamp}_{originalFilename}
    *
+   * @param conferenceId ID của conference
    * @param submissionId ID của submission
    * @param file MultipartFile chứa PDF data
    * @return Đường dẫn file đã lưu (relative path từ base directory)
    * @throws IllegalArgumentException Nếu file không phải PDF hoặc vượt quá size limit
    * @throws RuntimeException Nếu có lỗi khi lưu file
    */
-  String storeSubmissionPdf(Long submissionId, MultipartFile file);
+  String storeSubmissionPdf(Long conferenceId, Long submissionId, MultipartFile file);
 
   /**
    * Lưu PDF file cho camera-ready paper
    *
-   * <p>File sẽ được lưu với path pattern: camera-ready/{paperId}/{timestamp}_{originalFilename}
+   * <p>File sẽ được lưu với path pattern: conferences/{conferenceId}/camera-ready/{paperId}/{timestamp}_{originalFilename}
    *
+   * @param conferenceId ID của conference
    * @param paperId ID của camera-ready paper (submission ID)
    * @param file MultipartFile chứa PDF data
    * @return Đường dẫn file đã lưu (relative path từ base directory)
    * @throws IllegalArgumentException Nếu file không phải PDF hoặc vượt quá size limit
    * @throws RuntimeException Nếu có lỗi khi lưu file
    */
-  String storeCameraReadyPdf(Long paperId, MultipartFile file);
+  String storeCameraReadyPdf(Long conferenceId, Long paperId, MultipartFile file);
 
   /**
    * Xóa file từ storage
@@ -86,4 +88,13 @@ public interface StorageService {
    * @throws RuntimeException Nếu file không tồn tại
    */
   long getFileSize(String filePath);
+
+  /**
+   * Verify checksum của file để detect corruption
+   *
+   * @param filePath Đường dẫn file (relative path từ base directory)
+   * @param expectedChecksum SHA-256 checksum mong đợi
+   * @return true nếu checksum khớp, false nếu không khớp hoặc có lỗi
+   */
+  boolean verifyChecksum(String filePath, String expectedChecksum);
 }

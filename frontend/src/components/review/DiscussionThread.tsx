@@ -10,61 +10,58 @@ import {
   CAlert,
 } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
-import { reviewService, DiscussionMessage } from '../../services/review.service'
+import { reviewService, ReviewComment } from '../../services/review.service'
 
 /**
  * DiscussionThread Props
  */
 interface DiscussionThreadProps {
-  reviewId: number
+  submissionId: number
 }
 
 /**
  * DiscussionThread - Component hiển thị internal discussion thread
  *
  * Features:
- * - Hiển thị messages
- * - Thêm message mới
- * - Internal discussion (chỉ PC members thấy)
+ * - Hiển thị internal comments
+ * - Thêm comment mới
+ * - Internal discussion (chỉ PC members/chair/admin thấy)
  */
-const DiscussionThread: React.FC<DiscussionThreadProps> = ({ reviewId }) => {
+const DiscussionThread: React.FC<DiscussionThreadProps> = ({ submissionId }) => {
   const { t } = useTranslation()
-  const [messages, setMessages] = useState<DiscussionMessage[]>([])
-  const [newMessage, setNewMessage] = useState('')
+  const [comments, setComments] = useState<ReviewComment[]>([])
+  const [newComment, setNewComment] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
 
-  const loadMessages = useCallback(async () => {
+  const loadComments = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await reviewService.getDiscussion(reviewId)
-      setMessages(data)
+      const data = await reviewService.getInternalComments(submissionId)
+      setComments(data)
     } catch (error) {
-      console.error('Error loading discussion:', error)
+      console.error('Error loading comments:', error)
     } finally {
       setLoading(false)
     }
-  }, [reviewId])
+  }, [submissionId])
 
   useEffect(() => {
-    void loadMessages()
-  }, [loadMessages])
+    void loadComments()
+  }, [loadComments])
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendComment = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim()) return
+    if (!newComment.trim()) return
 
     try {
       setSending(true)
-      await reviewService.addDiscussionMessage({
-        reviewId,
-        content: newMessage.trim(),
-      })
-      setNewMessage('')
-      await loadMessages()
-    } catch (error) {
-      console.error('Error sending message:', error)
-      alert('Không thể gửi message')
+      await reviewService.addInternalComment(submissionId, newComment.trim())
+      setNewComment('')
+      await loadComments()
+    } catch (error: any) {
+      console.error('Error sending comment:', error)
+      alert(error.response?.data?.message || 'Không thể gửi comment')
     } finally {
       setSending(false)
     }
@@ -82,35 +79,42 @@ const DiscussionThread: React.FC<DiscussionThreadProps> = ({ reviewId }) => {
     <CCard>
       <CCardHeader>
         <h5>Thảo luận nội bộ</h5>
+        <small className="text-muted">
+          Chỉ PC members, chair và admin có thể xem và thêm comments
+        </small>
       </CCardHeader>
       <CCardBody>
-        {messages.length === 0 ? (
+        {comments.length === 0 ? (
           <CAlert color="info">Chưa có thảo luận nào</CAlert>
         ) : (
           <div className="space-y-3 mb-4">
-            {messages.map((message) => (
-              <div key={message.id} className="border-bottom pb-3 mb-3">
+            {comments.map((comment) => (
+              <div key={comment.id} className="border-bottom pb-3 mb-3">
                 <div className="d-flex justify-content-between align-items-start mb-2">
-                  <strong>{message.authorName}</strong>
+                  <strong>
+                    {comment.reviewerName || `Reviewer #${comment.reviewerId}`}
+                  </strong>
                   <small className="text-muted">
-                    {new Date(message.createdAt).toLocaleString('vi-VN')}
+                    {new Date(comment.createdAt).toLocaleString('vi-VN')}
                   </small>
                 </div>
-                <p className="mb-0">{message.content}</p>
+                <p className="mb-0">{comment.content}</p>
               </div>
             ))}
           </div>
         )}
 
-        <CForm onSubmit={handleSendMessage}>
+        <CForm onSubmit={handleSendComment}>
           <CFormTextarea
-            value={newMessage}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewMessage(e.target.value)}
-            placeholder="Nhập message..."
+            value={newComment}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              setNewComment(e.target.value)
+            }
+            placeholder="Nhập comment nội bộ..."
             rows={3}
             className="mb-2"
           />
-          <CButton type="submit" color="primary" disabled={sending || !newMessage.trim()}>
+          <CButton type="submit" color="primary" disabled={sending || !newComment.trim()}>
             {sending ? <CSpinner size="sm" /> : 'Gửi'}
           </CButton>
         </CForm>

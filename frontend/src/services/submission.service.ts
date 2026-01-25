@@ -1,17 +1,28 @@
 import apiClient from './api'
 
 /**
- * Submission interface
+ * Submission Author interface
+ */
+export interface SubmissionAuthor {
+  id?: number
+  userId?: number
+  firstName: string
+  lastName: string
+  email?: string
+  affiliation?: string
+  isCorresponding?: boolean
+  orderIndex?: number
+}
+
+/**
+ * Submission interface - matches backend SubmissionResponseDTO
  */
 export interface Submission {
   id: number
-  title: string
-  abstract: string
-  keywords: string[]
   conferenceId: number
-  conferenceName?: string
-  trackId?: number
-  trackName?: string
+  authorId: number
+  title: string
+  abstractText: string // Note: backend uses "abstractText" not "abstract"
   status:
     | 'DRAFT'
     | 'SUBMITTED'
@@ -21,35 +32,49 @@ export interface Submission {
     | 'REJECTED'
     | 'WITHDRAWN'
     | 'CAMERA_READY'
+  pdfFilePath?: string
+  trackId?: number
+  keywords?: string // Note: backend stores as string, not array
+  withdrawn?: boolean
+  authors?: SubmissionAuthor[]
+  files?: SubmissionFile[]
+  createdAt?: string
+  updatedAt?: string
+  // Frontend convenience fields (computed from above)
+  conferenceName?: string
+  trackName?: string
   submittedAt?: string
   deadline?: string
-  canEdit: boolean
-  canWithdraw: boolean
+  canEdit?: boolean
+  canWithdraw?: boolean
   fileUrl?: string
   fileName?: string
+  // Legacy field for backward compatibility
+  abstract?: string
+  keywordsArray?: string[]
 }
 
 /**
- * Create Submission request
+ * Create Submission request - matches backend SubmissionCreateDTO
  */
 export interface CreateSubmissionRequest {
-  title: string
-  abstract: string
-  keywords: string[]
   conferenceId: number
+  title: string
+  abstractText: string // Note: backend uses "abstractText"
   trackId?: number
-  file: File
+  keywords?: string // Note: backend stores as string, not array
+  authors?: SubmissionAuthor[]
 }
 
 /**
- * Update Submission request
+ * Update Submission request - matches backend SubmissionUpdateDTO
  */
 export interface UpdateSubmissionRequest {
   title?: string
-  abstract?: string
-  keywords?: string[]
+  abstractText?: string // Note: backend uses "abstractText"
   trackId?: number
-  file?: File
+  keywords?: string // Note: backend stores as string, not array
+  authors?: SubmissionAuthor[]
 }
 
 /**
@@ -81,7 +106,7 @@ export interface Decision {
 }
 
 /**
- * Submission File interface
+ * Submission File interface - matches backend SubmissionFileDTO
  */
 export interface SubmissionFile {
   id: number
@@ -101,11 +126,17 @@ export interface SubmissionFile {
 export const submissionService = {
   /**
    * Lấy danh sách submissions của user hiện tại
-   * GET /api/submissions/my-submissions
+   * GET /api/submissions/my
    */
   getMySubmissions: async (): Promise<Submission[]> => {
-    const response = await apiClient.get<Submission[]>('/submissions/my-submissions')
-    return response.data
+    const response = await apiClient.get<{ success: boolean; data: Submission[] }>('/submissions/my')
+    const submissions = response.data.data || response.data
+    // Transform for frontend compatibility
+    return (Array.isArray(submissions) ? submissions : []).map((s) => ({
+      ...s,
+      abstract: s.abstractText, // Legacy field
+      keywordsArray: s.keywords ? s.keywords.split(',').map((k: string) => k.trim()) : [], // Legacy field
+    }))
   },
 
   /**
@@ -113,51 +144,96 @@ export const submissionService = {
    * GET /api/submissions/{id}
    */
   getSubmission: async (id: number): Promise<Submission> => {
-    const response = await apiClient.get<Submission>(`/submissions/${id}`)
-    return response.data
+    const response = await apiClient.get<{ success: boolean; data: Submission }>(`/submissions/${id}`)
+    const submission = response.data.data || response.data
+    // Transform for frontend compatibility
+    return {
+      ...submission,
+      abstract: submission.abstractText, // Legacy field
+      keywordsArray: submission.keywords ? submission.keywords.split(',').map((k: string) => k.trim()) : [], // Legacy field
+    }
+  },
+
+  /**
+   * Lấy danh sách submissions của conference (CHAIR/ADMIN only)
+   * GET /api/submissions/conference/{conferenceId}
+   */
+  getSubmissionsByConference: async (conferenceId: number): Promise<Submission[]> => {
+    const response = await apiClient.get<{ success: boolean; data: Submission[] }>(
+      `/submissions/conference/${conferenceId}`
+    )
+    const submissions = response.data.data || response.data
+    // Transform for frontend compatibility
+    return (Array.isArray(submissions) ? submissions : []).map((s) => ({
+      ...s,
+      abstract: s.abstractText, // Legacy field
+      keywordsArray: s.keywords ? s.keywords.split(',').map((k: string) => k.trim()) : [], // Legacy field
+    }))
   },
 
   /**
    * Tạo submission mới
    * POST /api/submissions
+   * Note: File upload is separate - use uploadPdf after creating submission
    */
   createSubmission: async (data: CreateSubmissionRequest): Promise<Submission> => {
-    const formData = new FormData()
-    formData.append('title', data.title)
-    formData.append('abstract', data.abstract)
-    formData.append('keywords', JSON.stringify(data.keywords))
-    formData.append('conferenceId', data.conferenceId.toString())
-    if (data.trackId) {
-      formData.append('trackId', data.trackId.toString())
+    // Convert keywords array to string if provided
+    const requestData: any = {
+      conferenceId: data.conferenceId,
+      title: data.title,
+      abstractText: data.abstractText,
     }
-    formData.append('file', data.file)
+    if (data.trackId) {
+      requestData.trackId = data.trackId
+    }
+    if (data.keywords) {
+      requestData.keywords = typeof data.keywords === 'string' ? data.keywords : data.keywords.join(', ')
+    }
+    if (data.authors && data.authors.length > 0) {
+      requestData.authors = data.authors
+    }
 
-    const response = await apiClient.post<Submission>('/submissions', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
-    return response.data
+    const response = await apiClient.post<{ success: boolean; data: Submission }>('/submissions', requestData)
+    const submission = response.data.data || response.data
+    // Transform for frontend compatibility
+    return {
+      ...submission,
+      abstract: submission.abstractText, // Legacy field
+      keywordsArray: submission.keywords ? submission.keywords.split(',').map((k: string) => k.trim()) : [], // Legacy field
+    }
   },
 
   /**
    * Cập nhật submission
    * PUT /api/submissions/{id}
+   * Note: File upload is separate - use uploadPdf for file updates
    */
   updateSubmission: async (id: number, data: UpdateSubmissionRequest): Promise<Submission> => {
-    const formData = new FormData()
-    if (data.title) formData.append('title', data.title)
-    if (data.abstract) formData.append('abstract', data.abstract)
-    if (data.keywords) formData.append('keywords', JSON.stringify(data.keywords))
-    if (data.trackId) formData.append('trackId', data.trackId.toString())
-    if (data.file) formData.append('file', data.file)
+    const requestData: any = {}
+    if (data.title) {
+      requestData.title = data.title
+    }
+    if (data.abstractText) {
+      requestData.abstractText = data.abstractText
+    }
+    if (data.trackId !== undefined) {
+      requestData.trackId = data.trackId
+    }
+    if (data.keywords !== undefined) {
+      requestData.keywords = typeof data.keywords === 'string' ? data.keywords : data.keywords.join(', ')
+    }
+    if (data.authors) {
+      requestData.authors = data.authors
+    }
 
-    const response = await apiClient.put<Submission>(`/submissions/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
-    return response.data
+    const response = await apiClient.put<{ success: boolean; data: Submission }>(`/submissions/${id}`, requestData)
+    const submission = response.data.data || response.data
+    // Transform for frontend compatibility
+    return {
+      ...submission,
+      abstract: submission.abstractText, // Legacy field
+      keywordsArray: submission.keywords ? submission.keywords.split(',').map((k: string) => k.trim()) : [], // Legacy field
+    }
   },
 
   /**
@@ -169,12 +245,38 @@ export const submissionService = {
   },
 
   /**
+   * Upload PDF file cho submission
+   * POST /api/submissions/{id}/upload-pdf
+   */
+  uploadPdf: async (id: number, file: File): Promise<SubmissionFile> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await apiClient.post<{ success: boolean; data: SubmissionFile }>(
+      `/submissions/${id}/upload-pdf`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+    return response.data.data || response.data
+  },
+
+  /**
    * Withdraw submission (rút bài đã submit)
    * POST /api/submissions/{id}/withdraw
    */
   withdrawSubmission: async (id: number): Promise<Submission> => {
-    const response = await apiClient.post<Submission>(`/submissions/${id}/withdraw`)
-    return response.data
+    const response = await apiClient.post<{ success: boolean; data: Submission }>(`/submissions/${id}/withdraw`)
+    const submission = response.data.data || response.data
+    // Transform for frontend compatibility
+    return {
+      ...submission,
+      abstract: submission.abstractText, // Legacy field
+      keywordsArray: submission.keywords ? submission.keywords.split(',').map((k: string) => k.trim()) : [], // Legacy field
+    }
   },
 
   /**
@@ -182,8 +284,14 @@ export const submissionService = {
    * POST /api/submissions/{id}/submit
    */
   submitSubmission: async (id: number): Promise<Submission> => {
-    const response = await apiClient.post<Submission>(`/submissions/${id}/submit`)
-    return response.data
+    const response = await apiClient.post<{ success: boolean; data: Submission }>(`/submissions/${id}/submit`)
+    const submission = response.data.data || response.data
+    // Transform for frontend compatibility
+    return {
+      ...submission,
+      abstract: submission.abstractText, // Legacy field
+      keywordsArray: submission.keywords ? submission.keywords.split(',').map((k: string) => k.trim()) : [], // Legacy field
+    }
   },
 
   /**
@@ -227,8 +335,8 @@ export const submissionService = {
    * GET /api/submissions/{id}/files
    */
   getFileVersions: async (id: number): Promise<SubmissionFile[]> => {
-    const response = await apiClient.get<SubmissionFile[]>(`/submissions/${id}/files`)
-    return response.data
+    const response = await apiClient.get<{ success: boolean; data: SubmissionFile[] }>(`/submissions/${id}/files`)
+    return response.data.data || response.data
   },
 
   /**

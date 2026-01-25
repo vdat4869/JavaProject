@@ -79,21 +79,37 @@ const DiscussionPage: React.FC = () => {
         </CCardHeader>
         <CCardBody>
           <div className="mb-2">
-            <strong>Đánh giá tổng thể: </strong>
-            {review.overallRating}/5
+            <strong>Điểm đánh giá: </strong>
+            {review.score}
+            {review.numericScore && ` (${review.numericScore}/7)`}
           </div>
-          <div className="mb-2">
-            <strong>Độ tin cậy: </strong>
-            {review.confidence}/5
-          </div>
-          <div className="mb-2">
-            <strong>Khuyến nghị: </strong>
-            {review.recommendation}
-          </div>
+          {review.overallRating && (
+            <div className="mb-2">
+              <strong>Đánh giá tổng thể: </strong>
+              {review.overallRating}/5
+            </div>
+          )}
+          {review.confidence && (
+            <div className="mb-2">
+              <strong>Độ tin cậy: </strong>
+              {review.confidence}/5
+            </div>
+          )}
+          {review.summary && (
+            <div className="mb-2">
+              <strong>Tóm tắt: </strong>
+              <p className="mb-0">{review.summary}</p>
+            </div>
+          )}
           {review.comments && (
             <div className="mb-2">
               <strong>Nhận xét: </strong>
               <p className="mb-0">{review.comments}</p>
+            </div>
+          )}
+          {review.isConfidential && (
+            <div className="mb-2">
+              <span className="badge bg-warning">Đánh giá bảo mật</span>
             </div>
           )}
         </CCardBody>
@@ -104,17 +120,22 @@ const DiscussionPage: React.FC = () => {
         <CCard className="mb-3">
           <CCardHeader>
             <h5>Rebuttal từ Author</h5>
+            {rebuttal.status === 'DRAFT' && (
+              <small className="text-muted">(Bản nháp)</small>
+            )}
           </CCardHeader>
           <CCardBody>
             <p>{rebuttal.content}</p>
-            <small className="text-muted">
-              Gửi vào: {new Date(rebuttal.submittedAt).toLocaleString('vi-VN')}
-            </small>
+            {rebuttal.submittedAt && (
+              <small className="text-muted">
+                Gửi vào: {new Date(rebuttal.submittedAt).toLocaleString('vi-VN')}
+              </small>
+            )}
           </CCardBody>
         </CCard>
       )}
 
-      <DiscussionThread reviewId={review.id} />
+      <DiscussionThread submissionId={review.submissionId} />
     </>
   )
 }

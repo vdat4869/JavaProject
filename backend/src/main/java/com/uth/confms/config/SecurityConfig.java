@@ -1,6 +1,5 @@
 package com.uth.confms.config;
 
-import com.uth.confms.auth.security.EmailVerificationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,7 +27,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @EnableMethodSecurity
 public class SecurityConfig {
   private final JwtAuthenticationFilter jwtAuthFilter;
-  private final EmailVerificationFilter emailVerificationFilter;
   private final UserDetailsService userDetailsService;
   private final CorsConfigurationSource corsConfigurationSource;
   
@@ -40,11 +38,9 @@ public class SecurityConfig {
 
   public SecurityConfig(
       JwtAuthenticationFilter jwtAuthFilter,
-      EmailVerificationFilter emailVerificationFilter,
       UserDetailsService userDetailsService,
       CorsConfigurationSource corsConfigurationSource) {
     this.jwtAuthFilter = jwtAuthFilter;
-    this.emailVerificationFilter = emailVerificationFilter;
     this.userDetailsService = userDetailsService;
     this.corsConfigurationSource = corsConfigurationSource;
   }
@@ -81,8 +77,7 @@ public class SecurityConfig {
           .successHandler(oauth2AuthenticationSuccessHandler));
     }
     
-    http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-        .addFilterAfter(emailVerificationFilter, JwtAuthenticationFilter.class);
+    http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();
   }

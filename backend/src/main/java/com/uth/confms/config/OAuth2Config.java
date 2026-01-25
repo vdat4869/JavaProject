@@ -25,9 +25,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Cấu hình OAuth2/SSO Support với Google
  *
- * <p>Hỗ trợ đăng nhập qua Google OAuth2
+ * <p>
+ * Hỗ trợ đăng nhập qua Google OAuth2
  *
- * <p>Để bật OAuth2/SSO, cấu hình trong application.yaml:
+ * <p>
+ * Để bật OAuth2/SSO, cấu hình trong application.yaml:
+ * 
  * <pre>
  * app:
  *   oauth2:
@@ -38,7 +41,9 @@ import org.slf4j.LoggerFactory;
  *         client-secret: ${GOOGLE_CLIENT_SECRET:}
  * </pre>
  *
- * <p>Và cấu hình Spring Security OAuth2:
+ * <p>
+ * Và cấu hình Spring Security OAuth2:
+ * 
  * <pre>
  * spring:
  *   security:
@@ -56,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * @version 1.0
  */
 @Configuration
-@ConditionalOnProperty(name = "app.oauth2.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(name = "oauth2.enabled", havingValue = "true", matchIfMissing = false)
 public class OAuth2Config {
 
   private static final Logger log = LoggerFactory.getLogger(OAuth2Config.class);
@@ -69,7 +74,7 @@ public class OAuth2Config {
   private final AuthService authService;
 
   public OAuth2Config(
-      AuthService authService,
+      @org.springframework.context.annotation.Lazy AuthService authService,
       JwtService jwtService,
       UserDetailsService userDetailsService) {
     this.authService = authService;
@@ -80,7 +85,8 @@ public class OAuth2Config {
   /**
    * Custom OAuth2 User Service để tích hợp với hệ thống JWT hiện có
    *
-   * <p>Service này sẽ:
+   * <p>
+   * Service này sẽ:
    * 1. Load user info từ OAuth2 provider (Google)
    * 2. Tạo hoặc cập nhật user trong database
    * 3. Trả về OidcUser để Spring Security xử lý
@@ -90,12 +96,12 @@ public class OAuth2Config {
     OidcUserService delegate = new OidcUserService();
     return (userRequest) -> {
       OidcUser oidcUser = delegate.loadUser(userRequest);
-      
+
       // Tạo hoặc cập nhật user trong database
       String email = oidcUser.getEmail();
       String fullName = oidcUser.getFullName();
       String provider = userRequest.getClientRegistration().getRegistrationId();
-      
+
       if (email != null && !email.trim().isEmpty()) {
         try {
           authService.createOrUpdateOAuth2User(email, fullName, provider);
@@ -105,13 +111,14 @@ public class OAuth2Config {
           log.warn("Failed to create/update OAuth2 user: {}", e.getMessage(), e);
         }
       }
-      
+
       return oidcUser;
     };
   }
 
   /**
-   * Authentication Success Handler để tạo JWT token sau khi OAuth2 login thành công
+   * Authentication Success Handler để tạo JWT token sau khi OAuth2 login thành
+   * công
    */
   @Bean
   public AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler() {
@@ -122,23 +129,23 @@ public class OAuth2Config {
           HttpServletResponse response,
           Authentication authentication)
           throws IOException, ServletException {
-        
+
         if (authentication.getPrincipal() instanceof OidcUser oidcUser) {
           String email = oidcUser.getEmail();
-          
+
           try {
             // Load user details và tạo JWT token
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
             String accessToken = jwtService.generateAccessToken(userDetails);
             String refreshToken = jwtService.generateRefreshToken(userDetails);
-            
+
             // Redirect về frontend với token
             String redirectUrl = String.format(
                 "%s/auth/callback?token=%s&refreshToken=%s",
                 frontendUrl,
                 accessToken,
                 refreshToken);
-            
+
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
           } catch (Exception e) {
             // Nếu user chưa tồn tại, redirect về trang đăng ký
@@ -148,7 +155,7 @@ public class OAuth2Config {
                 email,
                 oidcUser.getFullName(),
                 oidcUser.getIssuer());
-            
+
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
           }
         } else {

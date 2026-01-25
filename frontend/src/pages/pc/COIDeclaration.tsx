@@ -5,7 +5,7 @@ import {
   CCardBody,
   CCardHeader,
   CForm,
-  CFormCheck,
+  CFormSelect,
   CFormTextarea,
   CFormLabel,
   CButton,
@@ -13,7 +13,9 @@ import {
   CSpinner,
 } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
-import { pcService, COIDeclaration } from '../../services/pc.service'
+import { pcService, COIDeclaration, COIType } from '../../services/pc.service'
+import CIcon from '@coreui/icons-react'
+import { cilTrash } from '@coreui/icons'
 import { reviewService, Assignment } from '../../services/review.service'
 
 /**
@@ -31,7 +33,7 @@ const COIDeclaration: React.FC = () => {
   const submissionId = searchParams.get('submissionId')
     ? parseInt(searchParams.get('submissionId')!)
     : null
-  const [hasCOI, setHasCOI] = useState(false)
+  const [coiType, setCoiType] = useState<COIType | ''>('')
   const [reason, setReason] = useState('')
   const [existingCOI, setExistingCOI] = useState<COIDeclaration | null>(null)
   const [assignment, setAssignment] = useState<Assignment | null>(null)
@@ -48,18 +50,23 @@ const COIDeclaration: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [coiData, assignments] = await Promise.all([
-        pcService.getCOI(submissionId!),
+      const [coisData, assignments] = await Promise.all([
+        pcService.getCOIsBySubmission(submissionId!),
         reviewService.getAssignments(),
       ])
 
-      setExistingCOI(coiData)
+      // Get current user's active COI (if exists)
+      // Note: getCOIsBySubmission returns all COIs for the submission
+      // We need to find the one for current user - for now, get first active one
+      // In production, filter by current user ID
+      const myCOI = coisData.find((coi) => coi.active) || null
+      setExistingCOI(myCOI)
       const assignmentData = assignments.find((a) => a.submissionId === submissionId)
       setAssignment(assignmentData || null)
 
-      if (coiData) {
-        setHasCOI(coiData.hasCOI)
-        setReason(coiData.reason || '')
+      if (myCOI) {
+        setCoiType(myCOI.type)
+        setReason(myCOI.reason || '')
       }
     } catch (error) {
       console.error('Error loading COI data:', error)
@@ -72,7 +79,12 @@ const COIDeclaration: React.FC = () => {
     e.preventDefault()
     setError('')
 
-    if (hasCOI && !reason.trim()) {
+    if (!coiType) {
+      setError('Vui lòng chọn loại COI')
+      return
+    }
+
+    if (coiType !== 'OTHER' && !reason.trim()) {
       setError('Vui lòng nhập lý do COI')
       return
     }
@@ -81,8 +93,8 @@ const COIDeclaration: React.FC = () => {
       setSaving(true)
       await pcService.declareCOI({
         submissionId: submissionId!,
-        hasCOI,
-        reason: hasCOI ? reason.trim() : undefined,
+        type: coiType as COIType,
+        reason: reason.trim() || undefined,
       })
       navigate('/pc/assignments')
     } catch (error: any) {
@@ -90,6 +102,35 @@ const COIDeclaration: React.FC = () => {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleDelete = async () => {
+    if (!existingCOI) return
+
+    if (!window.confirm('Bạn có chắc chắn muốn xóa khai báo COI này?')) {
+      return
+    }
+
+    try {
+      setSaving(true)
+      await pcService.deleteCOI(existingCOI.id)
+      navigate('/pc/assignments')
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Không thể xóa COI')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const getCOITypeLabel = (type: COIType) => {
+    const labels: Record<COIType, string> = {
+      CO_AUTHOR: 'Đồng tác giả',
+      COLLABORATOR: 'Cộng tác viên',
+      ADVISOR: 'Cố vấn',
+      INSTITUTIONAL: 'Cùng tổ chức',
+      OTHER: 'Khác',
+    }
+    return labels[type] || type
   }
 
   if (loading) {
@@ -125,7 +166,16 @@ const COIDeclaration: React.FC = () => {
 
         {existingCOI && (
           <CAlert color="info" className="mb-3">
-            Bạn đã khai báo COI vào: {new Date(existingCOI.declaredAt).toLocaleString('vi-VN')}
+            <div className="d-flex justify-content-between align-items-center">
+              <div>
+                Bạn đã khai báo COI ({getCOITypeLabel(existingCOI.type)}) vào:{' '}
+                {new Date(existingCOI.declaredAt).toLocaleString('vi-VN')}
+              </div>
+              <CButton color="danger" size="sm" onClick={handleDelete} disabled={saving}>
+                <CIcon icon={cilTrash} className="me-1" />
+                Xóa
+              </CButton>
+            </div>
           </CAlert>
         )}
 
@@ -137,24 +187,47 @@ const COIDeclaration: React.FC = () => {
 
         <CForm onSubmit={handleSubmit}>
           <div className="mb-3">
-            <CFormCheck
-              type="checkbox"
-              id="hasCOI"
-              label="Tôi có Conflict of Interest với bài báo này"
-              checked={hasCOI}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHasCOI(e.target.checked)}
-            />
+            <CFormLabel>
+              Loại Conflict of Interest <span className="text-danger">*</span>
+            </CFormLabel>
+            <CFormSelect
+              value={coiType}
+              onChange={(e) => setCoiType(e.target.value as COIType | '')}
+              required
+            >
+              <option value="">Chọn loại COI</option>
+              <option value="CO_AUTHOR">Đồng tác giả</option>
+              <option value="COLLABORATOR">Cộng tác viên</option>
+              <option value="ADVISOR">Cố vấn</option>
+              <option value="INSTITUTIONAL">Cùng tổ chức</option>
+              <option value="OTHER">Khác</option>
+            </CFormSelect>
+            <small className="text-muted">
+              Vui lòng chọn loại Conflict of Interest giữa bạn và bài báo này
+            </small>
           </div>
 
-          {hasCOI && (
+          {coiType && (
             <div className="mb-3">
-              <CFormLabel>Lý do COI *</CFormLabel>
+              <CFormLabel>
+                Lý do / Mô tả {coiType !== 'OTHER' && <span className="text-danger">*</span>}
+              </CFormLabel>
               <CFormTextarea
                 value={reason}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReason(e.target.value)}
-                required={hasCOI}
+                required={coiType !== 'OTHER'}
                 rows={5}
-                placeholder="Mô tả lý do Conflict of Interest (ví dụ: đồng tác giả, cố vấn, quan hệ tài chính, ...)"
+                placeholder={
+                  coiType === 'CO_AUTHOR'
+                    ? 'Mô tả mối quan hệ đồng tác giả...'
+                    : coiType === 'COLLABORATOR'
+                    ? 'Mô tả mối quan hệ cộng tác...'
+                    : coiType === 'ADVISOR'
+                    ? 'Mô tả mối quan hệ cố vấn...'
+                    : coiType === 'INSTITUTIONAL'
+                    ? 'Mô tả mối quan hệ tổ chức...'
+                    : 'Mô tả lý do Conflict of Interest...'
+                }
               />
             </div>
           )}

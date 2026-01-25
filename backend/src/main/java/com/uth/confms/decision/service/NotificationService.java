@@ -8,7 +8,9 @@ import com.uth.confms.conference.entity.Conference;
 import com.uth.confms.conference.repository.ConferenceRepository;
 import com.uth.confms.decision.dto.BulkNotificationRequestDTO;
 import com.uth.confms.decision.entity.Decision;
+import com.uth.confms.decision.entity.DecisionHistory;
 import com.uth.confms.decision.entity.NotificationLog;
+import com.uth.confms.decision.repository.DecisionHistoryRepository;
 import com.uth.confms.decision.repository.DecisionRepository;
 import com.uth.confms.decision.repository.NotificationLogRepository;
 import com.uth.confms.email.service.EmailService;
@@ -33,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationService {
   private final NotificationLogRepository notificationLogRepository;
   private final DecisionRepository decisionRepository;
+  private final DecisionHistoryRepository decisionHistoryRepository;
   private final SubmissionRepository submissionRepository;
   private final SubmissionAuthorRepository submissionAuthorRepository;
   private final ReviewRepository reviewRepository;
@@ -46,6 +49,7 @@ public class NotificationService {
   public NotificationService(
       NotificationLogRepository notificationLogRepository,
       DecisionRepository decisionRepository,
+      DecisionHistoryRepository decisionHistoryRepository,
       SubmissionRepository submissionRepository,
       SubmissionAuthorRepository submissionAuthorRepository,
       ReviewRepository reviewRepository,
@@ -54,6 +58,7 @@ public class NotificationService {
       EmailService emailService) {
     this.notificationLogRepository = notificationLogRepository;
     this.decisionRepository = decisionRepository;
+    this.decisionHistoryRepository = decisionHistoryRepository;
     this.submissionRepository = submissionRepository;
     this.submissionAuthorRepository = submissionAuthorRepository;
     this.reviewRepository = reviewRepository;
@@ -127,9 +132,37 @@ public class NotificationService {
       }
     }
 
-    // Mark decision as notified
+    // Mark decision as notified and lock it
+    boolean wasNotified = decision.getNotified() != null && decision.getNotified();
+    boolean wasLocked = decision.getLocked() != null && decision.getLocked();
+    
     decision.setNotified(true);
+    decision.setLocked(true);
     decisionRepository.save(decision);
+
+    // Log notification status change
+    if (!wasNotified) {
+      logDecisionChange(
+          decision.getId(),
+          decision.getDecidedBy(),
+          DecisionHistory.ChangeType.NOTIFICATION_STATUS_CHANGED,
+          "false",
+          "true",
+          "notified",
+          "Decision notification sent to authors");
+    }
+
+    // Log locking
+    if (!wasLocked) {
+      logDecisionChange(
+          decision.getId(),
+          decision.getDecidedBy(),
+          DecisionHistory.ChangeType.LOCKED,
+          "false",
+          "true",
+          "locked",
+          "Decision locked after notification");
+    }
   }
 
   @Transactional
@@ -327,5 +360,37 @@ public class NotificationService {
       default:
         return NotificationLog.NotificationType.DECISION_ACCEPT;
     }
+  }
+
+  /**
+   * Log decision change vào history table
+   *
+   * @param decisionId Decision ID
+   * @param changedBy User ID who made the change
+   * @param changeType Type of change
+   * @param oldValue Old value (if applicable)
+   * @param newValue New value (if applicable)
+   * @param fieldName Field name that changed
+   * @param description Description of the change
+   */
+  private void logDecisionChange(
+      Long decisionId,
+      Long changedBy,
+      DecisionHistory.ChangeType changeType,
+      String oldValue,
+      String newValue,
+      String fieldName,
+      String description) {
+    DecisionHistory history =
+        DecisionHistory.builder()
+            .decisionId(decisionId)
+            .changedBy(changedBy)
+            .changeType(changeType)
+            .oldValue(oldValue)
+            .newValue(newValue)
+            .fieldName(fieldName)
+            .description(description)
+            .build();
+    decisionHistoryRepository.save(history);
   }
 }

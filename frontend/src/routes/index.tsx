@@ -23,6 +23,10 @@ const AuthLayout = lazy(() => {
 })
 
 const DashboardPage = lazy(() => import('../pages/app/DashboardPage'))
+const ProfilePage = lazy(() => import('../pages/app/ProfilePage'))
+const SubmissionReviewsView = lazy(() => import('../pages/app/SubmissionReviewsView'))
+const UserManagementPage = lazy(() => import('../pages/admin/UserManagementPage'))
+const AuditLogPage = lazy(() => import('../pages/admin/AuditLogPage'))
 
 // Author pages
 const AuthorDashboard = lazy(() => import('../pages/author/AuthorDashboard'))
@@ -30,14 +34,20 @@ const SubmissionList = lazy(() => import('../pages/author/SubmissionList'))
 const SubmissionFormPage = lazy(() => import('../pages/author/SubmissionFormPage'))
 const SubmissionDetail = lazy(() => import('../pages/author/SubmissionDetail'))
 const SubmissionEdit = lazy(() => import('../pages/author/SubmissionEdit'))
+const RebuttalFormPage = lazy(() => import('../pages/author/RebuttalFormPage'))
 
 // PC/Reviewer pages
 const AssignedPaperList = lazy(() => import('../pages/pc/AssignedPaperList'))
 const ReviewFormPage = lazy(() => import('../pages/pc/ReviewFormPage'))
 const DiscussionPage = lazy(() => import('../pages/pc/DiscussionPage'))
 const COIDeclaration = lazy(() => import('../pages/pc/COIDeclaration'))
+const InvitationAcceptPage = lazy(() => import('../pages/pc/InvitationAcceptPage'))
+const MyCOIsList = lazy(() => import('../pages/pc/MyCOIsList'))
+const ReviewerWorkload = lazy(() => import('../pages/pc/ReviewerWorkload'))
 
 // Chair pages
+const ConferenceListPage = lazy(() => import('../pages/chair/ConferenceListPage'))
+const CreateConferencePage = lazy(() => import('../pages/chair/CreateConferencePage'))
 const ConferenceConfig = lazy(() => import('../pages/chair/ConferenceConfig'))
 const PCManagement = lazy(() => import('../pages/chair/PCManagement'))
 const AssignmentDashboard = lazy(() => import('../pages/chair/AssignmentDashboard'))
@@ -45,6 +55,14 @@ const DecisionBoard = lazy(() => import('../pages/chair/DecisionBoard'))
 const BulkEmailPreview = lazy(() => import('../pages/chair/BulkEmailPreview'))
 const ProceedingsExport = lazy(() => import('../pages/chair/ProceedingsExport'))
 const ReportingDashboard = lazy(() => import('../pages/chair/ReportingDashboard'))
+const WorkloadDashboard = lazy(() => import('../pages/chair/WorkloadDashboard'))
+const COIHistory = lazy(() => import('../pages/chair/COIHistory'))
+const COIStatistics = lazy(() => import('../pages/chair/COIStatistics'))
+const ReviewStatisticsDashboard = lazy(() => import('../pages/chair/ReviewStatisticsDashboard'))
+const AssignmentStatisticsDashboard = lazy(() => import('../pages/chair/AssignmentStatisticsDashboard'))
+const AssignmentQualityMetrics = lazy(() => import('../pages/chair/AssignmentQualityMetrics'))
+const BulkAssignmentPage = lazy(() => import('../pages/chair/BulkAssignmentPage'))
+const NotificationManagement = lazy(() => import('../pages/chair/NotificationManagement'))
 
 // Camera-ready pages
 const CameraReadyUpload = lazy(() => import('../pages/author/CameraReadyUpload'))
@@ -280,6 +298,21 @@ export const routes: RouteObject[] = [
         ),
         handle: { roles: ['AUTHOR'] as UserRole[] },
       },
+      {
+        path: 'author/submissions/:id/rebuttal',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <RebuttalFormPage />
+          </Suspense>
+        ),
+        handle: { roles: ['AUTHOR'] as UserRole[] },
+      },
       // PC/Reviewer routes
       {
         path: 'pc/assignments',
@@ -351,7 +384,79 @@ export const routes: RouteObject[] = [
           </Suspense>
         ),
       },
+      {
+        path: 'pc/cois',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <MyCOIsList />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'pc/invitation/accept',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <InvitationAcceptPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'pc/workload',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <ReviewerWorkload />
+          </Suspense>
+        ),
+      },
       // Chair routes
+      {
+        path: 'chair/conferences',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <ConferenceListPage />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
+        path: 'chair/conferences/new',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <CreateConferencePage />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
       {
         path: 'chair/conference/:id/config',
         element: (
@@ -398,6 +503,51 @@ export const routes: RouteObject[] = [
         handle: { roles: ['CHAIR'] as UserRole[] },
       },
       {
+        path: 'chair/conference/:id/assignment-statistics',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <AssignmentStatisticsDashboard />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
+        path: 'chair/conference/:id/assignment-quality',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <AssignmentQualityMetrics />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
+        path: 'chair/conference/:id/bulk-assign',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <BulkAssignmentPage />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
         path: 'chair/decisions',
         element: (
           <Suspense
@@ -408,6 +558,21 @@ export const routes: RouteObject[] = [
             }
           >
             <DecisionBoard />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
+        path: 'chair/notifications',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <NotificationManagement />
           </Suspense>
         ),
         handle: { roles: ['CHAIR'] as UserRole[] },
@@ -456,6 +621,126 @@ export const routes: RouteObject[] = [
           </Suspense>
         ),
         handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
+        path: 'chair/conference/:id/workload',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <WorkloadDashboard />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
+        path: 'chair/conference/:id/coi/history',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <COIHistory />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
+        path: 'chair/conference/:id/coi/statistics',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <COIStatistics />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
+        path: 'chair/conference/:id/review-statistics',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <ReviewStatisticsDashboard />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
+        path: 'submissions/:id/reviews',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <SubmissionReviewsView />
+          </Suspense>
+        ),
+      },
+      // User profile route
+      {
+        path: 'profile',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <ProfilePage />
+          </Suspense>
+        ),
+      },
+      // Admin routes
+      {
+        path: 'admin/users',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <UserManagementPage />
+          </Suspense>
+        ),
+        handle: { roles: ['ADMIN'] as UserRole[] },
+      },
+      {
+        path: 'admin/audit-logs',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <AuditLogPage />
+          </Suspense>
+        ),
+        handle: { roles: ['ADMIN'] as UserRole[] },
       },
     ],
   },

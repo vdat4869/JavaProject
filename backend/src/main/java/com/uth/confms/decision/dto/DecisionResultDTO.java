@@ -11,7 +11,9 @@ public class DecisionResultDTO {
   private String type;
   private String comments;
   private Boolean notified;
+  private Boolean locked;
   private LocalDateTime decidedAt;
+  private ReviewSummaryDTO reviewSummary;
 
   public DecisionResultDTO() {}
 
@@ -24,7 +26,9 @@ public class DecisionResultDTO {
       String type,
       String comments,
       Boolean notified,
-      LocalDateTime decidedAt) {
+      Boolean locked,
+      LocalDateTime decidedAt,
+      ReviewSummaryDTO reviewSummary) {
     this.id = id;
     this.submissionId = submissionId;
     this.submissionTitle = submissionTitle;
@@ -33,7 +37,9 @@ public class DecisionResultDTO {
     this.type = type;
     this.comments = comments;
     this.notified = notified;
+    this.locked = locked;
     this.decidedAt = decidedAt;
+    this.reviewSummary = reviewSummary;
   }
 
   public static Builder builder() {
@@ -104,12 +110,28 @@ public class DecisionResultDTO {
     this.notified = notified;
   }
 
+  public Boolean getLocked() {
+    return locked;
+  }
+
+  public void setLocked(Boolean locked) {
+    this.locked = locked;
+  }
+
   public LocalDateTime getDecidedAt() {
     return decidedAt;
   }
 
   public void setDecidedAt(LocalDateTime decidedAt) {
     this.decidedAt = decidedAt;
+  }
+
+  public ReviewSummaryDTO getReviewSummary() {
+    return reviewSummary;
+  }
+
+  public void setReviewSummary(ReviewSummaryDTO reviewSummary) {
+    this.reviewSummary = reviewSummary;
   }
 
   public static class Builder {
@@ -121,7 +143,9 @@ public class DecisionResultDTO {
     private String type;
     private String comments;
     private Boolean notified;
+    private Boolean locked;
     private LocalDateTime decidedAt;
+    private ReviewSummaryDTO reviewSummary;
 
     public Builder id(Long id) {
       this.id = id;
@@ -163,8 +187,18 @@ public class DecisionResultDTO {
       return this;
     }
 
+    public Builder locked(Boolean locked) {
+      this.locked = locked;
+      return this;
+    }
+
     public Builder decidedAt(LocalDateTime decidedAt) {
       this.decidedAt = decidedAt;
+      return this;
+    }
+
+    public Builder reviewSummary(ReviewSummaryDTO reviewSummary) {
+      this.reviewSummary = reviewSummary;
       return this;
     }
 
@@ -178,7 +212,9 @@ public class DecisionResultDTO {
           type,
           comments,
           notified,
-          decidedAt);
+          locked,
+          decidedAt,
+          reviewSummary);
     }
   }
 }

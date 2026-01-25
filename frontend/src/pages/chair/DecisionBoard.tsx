@@ -23,7 +23,13 @@ import {
   CFormLabel,
   CFormCheck,
 } from '@coreui/react'
-import { decisionService, Decision, CreateDecisionRequest } from '../../services/decision.service'
+import {
+  decisionService,
+  Decision,
+  DecisionType,
+  CreateDecisionRequest,
+  UpdateDecisionRequest,
+} from '../../services/decision.service'
 
 /**
  * DecisionBoard - Trang quản lý quyết định
@@ -31,7 +37,7 @@ import { decisionService, Decision, CreateDecisionRequest } from '../../services
  * Features:
  * - Xem danh sách submissions cần quyết định
  * - Accept/Reject submissions
- * - Bulk decisions
+ * - Gửi notifications
  * - Xem review summary
  */
 const DecisionBoard: React.FC = () => {
@@ -39,53 +45,69 @@ const DecisionBoard: React.FC = () => {
   const conferenceId = searchParams.get('conferenceId')
     ? parseInt(searchParams.get('conferenceId')!)
     : null
-  const [pendingDecisions, setPendingDecisions] = useState<Decision[]>([])
+  const [decisions, setDecisions] = useState<Decision[]>([])
   const [loading, setLoading] = useState(true)
   const [showDecisionModal, setShowDecisionModal] = useState(false)
-  const [selectedSubmission, setSelectedSubmission] = useState<Decision | null>(null)
-  const [decision, setDecision] = useState<
-    'ACCEPT' | 'REJECT' | 'MINOR_REVISION' | 'MAJOR_REVISION'
-  >('ACCEPT')
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<number | null>(null)
+  const [decisionType, setDecisionType] = useState<DecisionType>('ACCEPT')
   const [comments, setComments] = useState('')
+  const [sendNotification, setSendNotification] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<number[]>([])
+  const [sendingNotification, setSendingNotification] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  // Edit decision states
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingDecision, setEditingDecision] = useState<Decision | null>(null)
+  const [editType, setEditType] = useState<DecisionType>('ACCEPT')
+  const [editComments, setEditComments] = useState('')
+  const [editReason, setEditReason] = useState('')
 
   useEffect(() => {
     if (conferenceId) {
-      loadPendingDecisions()
+      loadDecisions()
     }
   }, [conferenceId])
 
-  const loadPendingDecisions = async () => {
+  const loadDecisions = async () => {
     try {
       setLoading(true)
-      const data = await decisionService.getPendingDecisions(conferenceId!)
-      setPendingDecisions(data)
+      const data = await decisionService.getDecisionsByConference(conferenceId!)
+      setDecisions(data)
     } catch (error) {
-      console.error('Error loading pending decisions:', error)
+      console.error('Error loading decisions:', error)
+      setError('Không thể tải danh sách quyết định')
     } finally {
       setLoading(false)
     }
   }
 
+  const handleOpenDecisionModal = (submissionId: number) => {
+    setSelectedSubmissionId(submissionId)
+    setDecisionType('ACCEPT')
+    setComments('')
+    setSendNotification(true)
+    setShowDecisionModal(true)
+  }
+
   const handleMakeDecision = async () => {
-    if (!selectedSubmission) return
+    if (!selectedSubmissionId) return
 
     try {
       setSaving(true)
       setError('')
-      await decisionService.createDecision({
-        submissionId: selectedSubmission.submissionId,
-        decision,
+      const request: CreateDecisionRequest = {
+        submissionId: selectedSubmissionId,
+        type: decisionType,
         comments: comments.trim() || undefined,
-      })
-      setSuccess('Đã tạo quyết định')
+        sendNotification,
+      }
+      await decisionService.createDecision(request)
+      setSuccess('Đã tạo quyết định thành công')
       setShowDecisionModal(false)
-      setSelectedSubmission(null)
+      setSelectedSubmissionId(null)
       setComments('')
-      await loadPendingDecisions()
+      await loadDecisions()
     } catch (error: any) {
       setError(error.response?.data?.message || 'Không thể tạo quyết định')
     } finally {
@@ -93,50 +115,74 @@ const DecisionBoard: React.FC = () => {
     }
   }
 
-  const handleBulkDecision = async () => {
-    if (selectedIds.length === 0) {
-      setError('Vui lòng chọn ít nhất một submission')
-      return
+  const handleSendNotification = async (decisionId: number) => {
+    try {
+      setSendingNotification(decisionId)
+      setError('')
+      await decisionService.sendNotification(decisionId)
+      setSuccess('Đã gửi notification thành công')
+      await loadDecisions()
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Không thể gửi notification')
+    } finally {
+      setSendingNotification(null)
     }
+  }
 
-    if (!window.confirm(`Bạn có chắc chắn muốn quyết định ${selectedIds.length} submissions?`)) {
+  const handleOpenEditModal = (decision: Decision) => {
+    setEditingDecision(decision)
+    setEditType(decision.type)
+    setEditComments(decision.comments || '')
+    setEditReason('')
+    setShowEditModal(true)
+  }
+
+  const handleUpdateDecision = async () => {
+    if (!editingDecision || !editReason.trim()) {
+      setError('Vui lòng nhập lý do thay đổi')
       return
     }
 
     try {
       setSaving(true)
       setError('')
-      await decisionService.bulkDecisions({
-        submissionIds: selectedIds,
-        decision,
-        comments: comments.trim() || undefined,
-      })
-      setSuccess(`Đã tạo quyết định cho ${selectedIds.length} submissions`)
-      setSelectedIds([])
-      setComments('')
-      await loadPendingDecisions()
+      const request: UpdateDecisionRequest = {
+        type: editType !== editingDecision.type ? editType : undefined,
+        comments: editComments !== editingDecision.comments ? editComments : undefined,
+        reason: editReason.trim(),
+      }
+      await decisionService.updateDecision(editingDecision.id, request)
+      setSuccess('Đã cập nhật quyết định thành công')
+      setShowEditModal(false)
+      setEditingDecision(null)
+      setEditReason('')
+      await loadDecisions()
     } catch (error: any) {
-      setError(error.response?.data?.message || 'Không thể tạo bulk decisions')
+      setError(error.response?.data?.message || 'Không thể cập nhật quyết định')
     } finally {
       setSaving(false)
     }
   }
 
-  const getDecisionBadge = (decision: Decision['decision']) => {
-    const colorMap: Record<string, string> = {
+  const getDecisionBadge = (type: DecisionType) => {
+    const colorMap: Record<DecisionType, string> = {
       ACCEPT: 'success',
       REJECT: 'danger',
-      MINOR_REVISION: 'warning',
-      MAJOR_REVISION: 'warning',
+      CONDITIONAL_ACCEPT: 'warning',
     }
-    return <CBadge color={colorMap[decision] || 'secondary'}>{decision}</CBadge>
+    const labelMap: Record<DecisionType, string> = {
+      ACCEPT: 'Chấp nhận',
+      REJECT: 'Từ chối',
+      CONDITIONAL_ACCEPT: 'Chấp nhận có điều kiện',
+    }
+    return <CBadge color={colorMap[type]}>{labelMap[type]}</CBadge>
   }
 
   if (!conferenceId) {
     return (
       <CCard>
         <CCardBody>
-          <CAlert color="danger">Missing conferenceId</CAlert>
+          <CAlert color="danger">Thiếu conferenceId</CAlert>
         </CCardBody>
       </CCard>
     )
@@ -150,158 +196,184 @@ const DecisionBoard: React.FC = () => {
     )
   }
 
-  return (
-    <CCard>
-      <CCardHeader>
-        <div className="d-flex justify-content-between align-items-center">
-          <h4>Decision Board</h4>
-          {selectedIds.length > 0 && (
-            <div className="d-flex gap-2">
-              <select
-                className="form-select"
-                value={decision}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                  setDecision(e.target.value as any)
-                }
-                style={{ width: 'auto' }}
-              >
-                <option value="ACCEPT">Accept</option>
-                <option value="MINOR_REVISION">Minor Revision</option>
-                <option value="MAJOR_REVISION">Major Revision</option>
-                <option value="REJECT">Reject</option>
-              </select>
-              <CButton color="primary" onClick={handleBulkDecision} disabled={saving}>
-                Bulk Decision ({selectedIds.length})
-              </CButton>
-            </div>
-          )}
-        </div>
-      </CCardHeader>
-      <CCardBody>
-        {error && (
-          <CAlert color="danger" className="mb-3">
-            {error}
-          </CAlert>
-        )}
-        {success && (
-          <CAlert color="success" className="mb-3">
-            {success}
-          </CAlert>
-        )}
+  // Lọc submissions chưa có decision (pending)
+  const pendingSubmissions = decisions.filter((d) => !d.type)
+  // Submissions đã có decision
+  const decidedSubmissions = decisions.filter((d) => d.type)
 
-        {pendingDecisions.length === 0 ? (
-          <p className="text-muted">Không có submission nào cần quyết định</p>
-        ) : (
-          <CTable hover>
-            <CTableHead>
-              <CTableRow>
-                <CTableHeaderCell>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.length === pendingDecisions.length}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      if (e.target.checked) {
-                        setSelectedIds(pendingDecisions.map((d) => d.submissionId))
-                      } else {
-                        setSelectedIds([])
-                      }
-                    }}
-                  />
-                </CTableHeaderCell>
-                <CTableHeaderCell>ID</CTableHeaderCell>
-                <CTableHeaderCell>Tiêu đề</CTableHeaderCell>
-                <CTableHeaderCell>Số reviews</CTableHeaderCell>
-                <CTableHeaderCell>Điểm TB</CTableHeaderCell>
-                <CTableHeaderCell>Thao tác</CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
-            <CTableBody>
-              {pendingDecisions.map((item) => (
-                <CTableRow key={item.submissionId}>
-                  <CTableDataCell>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(item.submissionId)}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        if (e.target.checked) {
-                          setSelectedIds([...selectedIds, item.submissionId])
-                        } else {
-                          setSelectedIds(selectedIds.filter((id) => id !== item.submissionId))
-                        }
-                      }}
-                    />
-                  </CTableDataCell>
-                  <CTableDataCell>{item.submissionId}</CTableDataCell>
-                  <CTableDataCell>{item.submissionTitle}</CTableDataCell>
-                  <CTableDataCell>{item.reviewCount}</CTableDataCell>
-                  <CTableDataCell>{item.averageRating.toFixed(2)}</CTableDataCell>
-                  <CTableDataCell>
-                    <CButton
-                      color="link"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedSubmission(item)
-                        setShowDecisionModal(true)
-                      }}
-                    >
-                      Quyết định
-                    </CButton>
-                  </CTableDataCell>
+  return (
+    <>
+      <CCard className="mb-4">
+        <CCardHeader>
+          <h4>Submissions cần quyết định</h4>
+        </CCardHeader>
+        <CCardBody>
+          {error && (
+            <CAlert color="danger" className="mb-3" dismissible onClose={() => setError('')}>
+              {error}
+            </CAlert>
+          )}
+          {success && (
+            <CAlert color="success" className="mb-3" dismissible onClose={() => setSuccess('')}>
+              {success}
+            </CAlert>
+          )}
+
+          {pendingSubmissions.length === 0 ? (
+            <p className="text-muted">Tất cả submissions đã được quyết định</p>
+          ) : (
+            <CTable hover>
+              <CTableHead>
+                <CTableRow>
+                  <CTableHeaderCell>ID</CTableHeaderCell>
+                  <CTableHeaderCell>Tiêu đề</CTableHeaderCell>
+                  <CTableHeaderCell>Số reviews</CTableHeaderCell>
+                  <CTableHeaderCell>Điểm TB</CTableHeaderCell>
+                  <CTableHeaderCell>Thao tác</CTableHeaderCell>
                 </CTableRow>
-              ))}
-            </CTableBody>
-          </CTable>
-        )}
-      </CCardBody>
+              </CTableHead>
+              <CTableBody>
+                {pendingSubmissions.map((item) => (
+                  <CTableRow key={item.submissionId}>
+                    <CTableDataCell>{item.submissionId}</CTableDataCell>
+                    <CTableDataCell>{item.submissionTitle}</CTableDataCell>
+                    <CTableDataCell>{item.reviewSummary?.reviewCount || 0}</CTableDataCell>
+                    <CTableDataCell>
+                      {item.reviewSummary?.averageScore?.toFixed(2) || 'N/A'}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      <CButton
+                        color="primary"
+                        size="sm"
+                        onClick={() => handleOpenDecisionModal(item.submissionId)}
+                      >
+                        Quyết định
+                      </CButton>
+                    </CTableDataCell>
+                  </CTableRow>
+                ))}
+              </CTableBody>
+            </CTable>
+          )}
+        </CCardBody>
+      </CCard>
+
+      <CCard>
+        <CCardHeader>
+          <h4>Đã quyết định</h4>
+        </CCardHeader>
+        <CCardBody>
+          {decidedSubmissions.length === 0 ? (
+            <p className="text-muted">Chưa có quyết định nào</p>
+          ) : (
+            <CTable hover>
+              <CTableHead>
+                <CTableRow>
+                  <CTableHeaderCell>ID</CTableHeaderCell>
+                  <CTableHeaderCell>Tiêu đề</CTableHeaderCell>
+                  <CTableHeaderCell>Quyết định</CTableHeaderCell>
+                  <CTableHeaderCell>Ngày quyết định</CTableHeaderCell>
+                  <CTableHeaderCell>Thông báo</CTableHeaderCell>
+                  <CTableHeaderCell>Thao tác</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                {decidedSubmissions.map((item) => (
+                  <CTableRow key={item.id}>
+                    <CTableDataCell>{item.submissionId}</CTableDataCell>
+                    <CTableDataCell>{item.submissionTitle}</CTableDataCell>
+                    <CTableDataCell>{getDecisionBadge(item.type)}</CTableDataCell>
+                    <CTableDataCell>
+                      {new Date(item.decidedAt).toLocaleDateString('vi-VN')}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {item.notified ? (
+                        <CBadge color="success">Đã gửi</CBadge>
+                      ) : (
+                        <CBadge color="secondary">Chưa gửi</CBadge>
+                      )}
+                      {item.locked && (
+                        <CBadge color="dark" className="ms-1">
+                          Đã khóa
+                        </CBadge>
+                      )}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      <div className="d-flex gap-1">
+                        {!item.notified && !item.locked && (
+                          <CButton
+                            color="warning"
+                            size="sm"
+                            onClick={() => handleOpenEditModal(item)}
+                          >
+                            Sửa
+                          </CButton>
+                        )}
+                        {!item.notified && (
+                          <CButton
+                            color="info"
+                            size="sm"
+                            onClick={() => handleSendNotification(item.id)}
+                            disabled={sendingNotification === item.id}
+                          >
+                            {sendingNotification === item.id ? (
+                              <CSpinner size="sm" />
+                            ) : (
+                              'Gửi thông báo'
+                            )}
+                          </CButton>
+                        )}
+                      </div>
+                    </CTableDataCell>
+                  </CTableRow>
+                ))}
+              </CTableBody>
+            </CTable>
+          )}
+        </CCardBody>
+      </CCard>
 
       {/* Decision Modal */}
       <CModal visible={showDecisionModal} onClose={() => setShowDecisionModal(false)}>
         <CModalHeader>
-          <CModalTitle>Quyết định</CModalTitle>
+          <CModalTitle>Tạo quyết định</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          {selectedSubmission && (
-            <>
-              <div className="mb-3">
-                <strong>Bài báo: </strong>
-                {selectedSubmission.submissionTitle}
-              </div>
-              <div className="mb-3">
-                <strong>Số reviews: </strong>
-                {selectedSubmission.reviewCount}
-              </div>
-              <div className="mb-3">
-                <strong>Điểm trung bình: </strong>
-                {selectedSubmission.averageRating.toFixed(2)}
-              </div>
-              <div className="mb-3">
-                <CFormLabel>Quyết định *</CFormLabel>
-                <select
-                  className="form-select"
-                  value={decision}
-                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                    setDecision(e.target.value as any)
-                  }
-                >
-                  <option value="ACCEPT">Chấp nhận</option>
-                  <option value="MINOR_REVISION">Sửa đổi nhỏ</option>
-                  <option value="MAJOR_REVISION">Sửa đổi lớn</option>
-                  <option value="REJECT">Từ chối</option>
-                </select>
-              </div>
-              <div className="mb-3">
-                <CFormLabel>Nhận xét (tùy chọn)</CFormLabel>
-                <CFormTextarea
-                  value={comments}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setComments(e.target.value)
-                  }
-                  rows={5}
-                  placeholder="Nhập nhận xét về quyết định"
-                />
-              </div>
-            </>
-          )}
+          <div className="mb-3">
+            <CFormLabel>Loại quyết định *</CFormLabel>
+            <select
+              className="form-select"
+              value={decisionType}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setDecisionType(e.target.value as DecisionType)
+              }
+            >
+              <option value="ACCEPT">Chấp nhận</option>
+              <option value="CONDITIONAL_ACCEPT">Chấp nhận có điều kiện</option>
+              <option value="REJECT">Từ chối</option>
+            </select>
+          </div>
+          <div className="mb-3">
+            <CFormLabel>Nhận xét (tùy chọn)</CFormLabel>
+            <CFormTextarea
+              value={comments}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setComments(e.target.value)
+              }
+              rows={5}
+              placeholder="Nhập nhận xét về quyết định"
+            />
+          </div>
+          <div className="mb-3">
+            <CFormCheck
+              id="sendNotification"
+              label="Gửi email thông báo ngay"
+              checked={sendNotification}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSendNotification(e.target.checked)
+              }
+            />
+          </div>
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setShowDecisionModal(false)}>
@@ -312,7 +384,68 @@ const DecisionBoard: React.FC = () => {
           </CButton>
         </CModalFooter>
       </CModal>
-    </CCard>
+
+      {/* Edit Decision Modal */}
+      <CModal visible={showEditModal} onClose={() => setShowEditModal(false)}>
+        <CModalHeader>
+          <CModalTitle>Sửa quyết định</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          {editingDecision && (
+            <>
+              <div className="mb-3">
+                <strong>Bài báo: </strong>
+                {editingDecision.submissionTitle}
+              </div>
+              <div className="mb-3">
+                <CFormLabel>Loại quyết định *</CFormLabel>
+                <select
+                  className="form-select"
+                  value={editType}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                    setEditType(e.target.value as DecisionType)
+                  }
+                >
+                  <option value="ACCEPT">Chấp nhận</option>
+                  <option value="CONDITIONAL_ACCEPT">Chấp nhận có điều kiện</option>
+                  <option value="REJECT">Từ chối</option>
+                </select>
+              </div>
+              <div className="mb-3">
+                <CFormLabel>Nhận xét</CFormLabel>
+                <CFormTextarea
+                  value={editComments}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setEditComments(e.target.value)
+                  }
+                  rows={4}
+                  placeholder="Nhập nhận xét về quyết định"
+                />
+              </div>
+              <div className="mb-3">
+                <CFormLabel>Lý do thay đổi *</CFormLabel>
+                <CFormTextarea
+                  value={editReason}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                    setEditReason(e.target.value)
+                  }
+                  rows={2}
+                  placeholder="Nhập lý do thay đổi quyết định (bắt buộc)"
+                />
+              </div>
+            </>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setShowEditModal(false)}>
+            Hủy
+          </CButton>
+          <CButton color="primary" onClick={handleUpdateDecision} disabled={saving || !editReason.trim()}>
+            {saving ? <CSpinner size="sm" /> : 'Cập nhật'}
+          </CButton>
+        </CModalFooter>
+      </CModal>
+    </>
   )
 }
 

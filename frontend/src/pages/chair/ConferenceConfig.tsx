@@ -8,6 +8,7 @@ import {
   CFormInput,
   CFormTextarea,
   CFormLabel,
+  CFormSelect,
   CButton,
   CAlert,
   CSpinner,
@@ -17,24 +18,40 @@ import {
   CNavLink,
   CTabContent,
   CTabPane,
+  CBadge,
 } from '@coreui/react'
-import { conferenceService, Conference, CFP } from '../../services/conference.service'
+import CIcon from '@coreui/icons-react'
+import { cilCheckCircle, cilXCircle, cilTrash } from '@coreui/icons'
+import { useTranslation } from 'react-i18next'
+import {
+  conferenceService,
+  ConferenceResponse,
+  CFPResponse,
+  ConferenceUpdateRequest,
+  CFPRequest,
+} from '../../services/conference.service'
+import TrackEditor from '../../components/conference/TrackEditor'
+import DeadlineEditor from '../../components/conference/DeadlineEditor'
 
 /**
  * ConferenceConfig - Trang cấu hình conference
  *
  * Features:
  * - Cập nhật thông tin conference
- * - Cấu hình CFP (tracks, topics, deadlines)
+ * - Cấu hình CFP (call for papers, submission guidelines)
+ * - Publish/Close CFP
  * - Chỉ CHAIR mới có quyền
  */
 const ConferenceConfig: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [conference, setConference] = useState<Conference | null>(null)
-  const [cfp, setCfp] = useState<CFP | null>(null)
+  const { t } = useTranslation()
+  const [conference, setConference] = useState<ConferenceResponse | null>(null)
+  const [cfp, setCfp] = useState<CFPResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [closing, setClosing] = useState(false)
   const [activeTab, setActiveTab] = useState('basic')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -48,15 +65,17 @@ const ConferenceConfig: React.FC = () => {
   const loadData = async () => {
     try {
       setLoading(true)
+      setError('')
+      const conferenceId = parseInt(id!)
       const [confData, cfpData] = await Promise.all([
-        conferenceService.getConference(parseInt(id!)),
-        conferenceService.getCFP(parseInt(id!)),
+        conferenceService.getConference(conferenceId),
+        conferenceService.getCFP(conferenceId).catch(() => null), // CFP might not exist yet
       ])
       setConference(confData)
       setCfp(cfpData)
-    } catch (error) {
-      console.error('Error loading conference data:', error)
-      setError('Không thể tải thông tin hội nghị')
+    } catch (err: any) {
+      console.error('Error loading conference data:', err)
+      setError(err.response?.data?.message || t('conference.loadError') || 'Không thể tải thông tin hội nghị')
     } finally {
       setLoading(false)
     }
@@ -67,20 +86,23 @@ const ConferenceConfig: React.FC = () => {
     setError('')
     setSuccess('')
 
+    if (!conference) return
+
     try {
       setSaving(true)
-      await conferenceService.updateConference(parseInt(id!), {
-        name: conference!.name,
-        description: conference!.description,
-        startDate: conference!.startDate,
-        endDate: conference!.endDate,
-        submissionDeadline: conference!.submissionDeadline,
-        reviewDeadline: conference!.reviewDeadline,
-        active: conference!.active,
-      })
-      setSuccess('Cập nhật thành công')
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Không thể cập nhật')
+      const updateData: ConferenceUpdateRequest = {
+        name: conference.name,
+        acronym: conference.acronym,
+        description: conference.description,
+        reviewMode: conference.reviewMode,
+        tracks: conference.tracks,
+        deadlines: conference.deadlines,
+      }
+      const updated = await conferenceService.updateConference(parseInt(id!), updateData)
+      setConference(updated)
+      setSuccess(t('conference.updateSuccess') || 'Cập nhật thành công')
+    } catch (err: any) {
+      setError(err.response?.data?.message || t('conference.updateFailed') || 'Không thể cập nhật')
     } finally {
       setSaving(false)
     }
@@ -91,19 +113,63 @@ const ConferenceConfig: React.FC = () => {
     setError('')
     setSuccess('')
 
+    if (!conference || !cfp) return
+
     try {
       setSaving(true)
-      await conferenceService.updateCFP(parseInt(id!), {
-        description: cfp!.description,
-        topics: cfp!.topics,
-        tracks: cfp!.tracks,
-        deadlines: cfp!.deadlines,
-      })
-      setSuccess('Cập nhật CFP thành công')
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Không thể cập nhật CFP')
+      const cfpData: CFPRequest = {
+        conferenceId: conference.id,
+        callForPapers: cfp.callForPapers,
+        submissionGuidelines: cfp.submissionGuidelines,
+        topicIds: conference.topics?.map((t) => t.id!).filter((id) => id !== undefined),
+      }
+      const updated = await conferenceService.createOrUpdateCFP(cfpData)
+      setCfp(updated)
+      setSuccess(t('conference.cfpUpdateSuccess') || 'Cập nhật CFP thành công')
+    } catch (err: any) {
+      setError(err.response?.data?.message || t('conference.cfpUpdateFailed') || 'Không thể cập nhật CFP')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handlePublishCFP = async () => {
+    if (!conference) return
+    if (!window.confirm(t('conference.confirmPublishCFP') || 'Bạn có chắc chắn muốn publish CFP này?')) {
+      return
+    }
+
+    try {
+      setPublishing(true)
+      setError('')
+      const updated = await conferenceService.publishCFP(conference.id)
+      setCfp(updated)
+      setSuccess(t('conference.cfpPublished') || 'CFP đã được publish thành công')
+      await loadData() // Reload to get updated conference status
+    } catch (err: any) {
+      setError(err.response?.data?.message || t('conference.cfpPublishFailed') || 'Không thể publish CFP')
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  const handleCloseCFP = async () => {
+    if (!conference) return
+    if (!window.confirm(t('conference.confirmCloseCFP') || 'Bạn có chắc chắn muốn đóng CFP này?')) {
+      return
+    }
+
+    try {
+      setClosing(true)
+      setError('')
+      const updated = await conferenceService.closeCFP(conference.id)
+      setCfp(updated)
+      setSuccess(t('conference.cfpClosed') || 'CFP đã được đóng thành công')
+      await loadData() // Reload to get updated conference status
+    } catch (err: any) {
+      setError(err.response?.data?.message || t('conference.cfpCloseFailed') || 'Không thể đóng CFP')
+    } finally {
+      setClosing(false)
     }
   }
 
@@ -115,148 +181,333 @@ const ConferenceConfig: React.FC = () => {
     )
   }
 
-  if (!conference || !cfp) {
+  if (!conference) {
     return (
       <CCard>
         <CCardBody>
-          <CAlert color="danger">Không tìm thấy hội nghị</CAlert>
+          <CAlert color="danger">{t('conference.notFound') || 'Không tìm thấy hội nghị'}</CAlert>
         </CCardBody>
       </CCard>
     )
   }
 
   return (
-    <CCard>
-      <CCardHeader>
-        <h4>Cấu hình hội nghị: {conference.name}</h4>
-      </CCardHeader>
-      <CCardBody>
-        {error && (
-          <CAlert color="danger" className="mb-3">
-            {error}
-          </CAlert>
-        )}
-        {success && (
-          <CAlert color="success" className="mb-3">
-            {success}
-          </CAlert>
-        )}
+    <div>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h2>
+          {t('conference.config') || 'Cấu hình hội nghị'}: {conference.name}
+        </h2>
+        <div className="d-flex gap-2">
+          <CButton
+            color="danger"
+            onClick={async () => {
+              if (
+                window.confirm(
+                  t('conference.confirmDelete') ||
+                    'Bạn có chắc chắn muốn xóa hội nghị này? Hành động này không thể hoàn tác!',
+                )
+              ) {
+                try {
+                  setSaving(true)
+                  await conferenceService.deleteConference(conference.id)
+                  navigate('/app/chair/conferences')
+                } catch (err: any) {
+                  setError(err.response?.data?.message || t('conference.deleteFailed') || 'Không thể xóa hội nghị')
+                } finally {
+                  setSaving(false)
+                }
+              }
+            }}
+            disabled={saving}
+          >
+            <CIcon icon={cilTrash} className="me-2" />
+            {t('common.delete') || 'Xóa'}
+          </CButton>
+          <CButton color="secondary" onClick={() => navigate('/app/chair/conferences')}>
+            {t('common.back') || 'Quay lại'}
+          </CButton>
+        </div>
+      </div>
 
-        <CTabs activeTab={activeTab} onActiveTabChange={setActiveTab}>
-          <CNav variant="tabs">
-            <CNavItem>
-              <CNavLink>Thông tin cơ bản</CNavLink>
-            </CNavItem>
-            <CNavItem>
-              <CNavLink>CFP</CNavLink>
-            </CNavItem>
-          </CNav>
-          <CTabContent>
-            <CTabPane>
-              <CForm onSubmit={handleUpdateConference}>
-                <div className="mb-3">
-                  <CFormLabel>Tên hội nghị</CFormLabel>
-                  <CFormInput
-                    type="text"
-                    value={conference.name}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setConference({ ...conference, name: e.target.value })
-                    }
-                    required
-                  />
+      {conference.published && (
+        <CAlert color="info" className="mb-3">
+          <CIcon icon={cilCheckCircle} /> {t('conference.published') || 'Hội nghị đã được publish'}
+        </CAlert>
+      )}
+
+      <CCard>
+        <CCardHeader>
+          <div className="d-flex justify-content-between align-items-center">
+            <h5>{t('conference.conferenceConfiguration') || 'Cấu hình hội nghị'}</h5>
+            {cfp && (
+              <div>
+                <CBadge color={cfp.open ? 'success' : 'danger'} className="me-2">
+                  {cfp.open
+                    ? t('conference.cfpOpen') || 'CFP Mở'
+                    : t('conference.cfpClosed') || 'CFP Đóng'}
+                </CBadge>
+              </div>
+            )}
+          </div>
+        </CCardHeader>
+        <CCardBody>
+          {error && (
+            <CAlert color="danger" className="mb-3" onClose={() => setError('')} dismissible>
+              {error}
+            </CAlert>
+          )}
+          {success && (
+            <CAlert color="success" className="mb-3" onClose={() => setSuccess('')} dismissible>
+              {success}
+            </CAlert>
+          )}
+
+          <CTabs activeTab={activeTab} onActiveTabChange={setActiveTab}>
+            <CNav variant="tabs">
+              <CNavItem>
+                <CNavLink>{t('conference.basicInfo') || 'Thông tin cơ bản'}</CNavLink>
+              </CNavItem>
+              <CNavItem>
+                <CNavLink>
+                  {t('conference.cfp') || 'CFP'}
+                  {cfp && (
+                    <CBadge
+                      color={cfp.open ? 'success' : 'danger'}
+                      className="ms-2"
+                      style={{ fontSize: '0.7rem' }}
+                    >
+                      {cfp.open ? 'Mở' : 'Đóng'}
+                    </CBadge>
+                  )}
+                </CNavLink>
+              </CNavItem>
+              <CNavItem>
+                <CNavLink>{t('conference.tracks') || 'Tracks'}</CNavLink>
+              </CNavItem>
+              <CNavItem>
+                <CNavLink>{t('conference.deadlines') || 'Deadlines'}</CNavLink>
+              </CNavItem>
+            </CNav>
+            <CTabContent>
+              <CTabPane>
+                <CForm onSubmit={handleUpdateConference}>
+                  <div className="mb-3">
+                    <CFormLabel>
+                      {t('conference.name') || 'Tên hội nghị'} <span className="text-danger">*</span>
+                    </CFormLabel>
+                    <CFormInput
+                      type="text"
+                      value={conference.name}
+                      onChange={(e) => setConference({ ...conference, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <CFormLabel>{t('conference.acronym') || 'Tên viết tắt'}</CFormLabel>
+                    <CFormInput
+                      type="text"
+                      value={conference.acronym || ''}
+                      onChange={(e) => setConference({ ...conference, acronym: e.target.value })}
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <CFormLabel>{t('conference.description') || 'Mô tả'}</CFormLabel>
+                    <CFormTextarea
+                      value={conference.description || ''}
+                      onChange={(e) => setConference({ ...conference, description: e.target.value })}
+                      rows={5}
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <CFormLabel>{t('conference.reviewMode') || 'Chế độ review'}</CFormLabel>
+                    <CFormSelect
+                      value={conference.reviewMode || 'DOUBLE_BLIND'}
+                      onChange={(e) => setConference({ ...conference, reviewMode: e.target.value })}
+                    >
+                      <option value="SINGLE_BLIND">{t('conference.singleBlind') || 'Single Blind'}</option>
+                      <option value="DOUBLE_BLIND">{t('conference.doubleBlind') || 'Double Blind'}</option>
+                    </CFormSelect>
+                  </div>
+                  <CButton type="submit" color="primary" disabled={saving}>
+                    {saving ? (
+                      <>
+                        <CSpinner size="sm" className="me-2" />
+                        {t('common.saving') || 'Đang lưu...'}
+                      </>
+                    ) : (
+                      t('common.save') || 'Lưu'
+                    )}
+                  </CButton>
+                </CForm>
+              </CTabPane>
+              <CTabPane>
+                <CForm onSubmit={handleUpdateCFP}>
+                  <div className="mb-3">
+                    <CFormLabel>{t('conference.cfpDescription') || 'Mô tả CFP (Call for Papers)'}</CFormLabel>
+                    <CFormTextarea
+                      value={cfp?.callForPapers || ''}
+                      onChange={(e) => setCfp({ ...cfp!, callForPapers: e.target.value })}
+                      rows={8}
+                      placeholder={t('conference.cfpDescriptionPlaceholder') || 'Nhập mô tả CFP...'}
+                    />
+                  </div>
+                  <div className="mb-3">
+                    <CFormLabel>
+                      {t('conference.submissionGuidelines') || 'Hướng dẫn nộp bài'}
+                    </CFormLabel>
+                    <CFormTextarea
+                      value={cfp?.submissionGuidelines || ''}
+                      onChange={(e) => setCfp({ ...cfp!, submissionGuidelines: e.target.value })}
+                      rows={5}
+                      placeholder={t('conference.submissionGuidelinesPlaceholder') || 'Nhập hướng dẫn nộp bài...'}
+                    />
+                  </div>
+                  <div className="d-flex gap-2 mb-3">
+                    <CButton type="submit" color="primary" disabled={saving}>
+                      {saving ? (
+                        <>
+                          <CSpinner size="sm" className="me-2" />
+                          {t('common.saving') || 'Đang lưu...'}
+                        </>
+                      ) : (
+                        t('conference.saveCFP') || 'Lưu CFP'
+                      )}
+                    </CButton>
+                    {cfp && (
+                      <>
+                        {cfp.open ? (
+                          <CButton
+                            type="button"
+                            color="warning"
+                            onClick={handleCloseCFP}
+                            disabled={closing}
+                          >
+                            {closing ? (
+                              <>
+                                <CSpinner size="sm" className="me-2" />
+                                {t('common.processing') || 'Đang xử lý...'}
+                              </>
+                            ) : (
+                              <>
+                                <CIcon icon={cilXCircle} className="me-2" />
+                                {t('conference.closeCFP') || 'Đóng CFP'}
+                              </>
+                            )}
+                          </CButton>
+                        ) : (
+                          <CButton
+                            type="button"
+                            color="success"
+                            onClick={handlePublishCFP}
+                            disabled={publishing}
+                          >
+                            {publishing ? (
+                              <>
+                                <CSpinner size="sm" className="me-2" />
+                                {t('common.processing') || 'Đang xử lý...'}
+                              </>
+                            ) : (
+                              <>
+                                <CIcon icon={cilCheckCircle} className="me-2" />
+                                {t('conference.publishCFP') || 'Publish CFP'}
+                              </>
+                            )}
+                          </CButton>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {!cfp && (
+                    <CAlert color="info">
+                      {t('conference.cfpNotCreated') ||
+                        'CFP chưa được tạo. Lưu CFP để tạo mới, sau đó có thể publish.'}
+                    </CAlert>
+                  )}
+                </CForm>
+              </CTabPane>
+              <CTabPane>
+                <TrackEditor
+                  tracks={conference.tracks || []}
+                  onChange={(tracks) => {
+                    setConference({ ...conference, tracks })
+                    setSuccess('') // Clear success message
+                  }}
+                />
+                <div className="mt-3">
+                  <CButton
+                    color="primary"
+                    onClick={async () => {
+                      try {
+                        setSaving(true)
+                        const updateData: ConferenceUpdateRequest = {
+                          tracks: conference.tracks,
+                        }
+                        await conferenceService.updateConference(parseInt(id!), updateData)
+                        setSuccess(t('conference.tracksUpdated') || 'Tracks đã được cập nhật')
+                      } catch (err: any) {
+                        setError(err.response?.data?.message || t('common.error') || 'Lỗi khi cập nhật tracks')
+                      } finally {
+                        setSaving(false)
+                      }
+                    }}
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <>
+                        <CSpinner size="sm" className="me-2" />
+                        {t('common.saving') || 'Đang lưu...'}
+                      </>
+                    ) : (
+                      t('common.saveTracks') || 'Lưu Tracks'
+                    )}
+                  </CButton>
                 </div>
-                <div className="mb-3">
-                  <CFormLabel>Mô tả</CFormLabel>
-                  <CFormTextarea
-                    value={conference.description}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                      setConference({ ...conference, description: e.target.value })
-                    }
-                    rows={5}
-                  />
+              </CTabPane>
+              <CTabPane>
+                <DeadlineEditor
+                  deadlines={conference.deadlines || []}
+                  onChange={(deadlines) => {
+                    setConference({ ...conference, deadlines })
+                    setSuccess('') // Clear success message
+                  }}
+                />
+                <div className="mt-3">
+                  <CButton
+                    color="primary"
+                    onClick={async () => {
+                      try {
+                        setSaving(true)
+                        const updateData: ConferenceUpdateRequest = {
+                          deadlines: conference.deadlines,
+                        }
+                        await conferenceService.updateConference(parseInt(id!), updateData)
+                        setSuccess(t('conference.deadlinesUpdated') || 'Deadlines đã được cập nhật')
+                      } catch (err: any) {
+                        setError(
+                          err.response?.data?.message || t('common.error') || 'Lỗi khi cập nhật deadlines',
+                        )
+                      } finally {
+                        setSaving(false)
+                      }
+                    }}
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <>
+                        <CSpinner size="sm" className="me-2" />
+                        {t('common.saving') || 'Đang lưu...'}
+                      </>
+                    ) : (
+                      t('common.saveDeadlines') || 'Lưu Deadlines'
+                    )}
+                  </CButton>
                 </div>
-                <div className="mb-3">
-                  <CFormLabel>Ngày bắt đầu</CFormLabel>
-                  <CFormInput
-                    type="date"
-                    value={conference.startDate.split('T')[0]}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setConference({ ...conference, startDate: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="mb-3">
-                  <CFormLabel>Ngày kết thúc</CFormLabel>
-                  <CFormInput
-                    type="date"
-                    value={conference.endDate.split('T')[0]}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setConference({ ...conference, endDate: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="mb-3">
-                  <CFormLabel>Hạn nộp bài</CFormLabel>
-                  <CFormInput
-                    type="datetime-local"
-                    value={conference.submissionDeadline}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setConference({ ...conference, submissionDeadline: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="mb-3">
-                  <CFormLabel>Hạn đánh giá</CFormLabel>
-                  <CFormInput
-                    type="datetime-local"
-                    value={conference.reviewDeadline}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setConference({ ...conference, reviewDeadline: e.target.value })
-                    }
-                  />
-                </div>
-                <CButton type="submit" color="primary" disabled={saving}>
-                  {saving ? <CSpinner size="sm" /> : 'Lưu'}
-                </CButton>
-              </CForm>
-            </CTabPane>
-            <CTabPane>
-              <CForm onSubmit={handleUpdateCFP}>
-                <div className="mb-3">
-                  <CFormLabel>Mô tả CFP</CFormLabel>
-                  <CFormTextarea
-                    value={cfp.description}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                      setCfp({ ...cfp, description: e.target.value })
-                    }
-                    rows={5}
-                  />
-                </div>
-                <div className="mb-3">
-                  <CFormLabel>Topics (phân cách bằng dấu phẩy)</CFormLabel>
-                  <CFormInput
-                    type="text"
-                    value={cfp.topics.join(', ')}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setCfp({
-                        ...cfp,
-                        topics: e.target.value
-                          .split(',')
-                          .map((t) => t.trim())
-                          .filter((t) => t),
-                      })
-                    }
-                  />
-                </div>
-                <CButton type="submit" color="primary" disabled={saving}>
-                  {saving ? <CSpinner size="sm" /> : 'Lưu CFP'}
-                </CButton>
-              </CForm>
-            </CTabPane>
-          </CTabContent>
-        </CTabs>
-      </CCardBody>
-    </CCard>
+              </CTabPane>
+            </CTabContent>
+          </CTabs>
+        </CCardBody>
+      </CCard>
+    </div>
   )
 }
 

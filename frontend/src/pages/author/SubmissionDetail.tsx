@@ -4,6 +4,7 @@ import { CCard, CCardBody, CCardHeader, CButton, CBadge, CSpinner, CAlert } from
 import { useTranslation } from 'react-i18next'
 import { submissionService, Submission } from '../../services/submission.service'
 import ReviewResultView from '../../components/submission/ReviewResultView'
+import FileVersionHistory from '../../components/submission/FileVersionHistory'
 
 /**
  * SubmissionDetail - Trang chi tiết submission
@@ -21,6 +22,7 @@ const SubmissionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const [submission, setSubmission] = useState<Submission | null>(null)
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -61,6 +63,34 @@ const SubmissionDetail: React.FC = () => {
       navigate('/author/submissions')
     } catch (error) {
       alert('Không thể thực hiện thao tác. Vui lòng thử lại.')
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!submission) return
+
+    // Check if submission has PDF file
+    if (!submission.pdfFilePath && !submission.fileUrl) {
+      alert('Vui lòng upload file PDF trước khi nộp bài.')
+      return
+    }
+
+    const message =
+      'Bạn có chắc chắn muốn nộp bài này? Sau khi nộp, bạn sẽ không thể chỉnh sửa trừ khi rút bài.'
+
+    if (!window.confirm(message)) {
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      const updated = await submissionService.submitSubmission(parseInt(id!))
+      setSubmission(updated)
+      alert('Bài nộp đã được gửi thành công!')
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Không thể nộp bài. Vui lòng thử lại.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -119,6 +149,23 @@ const SubmissionDetail: React.FC = () => {
           <div className="d-flex justify-content-between align-items-center">
             <h4>{submission.title}</h4>
             <div className="d-flex gap-2">
+              {submission.status === 'DRAFT' && (
+                <CButton
+                  color="success"
+                  size="sm"
+                  onClick={handleSubmit}
+                  disabled={submitting || (!submission.pdfFilePath && !submission.fileUrl)}
+                >
+                  {submitting ? (
+                    <>
+                      <CSpinner size="sm" className="me-2" />
+                      Đang nộp...
+                    </>
+                  ) : (
+                    'Nộp bài'
+                  )}
+                </CButton>
+              )}
               {submission.canEdit && (
                 <CButton
                   color="primary"
@@ -133,7 +180,7 @@ const SubmissionDetail: React.FC = () => {
                   {submission.status === 'DRAFT' ? 'Xóa' : 'Rút bài'}
                 </CButton>
               )}
-              {submission.fileUrl && (
+              {(submission.fileUrl || submission.pdfFilePath) && (
                 <CButton color="secondary" size="sm" onClick={handleDownloadFile}>
                   Tải PDF
                 </CButton>
@@ -161,13 +208,37 @@ const SubmissionDetail: React.FC = () => {
 
           <div className="mb-3">
             <strong>Tóm tắt: </strong>
-            <p>{submission.abstract}</p>
+            <p>{submission.abstract || submission.abstractText || ''}</p>
           </div>
 
-          {submission.keywords && submission.keywords.length > 0 && (
+          {((submission.keywordsArray && submission.keywordsArray.length > 0) || submission.keywords) && (
             <div className="mb-3">
               <strong>Từ khóa: </strong>
-              {submission.keywords.join(', ')}
+              {submission.keywordsArray
+                ? submission.keywordsArray.join(', ')
+                : submission.keywords
+                ? submission.keywords.split(',').map((k: string) => k.trim()).join(', ')
+                : ''}
+            </div>
+          )}
+
+          {submission.authors && submission.authors.length > 0 && (
+            <div className="mb-3">
+              <strong>Tác giả: </strong>
+              <ul className="list-unstyled mt-2">
+                {submission.authors.map((author, index) => (
+                  <li key={index} className="mb-1">
+                    {index + 1}. {author.firstName} {author.lastName}
+                    {author.email && ` (${author.email})`}
+                    {author.affiliation && ` - ${author.affiliation}`}
+                    {author.isCorresponding && (
+                      <CBadge color="success" className="ms-2">
+                        Tác giả liên hệ
+                      </CBadge>
+                    )}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -197,6 +268,9 @@ const SubmissionDetail: React.FC = () => {
           )}
         </CCardBody>
       </CCard>
+
+      {/* File Version History */}
+      <FileVersionHistory submissionId={submission.id} />
 
       {/* Reviews và Decision */}
       {(submission.status === 'REVIEWED' ||

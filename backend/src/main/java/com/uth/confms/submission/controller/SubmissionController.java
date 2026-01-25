@@ -40,6 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
  * <ul>
  *   <li>GET /api/submissions/my - Lấy danh sách submissions của author (AUTHOR)
  *   <li>GET /api/submissions/{id} - Lấy thông tin submission (AUTHOR)
+ *   <li>GET /api/submissions/conference/{conferenceId} - Lấy danh sách submissions của conference (CHAIR/ADMIN)
  *   <li>POST /api/submissions - Tạo submission mới (AUTHOR)
  *   <li>PUT /api/submissions/{id} - Cập nhật submission (AUTHOR)
  *   <li>POST /api/submissions/{id}/submit - Submit submission (AUTHOR)
@@ -235,6 +236,19 @@ public class SubmissionController {
     Long authorId = getUserIdFromAuthentication(authentication);
     submissionService.deleteSubmission(id, authorId);
     return ResponseEntity.ok(ApiResponse.success(null));
+  }
+
+  @Operation(
+      summary = "Lấy danh sách submissions của conference",
+      description = "Trả về danh sách tất cả submissions của một conference (CHAIR/ADMIN only)")
+  @GetMapping("/conference/{conferenceId}")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<List<SubmissionResponseDTO>>> getSubmissionsByConference(
+      @Parameter(description = "ID của conference") @PathVariable Long conferenceId,
+      Authentication authentication) {
+    Long userId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(submissionService.getSubmissionsByConference(conferenceId, userId)));
   }
 
   private Long getUserIdFromAuthentication(Authentication authentication) {

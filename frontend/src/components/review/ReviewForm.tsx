@@ -4,6 +4,8 @@ import {
   CFormInput,
   CFormTextarea,
   CFormLabel,
+  CFormSelect,
+  CFormCheck,
   CButton,
   CAlert,
   CSpinner,
@@ -11,7 +13,13 @@ import {
   CCardBody,
   CBadge,
 } from '@coreui/react'
-import { reviewService, Review, Assignment } from '../../services/review.service'
+import {
+  reviewService,
+  Review,
+  Assignment,
+  ReviewScore,
+  ReviewSubmitDTO,
+} from '../../services/review.service'
 
 /**
  * ReviewForm Props
@@ -19,14 +27,7 @@ import { reviewService, Review, Assignment } from '../../services/review.service
 interface ReviewFormProps {
   assignmentId?: number
   reviewId?: number
-  onSubmit: (data: {
-    overallRating: number
-    confidence: number
-    comments: string
-    strengths: string
-    weaknesses: string
-    recommendation: 'ACCEPT' | 'REJECT' | 'MINOR_REVISION' | 'MAJOR_REVISION'
-  }) => Promise<void>
+  onSubmit: (data: ReviewSubmitDTO) => Promise<void>
   onCancel: () => void
   loading?: boolean
 }
@@ -35,10 +36,12 @@ interface ReviewFormProps {
  * ReviewForm - Form component cho create/edit review
  *
  * Features:
- * - Overall rating (1-5)
- * - Confidence (1-5)
+ * - Summary (required)
+ * - Score (ReviewScore enum: STRONG_ACCEPT to STRONG_REJECT)
  * - Comments, Strengths, Weaknesses
- * - Recommendation
+ * - Overall rating (1-5, optional)
+ * - Confidence (1-5, optional)
+ * - Is Confidential checkbox
  * - Validation
  * - Double-blind UI (không hiển thị author)
  */
@@ -49,14 +52,14 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   onCancel,
   loading = false,
 }) => {
-  const [overallRating, setOverallRating] = useState(3)
-  const [confidence, setConfidence] = useState(3)
+  const [summary, setSummary] = useState('')
+  const [score, setScore] = useState<ReviewScore>('BORDERLINE')
   const [comments, setComments] = useState('')
   const [strengths, setStrengths] = useState('')
   const [weaknesses, setWeaknesses] = useState('')
-  const [recommendation, setRecommendation] = useState<
-    'ACCEPT' | 'REJECT' | 'MINOR_REVISION' | 'MAJOR_REVISION'
-  >('ACCEPT')
+  const [overallRating, setOverallRating] = useState<number | undefined>(undefined)
+  const [confidence, setConfidence] = useState<number | undefined>(undefined)
+  const [isConfidential, setIsConfidential] = useState(false)
   const [assignment, setAssignment] = useState<Assignment | null>(null)
   const [review, setReview] = useState<Review | null>(null)
   const [loadingData, setLoadingData] = useState(false)
@@ -65,84 +68,102 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   const loadReview = useCallback(async () => {
     try {
       setLoadingData(true)
-      const reviewData = await reviewService.getReview(reviewId!)
-      setReview(reviewData)
+      let reviewData: Review | null = null
 
-      // Populate form với review data
-      setOverallRating(reviewData.overallRating)
-      setConfidence(reviewData.confidence)
-      setComments(reviewData.comments)
-      setStrengths(reviewData.strengths)
-      setWeaknesses(reviewData.weaknesses)
-      setRecommendation(reviewData.recommendation)
+      if (reviewId) {
+        reviewData = await reviewService.getReview(reviewId)
+      } else if (assignmentId) {
+        // Try to load existing review by assignment
+        reviewData = await reviewService.getReviewByAssignment(assignmentId)
+      }
 
-      // Load assignment để check deadline
-      const assignmentData = await reviewService.getAssignment(reviewData.assignmentId)
-      setAssignment(assignmentData)
+      if (reviewData) {
+        setReview(reviewData)
+        // Populate form với review data
+        setSummary(reviewData.summary || '')
+        setScore(reviewData.score)
+        setComments(reviewData.comments || '')
+        setStrengths(reviewData.strengths || '')
+        setWeaknesses(reviewData.weaknesses || '')
+        setOverallRating(reviewData.overallRating)
+        setConfidence(reviewData.confidence)
+        setIsConfidential(reviewData.isConfidential || false)
+
+        // Load assignment để check deadline
+        const assignmentData = await reviewService.getAssignment(reviewData.assignmentId)
+        setAssignment(assignmentData)
+      } else if (assignmentId) {
+        // No existing review, load assignment for new review
+        const assignmentData = await reviewService.getAssignment(assignmentId)
+        setAssignment(assignmentData)
+      }
     } catch (error) {
       console.error('Error loading review:', error)
       setError('Không thể tải thông tin đánh giá')
     } finally {
       setLoadingData(false)
     }
-  }, [reviewId])
-
-  const loadAssignment = useCallback(async () => {
-    try {
-      setLoadingData(true)
-      const assignmentData = await reviewService.getAssignment(assignmentId!)
-      setAssignment(assignmentData)
-    } catch (error) {
-      console.error('Error loading assignment:', error)
-      setError('Không thể tải thông tin assignment')
-    } finally {
-      setLoadingData(false)
-    }
-  }, [assignmentId])
+  }, [reviewId, assignmentId])
 
   useEffect(() => {
-    if (reviewId) {
-      void loadReview()
-    } else if (assignmentId) {
-      void loadAssignment()
-    }
-  }, [reviewId, assignmentId, loadReview, loadAssignment])
+    void loadReview()
+  }, [loadReview])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (!summary.trim()) {
+      setError('Vui lòng nhập tóm tắt')
+      return
+    }
 
     if (!comments.trim()) {
       setError('Vui lòng nhập nhận xét')
       return
     }
 
-    if (!strengths.trim()) {
-      setError('Vui lòng nhập điểm mạnh')
-      return
-    }
-
-    if (!weaknesses.trim()) {
-      setError('Vui lòng nhập điểm yếu')
+    if (!assignmentId && !review?.assignmentId) {
+      setError('Missing assignment ID')
       return
     }
 
     try {
-      await onSubmit({
+      const submitData: ReviewSubmitDTO = {
+        assignmentId: assignmentId || review!.assignmentId,
+        summary: summary.trim(),
+        comments: comments.trim(),
+        strengths: strengths.trim() || undefined,
+        weaknesses: weaknesses.trim() || undefined,
+        score,
+        isConfidential,
         overallRating,
         confidence,
-        comments: comments.trim(),
-        strengths: strengths.trim(),
-        weaknesses: weaknesses.trim(),
-        recommendation,
-      })
+      }
+
+      await onSubmit(submitData)
     } catch (err: any) {
       setError(err.message || 'Có lỗi xảy ra')
     }
   }
 
-  const isDeadlinePassed = assignment?.deadline ? new Date(assignment.deadline) < new Date() : false
-  const canEdit = review ? review.canEdit : true
+  const isDeadlinePassed = assignment?.deadline
+    ? new Date(assignment.deadline) < new Date()
+    : false
+  const canEdit = review ? review.status === 'DRAFT' : true
+
+  const getScoreLabel = (scoreValue: ReviewScore) => {
+    const labels: Record<ReviewScore, string> = {
+      STRONG_ACCEPT: 'Chấp nhận mạnh mẽ (7)',
+      ACCEPT: 'Chấp nhận (6)',
+      WEAK_ACCEPT: 'Chấp nhận yếu (5)',
+      BORDERLINE: 'Ranh giới (4)',
+      WEAK_REJECT: 'Từ chối yếu (3)',
+      REJECT: 'Từ chối (2)',
+      STRONG_REJECT: 'Từ chối mạnh mẽ (1)',
+    }
+    return labels[scoreValue]
+  }
 
   if (loadingData) {
     return (
@@ -185,40 +206,51 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
 
         <CForm onSubmit={handleSubmit}>
           <div className="mb-3">
-            <CFormLabel>Đánh giá tổng thể (1-5) *</CFormLabel>
-            <CFormInput
-              type="number"
-              min="1"
-              max="5"
-              value={overallRating}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setOverallRating(parseInt(e.target.value))
-              }
+            <CFormLabel>
+              Tóm tắt <span className="text-danger">*</span>
+            </CFormLabel>
+            <CFormTextarea
+              value={summary}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSummary(e.target.value)}
               required
+              rows={3}
+              placeholder="Nhập tóm tắt đánh giá"
               disabled={isDeadlinePassed || !canEdit}
             />
           </div>
 
           <div className="mb-3">
-            <CFormLabel>Độ tin cậy (1-5) *</CFormLabel>
-            <CFormInput
-              type="number"
-              min="1"
-              max="5"
-              value={confidence}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setConfidence(parseInt(e.target.value))
+            <CFormLabel>
+              Điểm đánh giá <span className="text-danger">*</span>
+            </CFormLabel>
+            <CFormSelect
+              value={score}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setScore(e.target.value as ReviewScore)
               }
               required
               disabled={isDeadlinePassed || !canEdit}
-            />
+            >
+              <option value="STRONG_ACCEPT">Chấp nhận mạnh mẽ (7)</option>
+              <option value="ACCEPT">Chấp nhận (6)</option>
+              <option value="WEAK_ACCEPT">Chấp nhận yếu (5)</option>
+              <option value="BORDERLINE">Ranh giới (4)</option>
+              <option value="WEAK_REJECT">Từ chối yếu (3)</option>
+              <option value="REJECT">Từ chối (2)</option>
+              <option value="STRONG_REJECT">Từ chối mạnh mẽ (1)</option>
+            </CFormSelect>
+            <small className="text-muted">Điểm hiện tại: {getScoreLabel(score)}</small>
           </div>
 
           <div className="mb-3">
-            <CFormLabel>Nhận xét *</CFormLabel>
+            <CFormLabel>
+              Nhận xét <span className="text-danger">*</span>
+            </CFormLabel>
             <CFormTextarea
               value={comments}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setComments(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setComments(e.target.value)
+              }
               required
               rows={5}
               placeholder="Nhập nhận xét về bài báo"
@@ -227,11 +259,12 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           </div>
 
           <div className="mb-3">
-            <CFormLabel>Điểm mạnh *</CFormLabel>
+            <CFormLabel>Điểm mạnh</CFormLabel>
             <CFormTextarea
               value={strengths}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setStrengths(e.target.value)}
-              required
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setStrengths(e.target.value)
+              }
               rows={3}
               placeholder="Nhập các điểm mạnh của bài báo"
               disabled={isDeadlinePassed || !canEdit}
@@ -239,13 +272,12 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           </div>
 
           <div className="mb-3">
-            <CFormLabel>Điểm yếu *</CFormLabel>
+            <CFormLabel>Điểm yếu</CFormLabel>
             <CFormTextarea
               value={weaknesses}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                 setWeaknesses(e.target.value)
               }
-              required
               rows={3}
               placeholder="Nhập các điểm yếu của bài báo"
               disabled={isDeadlinePassed || !canEdit}
@@ -253,23 +285,46 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
           </div>
 
           <div className="mb-3">
-            <CFormLabel>Khuyến nghị *</CFormLabel>
-            <select
-              className="form-select"
-              value={recommendation}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setRecommendation(
-                  e.target.value as 'ACCEPT' | 'REJECT' | 'MINOR_REVISION' | 'MAJOR_REVISION',
-                )
+            <CFormLabel>Đánh giá tổng thể (1-5)</CFormLabel>
+            <CFormInput
+              type="number"
+              min="1"
+              max="5"
+              value={overallRating || ''}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setOverallRating(e.target.value ? parseInt(e.target.value) : undefined)
               }
-              required
+              placeholder="Tùy chọn"
               disabled={isDeadlinePassed || !canEdit}
-            >
-              <option value="ACCEPT">Chấp nhận</option>
-              <option value="MINOR_REVISION">Sửa đổi nhỏ</option>
-              <option value="MAJOR_REVISION">Sửa đổi lớn</option>
-              <option value="REJECT">Từ chối</option>
-            </select>
+            />
+          </div>
+
+          <div className="mb-3">
+            <CFormLabel>Độ tin cậy (1-5)</CFormLabel>
+            <CFormInput
+              type="number"
+              min="1"
+              max="5"
+              value={confidence || ''}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setConfidence(e.target.value ? parseInt(e.target.value) : undefined)
+              }
+              placeholder="Tùy chọn"
+              disabled={isDeadlinePassed || !canEdit}
+            />
+          </div>
+
+          <div className="mb-3">
+            <CFormCheck
+              type="checkbox"
+              id="isConfidential"
+              label="Đánh giá bảo mật (chỉ chair/PC thấy, author không thấy)"
+              checked={isConfidential}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setIsConfidential(e.target.checked)
+              }
+              disabled={isDeadlinePassed || !canEdit}
+            />
           </div>
 
           <div className="d-flex justify-content-end gap-2">

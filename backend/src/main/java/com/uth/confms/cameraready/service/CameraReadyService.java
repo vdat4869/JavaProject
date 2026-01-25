@@ -53,6 +53,10 @@ public interface CameraReadyService {
 
     byte[] exportProceedingsCsv(UUID conferenceId, UUID trackId, CameraReadyStatus status);
 
+    byte[] exportProceedingsZip(UUID conferenceId, UUID trackId, CameraReadyStatus status);
+
+    byte[] exportProceedingsPdf(UUID conferenceId, UUID trackId, CameraReadyStatus status);
+
     // ==================== Admin Operations ====================
 
     int openCameraReady(UUID conferenceId, UUID userId);

@@ -45,6 +45,9 @@ public class Decision {
   @Column(nullable = false)
   private Boolean notified = false;
 
+  @Column(nullable = false)
+  private Boolean locked = false;
+
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime decidedAt;
@@ -58,6 +61,7 @@ public class Decision {
       DecisionType type,
       String comments,
       Boolean notified,
+      Boolean locked,
       LocalDateTime decidedAt) {
     this.id = id;
     this.submissionId = submissionId;
@@ -65,6 +69,7 @@ public class Decision {
     this.type = type;
     this.comments = comments;
     this.notified = notified;
+    this.locked = locked;
     this.decidedAt = decidedAt;
   }
 
@@ -128,6 +133,14 @@ public class Decision {
     this.decidedAt = decidedAt;
   }
 
+  public Boolean getLocked() {
+    return locked;
+  }
+
+  public void setLocked(Boolean locked) {
+    this.locked = locked;
+  }
+
   /** Enum định nghĩa các loại decision */
   public enum DecisionType {
     /** Chấp nhận submission */
@@ -145,6 +158,7 @@ public class Decision {
     private DecisionType type;
     private String comments;
     private Boolean notified = false;
+    private Boolean locked = false;
     private LocalDateTime decidedAt;
 
     public Builder id(Long id) {
@@ -177,13 +191,18 @@ public class Decision {
       return this;
     }
 
+    public Builder locked(Boolean locked) {
+      this.locked = locked;
+      return this;
+    }
+
     public Builder decidedAt(LocalDateTime decidedAt) {
       this.decidedAt = decidedAt;
       return this;
     }
 
     public Decision build() {
-      return new Decision(id, submissionId, decidedBy, type, comments, notified, decidedAt);
+      return new Decision(id, submissionId, decidedBy, type, comments, notified, locked, decidedAt);
     }
   }
 }

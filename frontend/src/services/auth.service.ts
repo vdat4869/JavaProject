@@ -83,8 +83,10 @@ export const authService = {
    * GET /api/auth/sso/redirect
    */
   getSSORedirectUrl: async (): Promise<string> => {
-    const response = await apiClient.get<SSORedirectResponse>('/auth/sso/redirect')
-    return response.data.redirectUrl
+    const response = await apiClient.get<{ success: boolean; data: SSORedirectResponse }>('/auth/sso/redirect')
+    // Backend wraps response in ApiResponse: { success: true, data: { redirectUrl: "..." } }
+    const respData = response.data as any
+    return respData.data?.redirectUrl || respData.redirectUrl
   },
 
   /**
@@ -119,5 +121,13 @@ export const authService = {
    */
   logout: async (): Promise<void> => {
     await apiClient.post('/auth/logout')
+  },
+
+  /**
+   * Change password
+   * POST /api/auth/change-password
+   */
+  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<void> => {
+    await apiClient.post('/auth/change-password', data)
   },
 }

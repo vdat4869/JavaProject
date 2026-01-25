@@ -15,7 +15,6 @@ import com.uth.confms.auth.repository.UserRepository;
 import com.uth.confms.common.exception.BusinessException;
 import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
-import com.uth.confms.email.service.EmailVerificationService;
 import com.uth.confms.auth.enums.LoginProvider;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -26,6 +25,8 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -42,6 +43,8 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class AuthService {
+  private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+
   private final UserRepository userRepository;
   private final RoleRepository roleRepository;
   private final PasswordEncoder passwordEncoder;
@@ -49,8 +52,6 @@ public class AuthService {
   private final AuthenticationManager authenticationManager;
   @SuppressWarnings("unused")
   private final UserDetailsService userDetailsService;
-  @SuppressWarnings("unused")
-  private final EmailVerificationService emailVerificationService;
   private final RefreshTokenRepository refreshTokenRepository;
   private final AuditLogService auditLogService;
   private final GoogleTokenService googleTokenService;
@@ -62,7 +63,6 @@ public class AuthService {
       JwtService jwtService,
       AuthenticationManager authenticationManager,
       UserDetailsService userDetailsService,
-      EmailVerificationService emailVerificationService,
       RefreshTokenRepository refreshTokenRepository,
       AuditLogService auditLogService,
       GoogleTokenService googleTokenService) {
@@ -72,7 +72,6 @@ public class AuthService {
     this.jwtService = jwtService;
     this.authenticationManager = authenticationManager;
     this.userDetailsService = userDetailsService;
-    this.emailVerificationService = emailVerificationService;
     this.refreshTokenRepository = refreshTokenRepository;
     this.auditLogService = auditLogService;
     this.googleTokenService = googleTokenService;
@@ -99,7 +98,7 @@ public class AuthService {
         .lastName(request.getLastName())
         .affiliation(request.getAffiliation())
         .phone(request.getPhone())
-        .emailVerified(false)
+        .emailVerified(true) // Email verification disabled - set to true by default
         .active(true)
         .build();
 
@@ -117,13 +116,6 @@ public class AuthService {
 
     user = userRepository.save(user);
 
-    // Send verification email (may log/warn if email sending fails)
-    try {
-      emailVerificationService.sendVerificationEmail(user);
-    } catch (Exception e) {
-      // swallow to avoid blocking registration
-    }
-
     // Audit log: Registration
     try {
       auditLogService.logAction(
@@ -138,8 +130,35 @@ public class AuthService {
       // Don't block registration if audit logging fails
     }
 
-    // Return minimal response without tokens. Frontend expects to navigate to
-    // verify-email.
+    // Generate tokens for immediate login after registration
+    String accessToken = jwtService.generateAccessToken(user);
+    String refreshTokenString = jwtService.generateRefreshToken(user);
+
+    // Create RefreshToken entity
+    try {
+      java.util.Date exp = jwtService.extractExpiration(refreshTokenString);
+      LocalDateTime expiresAt = exp.toInstant()
+          .atZone(ZoneId.systemDefault())
+          .toLocalDateTime();
+
+      String tokenHash = sha256Hex(refreshTokenString);
+
+      RefreshToken refreshToken = RefreshToken.builder()
+          .tokenHash(tokenHash)
+          .user(user)
+          .expiresAt(expiresAt)
+          .createdAt(LocalDateTime.now())
+          .deviceInfo(null) // Registration doesn't have device info
+          .ipAddress(null) // Registration doesn't have IP
+          .revoked(false)
+          .build();
+
+      refreshTokenRepository.save(refreshToken);
+    } catch (Exception e) {
+      // Don't block registration if token saving fails
+      log.warn("Failed to save refresh token during registration", e);
+    }
+
     Set<String> roles = user.getRoles().stream().map(r -> r.getName().name()).collect(Collectors.toSet());
 
     return LoginResponse.builder()
@@ -148,24 +167,10 @@ public class AuthService {
         .fullName(user.getFullName())
         .roles(roles)
         .emailVerified(user.getEmailVerified())
+        .accessToken(accessToken)
+        .refreshToken(refreshTokenString)
         .tokenType("Bearer")
         .build();
-  }
-
-  /**
-   * Verify email using token and mark user as verified
-   */
-  @Transactional
-  public void verifyEmail(String token) {
-    emailVerificationService.verifyEmail(token);
-  }
-
-  /**
-   * Resend verification token to user email
-   */
-  @Transactional
-  public void resendVerification(String email) {
-    emailVerificationService.resendVerificationToken(email);
   }
 
   /**
@@ -392,14 +397,15 @@ public class AuthService {
   /**
    * Tạo hoặc cập nhật user từ OAuth2 provider (Google, Microsoft, etc.)
    *
-   * <p>Method này được gọi khi user đăng nhập lần đầu qua OAuth2.
+   * <p>
+   * Method này được gọi khi user đăng nhập lần đầu qua OAuth2.
    * Nếu user đã tồn tại, sẽ cập nhật thông tin (nếu cần).
    * Nếu user chưa tồn tại, sẽ tạo user mới với:
    * - emailVerified = true (vì OAuth2 provider đã verify email)
    * - role AUTHOR (mặc định)
    * - password được generate random (không thể login bằng password)
    *
-   * @param email Email từ OAuth2 provider
+   * @param email    Email từ OAuth2 provider
    * @param fullName Tên đầy đủ từ OAuth2 provider
    * @param provider Tên provider (google, azure, etc.)
    * @return User đã được tạo hoặc cập nhật
@@ -427,6 +433,12 @@ public class AuthService {
       // Generate random password (user không thể login bằng password, chỉ OAuth2)
       String randomPassword = generateRandomPassword();
 
+      // Map provider string to LoginProvider enum
+      LoginProvider loginProvider = LoginProvider.LOCAL;
+      if ("google".equalsIgnoreCase(provider)) {
+        loginProvider = LoginProvider.GOOGLE;
+      }
+
       user = User.builder()
           .email(email)
           .password(passwordEncoder.encode(randomPassword))
@@ -434,6 +446,7 @@ public class AuthService {
           .lastName(lastName)
           .emailVerified(true) // OAuth2 providers đã verify email
           .active(true)
+          .provider(loginProvider)
           .build();
 
       // Get or create AUTHOR role
@@ -486,7 +499,8 @@ public class AuthService {
    */
   private String generateRandomPassword() {
     // Generate random password (32 characters)
-    // OAuth2 users không cần password để login, nhưng User entity yêu cầu password không null
+    // OAuth2 users không cần password để login, nhưng User entity yêu cầu password
+    // không null
     java.util.UUID uuid = java.util.UUID.randomUUID();
     return uuid.toString().replace("-", "") + uuid.toString().replace("-", "");
   }

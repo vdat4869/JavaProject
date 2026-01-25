@@ -36,14 +36,26 @@ const SubmissionFormPage: React.FC = () => {
     abstract: string
     keywords: string[]
     trackId?: number
-    file: File
+    file?: File
+    authors?: any[]
   }) => {
     try {
       setLoading(true)
-      await submissionService.createSubmission({
-        ...data,
+      // Step 1: Create submission (JSON only, no file)
+      const submission = await submissionService.createSubmission({
         conferenceId,
+        title: data.title,
+        abstractText: data.abstract,
+        keywords: data.keywords.join(', '), // Convert array to string
+        trackId: data.trackId,
+        authors: data.authors,
       })
+
+      // Step 2: Upload PDF file if provided
+      if (data.file) {
+        await submissionService.uploadPdf(submission.id, data.file)
+      }
+
       navigate('/author/submissions')
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Không thể tạo submission')

@@ -12,6 +12,8 @@ import {
 } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
 import { conferenceService, CFP, Track } from '../../services/conference.service'
+import AuthorEditor from './AuthorEditor'
+import { SubmissionAuthor } from '../../services/submission.service'
 
 /**
  * SubmissionForm Props
@@ -22,6 +24,7 @@ interface SubmissionFormProps {
     abstract?: string
     keywords?: string[]
     trackId?: number
+    authors?: SubmissionAuthor[]
   }
   conferenceId: number
   onSubmit: (data: {
@@ -29,7 +32,8 @@ interface SubmissionFormProps {
     abstract: string
     keywords: string[]
     trackId?: number
-    file: File
+    file?: File
+    authors?: SubmissionAuthor[]
   }) => Promise<void>
   onCancel: () => void
   loading?: boolean
@@ -57,6 +61,7 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({
   const [keywords, setKeywords] = useState(initialData?.keywords?.join(', ') || '')
   const [trackId, setTrackId] = useState<number | undefined>(initialData?.trackId)
   const [file, setFile] = useState<File | null>(null)
+  const [authors, setAuthors] = useState<SubmissionAuthor[]>(initialData?.authors || [])
   const [cfp, setCfp] = useState<CFP | null>(null)
   const [loadingCfp, setLoadingCfp] = useState(true)
   const [error, setError] = useState('')
@@ -92,10 +97,8 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({
       return
     }
 
-    if (!file && !initialData) {
-      setError('Vui lòng chọn file PDF')
-      return
-    }
+    // File is optional for create (can upload later)
+    // File is optional for update (only upload if changing)
 
     const keywordsArray = keywords
       .split(',')
@@ -108,7 +111,8 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({
         abstract: abstract.trim(),
         keywords: keywordsArray,
         trackId,
-        file: file || ({} as File), // Type assertion, sẽ được xử lý ở parent
+        file: file || undefined, // Optional file
+        authors: authors.length > 0 ? authors : undefined,
       })
     } catch (err: any) {
       setError(err.message || 'Có lỗi xảy ra')
@@ -181,9 +185,14 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({
         </div>
       )}
 
+      {/* Authors Section */}
+      <div className="mb-3">
+        <AuthorEditor authors={authors} onChange={setAuthors} />
+      </div>
+
       {!initialData && (
         <div className="mb-3">
-          <CFormLabel>File PDF *</CFormLabel>
+          <CFormLabel>File PDF (tùy chọn)</CFormLabel>
           <CFormInput
             type="file"
             accept=".pdf"
@@ -197,9 +206,8 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({
                 setFile(selectedFile)
               }
             }}
-            required={!initialData}
           />
-          <small className="text-muted">File PDF, tối đa 20MB</small>
+          <small className="text-muted">File PDF, tối đa 20MB. Có thể upload sau khi tạo submission.</small>
         </div>
       )}
 

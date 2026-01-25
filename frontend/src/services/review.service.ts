@@ -19,76 +19,127 @@ export interface Assignment {
 }
 
 /**
- * Review interface
+ * ReviewScore enum - matches backend ReviewScore enum
+ */
+export type ReviewScore =
+  | 'STRONG_ACCEPT'
+  | 'ACCEPT'
+  | 'WEAK_ACCEPT'
+  | 'BORDERLINE'
+  | 'WEAK_REJECT'
+  | 'REJECT'
+  | 'STRONG_REJECT'
+
+/**
+ * Review interface - matches backend ReviewResponseDTO
  */
 export interface Review {
   id: number
   assignmentId: number
   submissionId: number
-  overallRating: number
-  confidence: number
-  comments: string
-  strengths: string
-  weaknesses: string
-  recommendation: 'ACCEPT' | 'REJECT' | 'MINOR_REVISION' | 'MAJOR_REVISION'
-  status: 'DRAFT' | 'SUBMITTED'
-  submittedAt?: string
-  canEdit: boolean
-}
-
-/**
- * Create Review request
- */
-export interface CreateReviewRequest {
-  assignmentId: number
-  overallRating: number
-  confidence: number
-  comments: string
-  strengths: string
-  weaknesses: string
-  recommendation: 'ACCEPT' | 'REJECT' | 'MINOR_REVISION' | 'MAJOR_REVISION'
-}
-
-/**
- * Update Review request
- */
-export interface UpdateReviewRequest {
-  overallRating?: number
-  confidence?: number
-  comments?: string
+  reviewerId: number
+  reviewerName: string | null // Only visible to chair/admin, null for double-blind
+  summary: string
   strengths?: string
   weaknesses?: string
-  recommendation?: 'ACCEPT' | 'REJECT' | 'MINOR_REVISION' | 'MAJOR_REVISION'
-}
-
-/**
- * Discussion message interface
- */
-export interface DiscussionMessage {
-  id: number
-  reviewId: number
-  authorId: number
-  authorName: string
-  content: string
+  comments: string
+  score: ReviewScore
+  status: 'DRAFT' | 'SUBMITTED'
+  isConfidential: boolean
+  overallRating?: number // 1-5
+  confidence?: number // 1-5
+  numericScore?: number // 1-7
   createdAt: string
+  submittedAt?: string
 }
 
 /**
- * Create Discussion message request
+ * Create/Update Review request - matches backend ReviewSubmitDTO
  */
-export interface CreateDiscussionRequest {
-  reviewId: number
-  content: string
+export interface ReviewSubmitDTO {
+  assignmentId: number
+  summary: string
+  strengths?: string
+  weaknesses?: string
+  comments: string
+  score: ReviewScore
+  isConfidential: boolean
+  overallRating?: number // 1-5
+  confidence?: number // 1-5
+  templateId?: number
 }
 
 /**
- * Rebuttal interface (Double-blind - không có author info)
+ * Review Comment interface - matches backend ReviewCommentDTO
+ */
+export interface ReviewComment {
+  id: number
+  submissionId: number
+  reviewerId: number
+  reviewerName: string | null // Only visible to chair/admin for internal comments
+  content: string
+  isInternal: boolean
+  createdAt: string
+  updatedAt?: string
+}
+
+/**
+ * Average Score interface - matches backend AverageScoreDTO
+ */
+export interface AverageScore {
+  submissionId: number
+  averageScore: number
+  reviewCount: number
+}
+
+/**
+ * Review Statistics interface - matches backend ReviewStatisticsDTO
+ */
+export interface ReviewStatistics {
+  conferenceId: number
+  completionRate: number // Percentage
+  averageScore: number
+  scoreDistribution: Record<string, number> // Score -> count
+  averageCompletionTime: number // Days
+  totalReviews: number
+  completedReviews: number
+  pendingReviews: number
+  submissionTimeline: Record<string, number> // Date -> count
+  reviewerMetrics: Record<number, ReviewerPerformance>
+}
+
+/**
+ * Reviewer Performance interface - matches backend ReviewerPerformanceDTO
+ */
+export interface ReviewerPerformance {
+  reviewerId: number
+  reviewerName: string
+  totalReviews: number
+  completedReviews: number
+  averageScore: number
+  averageCompletionTime: number // Days
+  completionRate: number // Percentage
+}
+
+/**
+ * Rebuttal interface - matches backend RebuttalDTO
  */
 export interface Rebuttal {
   id: number
   submissionId: number
+  authorId: number
   content: string
-  submittedAt: string
+  status: 'DRAFT' | 'SUBMITTED'
+  createdAt: string
+  submittedAt?: string
+}
+
+/**
+ * Rebuttal Submit DTO - matches backend RebuttalSubmitDTO
+ */
+export interface RebuttalSubmitDTO {
+  submissionId: number
+  content: string
 }
 
 /**
@@ -118,71 +169,155 @@ export const reviewService = {
    * GET /api/reviews/{id}
    */
   getReview: async (id: number): Promise<Review> => {
-    const response = await apiClient.get<Review>(`/reviews/${id}`)
-    return response.data
+    const response = await apiClient.get<{ success: boolean; data: Review }>(`/reviews/${id}`)
+    return response.data.data || response.data
   },
 
   /**
-   * Tạo review mới
-   * POST /api/reviews
+   * Lấy review theo assignment ID
+   * GET /api/reviews/assignment/{assignmentId}
    */
-  createReview: async (data: CreateReviewRequest): Promise<Review> => {
-    const response = await apiClient.post<Review>('/reviews', data)
-    return response.data
-  },
-
-  /**
-   * Cập nhật review
-   * PUT /api/reviews/{id}
-   */
-  updateReview: async (id: number, data: UpdateReviewRequest): Promise<Review> => {
-    const response = await apiClient.put<Review>(`/reviews/${id}`, data)
-    return response.data
-  },
-
-  /**
-   * Submit review (finalize)
-   * POST /api/reviews/{id}/submit
-   */
-  submitReview: async (id: number): Promise<void> => {
-    await apiClient.post(`/reviews/${id}/submit`)
-  },
-
-  /**
-   * Lấy danh sách discussion messages
-   * GET /api/reviews/{id}/discussion
-   */
-  getDiscussion: async (reviewId: number): Promise<DiscussionMessage[]> => {
-    const response = await apiClient.get<DiscussionMessage[]>(`/reviews/${reviewId}/discussion`)
-    return response.data
-  },
-
-  /**
-   * Thêm message vào discussion
-   * POST /api/reviews/{id}/discussion
-   */
-  addDiscussionMessage: async (data: CreateDiscussionRequest): Promise<DiscussionMessage> => {
-    const response = await apiClient.post<DiscussionMessage>(
-      `/reviews/${data.reviewId}/discussion`,
-      { content: data.content },
-    )
-    return response.data
-  },
-
-  /**
-   * Lấy rebuttal cho submission (nếu có)
-   * GET /api/submissions/{id}/rebuttal
-   */
-  getRebuttal: async (submissionId: number): Promise<Rebuttal | null> => {
+  getReviewByAssignment: async (assignmentId: number): Promise<Review | null> => {
     try {
-      const response = await apiClient.get<Rebuttal>(`/submissions/${submissionId}/rebuttal`)
-      return response.data
+      const response = await apiClient.get<{ success: boolean; data: Review }>(
+        `/reviews/assignment/${assignmentId}`
+      )
+      return response.data.data || response.data
     } catch (error: any) {
       if (error.response?.status === 404) {
         return null
       }
       throw error
     }
+  },
+
+  /**
+   * Lấy tất cả reviews của submission
+   * GET /api/reviews/submission/{submissionId}
+   */
+  getReviewsBySubmission: async (submissionId: number): Promise<Review[]> => {
+    const response = await apiClient.get<{ success: boolean; data: Review[] }>(
+      `/reviews/submission/${submissionId}`
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Tạo hoặc cập nhật draft review
+   * POST /api/reviews/draft
+   */
+  createOrUpdateDraft: async (data: ReviewSubmitDTO): Promise<Review> => {
+    const response = await apiClient.post<{ success: boolean; data: Review }>(
+      '/reviews/draft',
+      data
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Submit review (finalize)
+   * POST /api/reviews/{id}/submit
+   */
+  submitReview: async (id: number): Promise<Review> => {
+    const response = await apiClient.post<{ success: boolean; data: Review }>(
+      `/reviews/${id}/submit`
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Lấy average score của submission
+   * GET /api/reviews/submission/{submissionId}/average-score
+   */
+  getAverageScore: async (submissionId: number): Promise<AverageScore> => {
+    const response = await apiClient.get<{ success: boolean; data: AverageScore }>(
+      `/reviews/submission/${submissionId}/average-score`
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Lấy review statistics của conference
+   * GET /api/reviews/conference/{conferenceId}/statistics
+   */
+  getReviewStatistics: async (conferenceId: number): Promise<ReviewStatistics> => {
+    const response = await apiClient.get<{ success: boolean; data: ReviewStatistics }>(
+      `/reviews/conference/${conferenceId}/statistics`
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Lấy internal comments của submission
+   * GET /api/reviews/submission/{submissionId}/comments
+   */
+  getInternalComments: async (submissionId: number): Promise<ReviewComment[]> => {
+    const response = await apiClient.get<{ success: boolean; data: ReviewComment[] }>(
+      `/reviews/submission/${submissionId}/comments`
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Thêm internal comment vào submission
+   * POST /api/reviews/submission/{submissionId}/comments
+   * Note: Backend expects String content in request body, not JSON object
+   */
+  addInternalComment: async (
+    submissionId: number,
+    content: string
+  ): Promise<ReviewComment> => {
+    const response = await apiClient.post<{ success: boolean; data: ReviewComment }>(
+      `/reviews/submission/${submissionId}/comments`,
+      content, // Send as plain string, not JSON
+      {
+        headers: {
+          'Content-Type': 'text/plain',
+        },
+      }
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Lấy rebuttal cho submission (nếu có)
+   * GET /api/reviews/rebuttal/submission/{submissionId}
+   */
+  getRebuttal: async (submissionId: number): Promise<Rebuttal | null> => {
+    try {
+      const response = await apiClient.get<{ success: boolean; data: Rebuttal }>(
+        `/reviews/rebuttal/submission/${submissionId}`
+      )
+      return response.data.data || response.data
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null
+      }
+      throw error
+    }
+  },
+
+  /**
+   * Tạo hoặc cập nhật rebuttal draft
+   * POST /api/reviews/rebuttal
+   */
+  createOrUpdateRebuttal: async (data: RebuttalSubmitDTO): Promise<Rebuttal> => {
+    const response = await apiClient.post<{ success: boolean; data: Rebuttal }>(
+      '/reviews/rebuttal',
+      data
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Submit rebuttal (finalize)
+   * POST /api/reviews/rebuttal/{id}/submit
+   */
+  submitRebuttal: async (id: number): Promise<Rebuttal> => {
+    const response = await apiClient.post<{ success: boolean; data: Rebuttal }>(
+      `/reviews/rebuttal/${id}/submit`
+    )
+    return response.data.data || response.data
   },
 
   /**

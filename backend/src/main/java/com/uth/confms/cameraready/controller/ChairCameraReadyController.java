@@ -134,6 +134,38 @@ public class ChairCameraReadyController {
                 .body(csv);
     }
 
+    @GetMapping("/export/zip")
+    @Operation(summary = "Xuất ZIP (tất cả PDFs + metadata)")
+    public ResponseEntity<byte[]> exportZip(
+            @PathVariable UUID conferenceId,
+            @RequestParam(required = false) UUID trackId,
+            @RequestParam(defaultValue = "APPROVED") CameraReadyStatus status) {
+        
+        byte[] zip = cameraReadyService.exportProceedingsZip(conferenceId, trackId, status);
+        String filename = String.format("proceedings_%s.zip", LocalDate.now());
+        
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(zip);
+    }
+
+    @GetMapping("/export/pdf")
+    @Operation(summary = "Xuất PDF (compiled proceedings)")
+    public ResponseEntity<byte[]> exportPdf(
+            @PathVariable UUID conferenceId,
+            @RequestParam(required = false) UUID trackId,
+            @RequestParam(defaultValue = "APPROVED") CameraReadyStatus status) {
+        
+        byte[] pdf = cameraReadyService.exportProceedingsPdf(conferenceId, trackId, status);
+        String filename = String.format("proceedings_%s.pdf", LocalDate.now());
+        
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/pdf"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(pdf);
+    }
+
     @PostMapping("/open")
     @Operation(summary = "Mở nộp camera-ready")
     public ResponseEntity<Map<String, Object>> openCameraReady(

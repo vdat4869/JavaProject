@@ -18,15 +18,21 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Controller quản lý decisions và notifications
  *
- * <p>Các endpoints:
+ * <p>
+ * Các endpoints:
  *
  * <ul>
- *   <li>POST /api/decisions - Tạo decision (CHAIR/ADMIN)
- *   <li>GET /api/decisions/submission/{id} - Lấy decision by submission (authenticated)
- *   <li>GET /api/decisions/conference/{id} - Lấy decisions của conference (CHAIR/ADMIN)
- *   <li>GET /api/decisions/pending-notifications - Lấy pending notifications (CHAIR/ADMIN)
- *   <li>POST /api/decisions/notify/{id} - Gửi notification cho decision (CHAIR/ADMIN)
- *   <li>POST /api/decisions/notifications/bulk - Gửi bulk notifications (CHAIR/ADMIN)
+ * <li>POST /api/decisions - Tạo decision (CHAIR/ADMIN)
+ * <li>GET /api/decisions/submission/{id} - Lấy decision by submission
+ * (authenticated)
+ * <li>GET /api/decisions/conference/{id} - Lấy decisions của conference
+ * (CHAIR/ADMIN)
+ * <li>GET /api/decisions/pending-notifications - Lấy pending notifications
+ * (CHAIR/ADMIN)
+ * <li>POST /api/decisions/notify/{id} - Gửi notification cho decision
+ * (CHAIR/ADMIN)
+ * <li>POST /api/decisions/notifications/bulk - Gửi bulk notifications
+ * (CHAIR/ADMIN)
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -82,8 +88,7 @@ public class DecisionController {
   @PostMapping("/notify/{decisionId}")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
   public ResponseEntity<ApiResponse<Void>> sendNotification(@PathVariable Long decisionId) {
-    com.uth.confms.decision.entity.Decision decision =
-        decisionService.getDecisionEntityById(decisionId);
+    com.uth.confms.decision.entity.Decision decision = decisionService.getDecisionEntityById(decisionId);
     notificationService.sendDecisionNotification(decision);
     return ResponseEntity.ok(ApiResponse.success("Notification sent", null));
   }
@@ -96,10 +101,20 @@ public class DecisionController {
     return ResponseEntity.ok(ApiResponse.success("Bulk notifications sent", null));
   }
 
+  @PutMapping("/{decisionId}")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<DecisionResultDTO>> updateDecision(
+      @PathVariable Long decisionId,
+      @Valid @RequestBody com.uth.confms.decision.dto.UpdateDecisionRequestDTO dto,
+      Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(
+        ApiResponse.success(decisionService.updateDecision(decisionId, dto, chairId)));
+  }
+
   private Long getUserIdFromAuthentication(Authentication authentication) {
     String email = authentication.getName();
-    User user =
-        userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+    User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
     return user.getId();
   }
 }
