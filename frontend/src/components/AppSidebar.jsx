@@ -14,8 +14,8 @@ import CIcon from '@coreui/icons-react'
 import { AppSidebarNav } from './AppSidebarNav.jsx'
 import { useAuth } from '../context/AuthContext'
 
-import { logo } from 'src/assets/brand/logo'
-import { sygnet } from 'src/assets/brand/sygnet'
+import { logo } from '../assets/brand/logo'
+import { sygnet } from '../assets/brand/sygnet'
 
 // sidebar nav config
 import navigation from '../_nav'
@@ -31,7 +31,7 @@ import navigation from '../_nav'
 const filterNavigationByRole = (items, userRoles) => {
   // Nếu user là ADMIN, có thể cho thấy tất cả (hoặc filter như bình thường)
   const isAdmin = userRoles && userRoles.includes('ADMIN')
-  
+
   if (!userRoles || userRoles.length === 0) {
     // Nếu không có roles, chỉ hiển thị items không có roles requirement
     return items.filter((item) => !item.roles)

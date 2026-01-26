@@ -21,29 +21,24 @@ import {
   CModalFooter,
   CModalHeader,
   CModalTitle,
+  CBadge,
 } from '@coreui/react'
 import {
   reportsService,
   ReportStatistics,
-  ReportExportRequest,
 } from '../../services/reports.service'
 
 /**
- * ReportingDashboard - Dashboard thống kê và báo cáo cho CHAIR
- *
- * Features:
- * - Thống kê tổng quan
- * - Submissions by track
- * - Submissions by status
- * - Review progress
- * - Export reports
+ * ReportingDashboard - Dashboard thống kê và báo cáo cho CHAIR (API v1)
  */
 const ReportingDashboard: React.FC = () => {
   const [searchParams] = useSearchParams()
   const conferenceId = searchParams.get('conferenceId')
     ? parseInt(searchParams.get('conferenceId')!)
     : null
+
   const [stats, setStats] = useState<ReportStatistics | null>(null)
+  const [history, setHistory] = useState<ReportStatistics[]>([])
   const [loading, setLoading] = useState(true)
   const [showExportModal, setShowExportModal] = useState(false)
   const [reportType, setReportType] = useState<
@@ -51,16 +46,22 @@ const ReportingDashboard: React.FC = () => {
   >('ALL')
   const [exportFormat, setExportFormat] = useState<'PDF' | 'EXCEL' | 'CSV'>('PDF')
   const [exporting, setExporting] = useState(false)
+  const [snapshotting, setSnapshotting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const loadStatistics = useCallback(async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await reportsService.getStatistics(conferenceId!)
-      setStats(data)
+      const [latest, snapshots] = await Promise.all([
+        reportsService.getLatestReport(conferenceId!),
+        reportsService.getReportHistory(conferenceId!)
+      ])
+      setStats(latest)
+      setHistory(snapshots)
     } catch (error) {
-      console.error('Error loading statistics:', error)
+      console.error('Error loading reporting data:', error)
+      setError('Không thể tải dữ liệu báo cáo.')
     } finally {
       setLoading(false)
     }
@@ -68,9 +69,23 @@ const ReportingDashboard: React.FC = () => {
 
   useEffect(() => {
     if (conferenceId) {
-      loadStatistics()
+      loadData()
     }
-  }, [conferenceId, loadStatistics])
+  }, [conferenceId, loadData])
+
+  const handleCreateSnapshot = async () => {
+    if (!conferenceId) return
+    try {
+      setSnapshotting(true)
+      await reportsService.createSnapshot(conferenceId)
+      setSuccess('Đã lưu snapshot báo cáo thành công.')
+      loadData()
+    } catch (error) {
+      setError('Lỗi khi tạo snapshot.')
+    } finally {
+      setSnapshotting(false)
+    }
+  }
 
   const handleExport = async () => {
     if (!conferenceId) return
@@ -113,180 +128,168 @@ const ReportingDashboard: React.FC = () => {
     )
   }
 
-  if (!stats) {
-    return (
-      <CCard>
-        <CCardBody>
-          <CAlert color="danger">Không thể tải thống kê</CAlert>
-        </CCardBody>
-      </CCard>
-    )
-  }
-
   return (
-    <>
-      <CCard className="mb-3">
-        <CCardHeader>
-          <div className="d-flex justify-content-between align-items-center">
-            <h4>Reporting Dashboard</h4>
-            <CButton color="primary" onClick={() => setShowExportModal(true)}>
-              Export Report
-            </CButton>
-          </div>
-        </CCardHeader>
+    <div className="container-fluid">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h4>Reporting & Analytics Dashboard</h4>
+        <div className="d-flex gap-2">
+          <CButton color="info" variant="outline" onClick={handleCreateSnapshot} disabled={snapshotting}>
+            {snapshotting ? <CSpinner size="sm" /> : 'Capture Snapshot'}
+          </CButton>
+          <CButton color="primary" onClick={() => setShowExportModal(true)}>
+            Export Report
+          </CButton>
+        </div>
+      </div>
+
+      {error && <CAlert color="danger" dismissible onClose={() => setError('')}>{error}</CAlert>}
+      {success && <CAlert color="success" dismissible onClose={() => setSuccess('')}>{success}</CAlert>}
+
+      {stats && (
+        <>
+          {/* Submissions Section */}
+          <h5 className="mb-3">Submission Statistics</h5>
+          <CRow className="mb-4">
+            <CCol md={3}>
+              <CCard className="h-100 border-start border-start-4 border-start-primary">
+                <CCardBody>
+                  <div className="text-muted small">Tổng số bài nộp</div>
+                  <div className="h2 fw-bold">{stats.totalSubmissions}</div>
+                  <div className="small text-muted">
+                    Acceptance Rate: {stats.acceptanceRate.toFixed(1)}%
+                  </div>
+                </CCardBody>
+              </CCard>
+            </CCol>
+            <CCol md={3}>
+              <CCard className="h-100 border-start border-start-4 border-start-success">
+                <CCardBody>
+                  <div className="text-muted small">Đã chấp nhận</div>
+                  <div className="h2 fw-bold text-success">{stats.acceptedCount}</div>
+                </CCardBody>
+              </CCard>
+            </CCol>
+            <CCol md={3}>
+              <CCard className="h-100 border-start border-start-4 border-start-danger">
+                <CCardBody>
+                  <div className="text-muted small">Đã từ chối</div>
+                  <div className="h2 fw-bold text-danger">{stats.rejectedCount}</div>
+                </CCardBody>
+              </CCard>
+            </CCol>
+            <CCol md={3}>
+              <CCard className="h-100 border-start border-start-4 border-start-warning">
+                <CCardBody>
+                  <div className="text-muted small">Đang chờ xử lý</div>
+                  <div className="h2 fw-bold text-warning">{stats.pendingCount}</div>
+                </CCardBody>
+              </CCard>
+            </CCol>
+          </CRow>
+
+          <CRow className="mb-4">
+            {/* Review Section */}
+            <CCol md={6}>
+              <CCard className="h-100">
+                <CCardHeader>Review Progress</CCardHeader>
+                <CCardBody>
+                  <CRow className="mb-3">
+                    <CCol xs={4} className="text-center">
+                      <div className="text-muted small">Tổng số</div>
+                      <div className="h4">{stats.totalReviews}</div>
+                    </CCol>
+                    <CCol xs={4} className="text-center border-start">
+                      <div className="text-muted small">Hoàn thành</div>
+                      <div className="h4 text-success">{stats.completedReviews}</div>
+                    </CCol>
+                    <CCol xs={4} className="text-center border-start">
+                      <div className="text-muted small">Đang chờ</div>
+                      <div className="h4 text-warning">{stats.pendingReviews}</div>
+                    </CCol>
+                  </CRow>
+                  <div className="progress" style={{ height: '10px' }}>
+                    <div
+                      className="progress-bar bg-success"
+                      style={{ width: `${(stats.completedReviews / stats.totalReviews) * 100}%` }}
+                    />
+                  </div>
+                </CCardBody>
+              </CCard>
+            </CCol>
+
+            {/* Assignment Section */}
+            <CCol md={6}>
+              <CCard className="h-100">
+                <CCardHeader>Assignment Overview</CCardHeader>
+                <CCardBody>
+                  <CRow>
+                    <CCol xs={4} className="text-center">
+                      <div className="text-muted small">Tổng số gán</div>
+                      <div className="h4">{stats.totalAssignments}</div>
+                    </CCol>
+                    <CCol xs={4} className="text-center border-start">
+                      <div className="text-muted small">Đồng ý</div>
+                      <div className="h4 text-success">{stats.acceptedAssignments}</div>
+                    </CCol>
+                    <CCol xs={4} className="text-center border-start">
+                      <div className="text-muted small">Từ chối</div>
+                      <div className="h4 text-danger">{stats.declinedAssignments}</div>
+                    </CCol>
+                  </CRow>
+                </CCardBody>
+              </CCard>
+            </CCol>
+          </CRow>
+        </>
+      )}
+
+      {/* Snapshot History Table */}
+      <CCard className="mb-4">
+        <CCardHeader>Historical Reports (Snapshots)</CCardHeader>
         <CCardBody>
-          {error && (
-            <CAlert color="danger" className="mb-3">
-              {error}
-            </CAlert>
-          )}
-          {success && (
-            <CAlert color="success" className="mb-3">
-              {success}
-            </CAlert>
-          )}
-
-          {/* Summary Cards */}
-          <CRow className="mb-4">
-            <CCol md={3}>
-              <CCard>
-                <CCardBody>
-                  <h5>Tổng số bài nộp</h5>
-                  <h2>{stats.totalSubmissions}</h2>
-                </CCardBody>
-              </CCard>
-            </CCol>
-            <CCol md={3}>
-              <CCard>
-                <CCardBody>
-                  <h5>Chấp nhận</h5>
-                  <h2 className="text-success">{stats.acceptedSubmissions}</h2>
-                </CCardBody>
-              </CCard>
-            </CCol>
-            <CCol md={3}>
-              <CCard>
-                <CCardBody>
-                  <h5>Từ chối</h5>
-                  <h2 className="text-danger">{stats.rejectedSubmissions}</h2>
-                </CCardBody>
-              </CCard>
-            </CCol>
-            <CCol md={3}>
-              <CCard>
-                <CCardBody>
-                  <h5>Đang chờ</h5>
-                  <h2 className="text-warning">{stats.pendingSubmissions}</h2>
-                </CCardBody>
-              </CCard>
-            </CCol>
-          </CRow>
-
-          {/* Review Statistics */}
-          <CRow className="mb-4">
-            <CCol md={4}>
-              <CCard>
-                <CCardBody>
-                  <h5>Tổng số reviews</h5>
-                  <h2>{stats.totalReviews}</h2>
-                </CCardBody>
-              </CCard>
-            </CCol>
-            <CCol md={4}>
-              <CCard>
-                <CCardBody>
-                  <h5>Đã hoàn thành</h5>
-                  <h2>{stats.completedReviews}</h2>
-                </CCardBody>
-              </CCard>
-            </CCol>
-            <CCol md={4}>
-              <CCard>
-                <CCardBody>
-                  <h5>Điểm trung bình</h5>
-                  <h2>{stats.averageRating.toFixed(2)}</h2>
-                </CCardBody>
-              </CCard>
-            </CCol>
-          </CRow>
-
-          {/* Submissions by Track */}
-          <CCard className="mb-3">
-            <CCardHeader>
-              <h5>Bài nộp theo Track</h5>
-            </CCardHeader>
-            <CCardBody>
-              <CTable hover>
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell>Track</CTableHeaderCell>
-                    <CTableHeaderCell>Tổng số</CTableHeaderCell>
-                    <CTableHeaderCell>Chấp nhận</CTableHeaderCell>
-                    <CTableHeaderCell>Từ chối</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {stats.submissionsByTrack.map((track, index) => (
-                    <CTableRow key={index}>
-                      <CTableDataCell>{track.trackName}</CTableDataCell>
-                      <CTableDataCell>{track.count}</CTableDataCell>
-                      <CTableDataCell className="text-success">{track.accepted}</CTableDataCell>
-                      <CTableDataCell className="text-danger">{track.rejected}</CTableDataCell>
-                    </CTableRow>
-                  ))}
-                </CTableBody>
-              </CTable>
-            </CCardBody>
-          </CCard>
-
-          {/* Submissions by Status */}
-          <CCard className="mb-3">
-            <CCardHeader>
-              <h5>Bài nộp theo Trạng thái</h5>
-            </CCardHeader>
-            <CCardBody>
-              <CTable hover>
-                <CTableHead>
-                  <CTableRow>
-                    <CTableHeaderCell>Trạng thái</CTableHeaderCell>
-                    <CTableHeaderCell>Số lượng</CTableHeaderCell>
-                  </CTableRow>
-                </CTableHead>
-                <CTableBody>
-                  {stats.submissionsByStatus.map((status, index) => (
-                    <CTableRow key={index}>
-                      <CTableDataCell>{status.status}</CTableDataCell>
-                      <CTableDataCell>{status.count}</CTableDataCell>
-                    </CTableRow>
-                  ))}
-                </CTableBody>
-              </CTable>
-            </CCardBody>
-          </CCard>
-
-          {/* Review Progress */}
-          <CCard>
-            <CCardHeader>
-              <h5>Tiến độ Review</h5>
-            </CCardHeader>
-            <CCardBody>
-              <CRow>
-                <CCol md={4}>
-                  <p>Đã hoàn thành: {stats.reviewProgress.completed}</p>
-                </CCol>
-                <CCol md={4}>
-                  <p>Đang thực hiện: {stats.reviewProgress.inProgress}</p>
-                </CCol>
-                <CCol md={4}>
-                  <p>Chờ xử lý: {stats.reviewProgress.pending}</p>
-                </CCol>
-              </CRow>
-            </CCardBody>
-          </CCard>
+          <CTable align="middle" hover responsive>
+            <CTableHead color="light">
+              <CTableRow>
+                <CTableHeaderCell>Thời điểm snapshot</CTableHeaderCell>
+                <CTableHeaderCell className="text-center">Submissions</CTableHeaderCell>
+                <CTableHeaderCell className="text-center">Acceptance</CTableHeaderCell>
+                <CTableHeaderCell className="text-center">Reviews (C/T)</CTableHeaderCell>
+                <CTableHeaderCell>Hành động</CTableHeaderCell>
+              </CTableRow>
+            </CTableHead>
+            <CTableBody>
+              {history.map((snapshot) => (
+                <CTableRow key={snapshot.id}>
+                  <CTableDataCell>
+                    {new Date(snapshot.snapshotAt!).toLocaleString('vi-VN')}
+                  </CTableDataCell>
+                  <CTableDataCell className="text-center">{snapshot.totalSubmissions}</CTableDataCell>
+                  <CTableDataCell className="text-center">
+                    <CBadge color="info">{snapshot.acceptanceRate.toFixed(1)}%</CBadge>
+                  </CTableDataCell>
+                  <CTableDataCell className="text-center">
+                    {snapshot.completedReviews} / {snapshot.totalReviews}
+                  </CTableDataCell>
+                  <CTableDataCell>
+                    <CButton color="light" size="sm" onClick={() => setStats(snapshot)}>
+                      Xem lại
+                    </CButton>
+                  </CTableDataCell>
+                </CTableRow>
+              ))}
+              {history.length === 0 && (
+                <CTableRow>
+                  <CTableDataCell colSpan={5} className="text-center text-muted p-4">
+                    Chưa có snapshot lịch sử nào được ghi lại.
+                  </CTableDataCell>
+                </CTableRow>
+              )}
+            </CTableBody>
+          </CTable>
         </CCardBody>
       </CCard>
 
-      {/* Export Modal */}
+      {/* Export Modal (Giữ nguyên logic cũ) */}
       <CModal visible={showExportModal} onClose={() => setShowExportModal(false)}>
         <CModalHeader>
           <CModalTitle>Export Report</CModalTitle>
@@ -294,29 +297,15 @@ const ReportingDashboard: React.FC = () => {
         <CModalBody>
           <div className="mb-3">
             <CFormLabel>Loại báo cáo *</CFormLabel>
-            <select
-              className="form-select"
-              value={reportType}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setReportType(e.target.value as any)
-              }
-            >
+            <select className="form-select" value={reportType} onChange={(e) => setReportType(e.target.value as any)}>
               <option value="ALL">Tất cả</option>
               <option value="STATISTICS">Thống kê</option>
-              <option value="SUBMISSIONS">Bài nộp</option>
               <option value="REVIEWS">Reviews</option>
-              <option value="DECISIONS">Quyết định</option>
             </select>
           </div>
           <div className="mb-3">
-            <CFormLabel>Format *</CFormLabel>
-            <select
-              className="form-select"
-              value={exportFormat}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setExportFormat(e.target.value as any)
-              }
-            >
+            <CFormLabel>Định dạng *</CFormLabel>
+            <select className="form-select" value={exportFormat} onChange={(e) => setExportFormat(e.target.value as any)}>
               <option value="PDF">PDF</option>
               <option value="EXCEL">Excel</option>
               <option value="CSV">CSV</option>
@@ -324,15 +313,13 @@ const ReportingDashboard: React.FC = () => {
           </div>
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setShowExportModal(false)}>
-            Hủy
-          </CButton>
+          <CButton color="secondary" onClick={() => setShowExportModal(false)}>Đóng</CButton>
           <CButton color="primary" onClick={handleExport} disabled={exporting}>
             {exporting ? <CSpinner size="sm" /> : 'Export'}
           </CButton>
         </CModalFooter>
       </CModal>
-    </>
+    </div>
   )
 }
 

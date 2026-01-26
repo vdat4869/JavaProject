@@ -108,7 +108,7 @@ const RebuttalFormPage: React.FC = () => {
       setSubmitting(true)
       await reviewService.submitRebuttal(rebuttal.id)
       alert('Đã submit rebuttal thành công')
-      navigate(`/author/submissions/${submissionId}`)
+      navigate(`/app/author/submissions/${submissionId}`)
     } catch (error: any) {
       setError(error.response?.data?.message || 'Không thể submit rebuttal')
     } finally {

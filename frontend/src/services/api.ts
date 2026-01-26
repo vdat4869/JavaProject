@@ -64,16 +64,16 @@ apiClient.interceptors.response.use(
           // Backend trả về: { success: true, data: { accessToken, tokenType } }
           const responseData = response.data?.data || response.data
           const newAccessToken = responseData?.accessToken
-          
+
           if (!newAccessToken) {
             throw new Error('No access token in refresh response')
           }
-          
+
           localStorage.setItem('accessToken', newAccessToken)
 
           // Retry original request với token mới
           if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${accessToken}`
+            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
           }
           return apiClient(originalRequest)
         }

@@ -27,6 +27,8 @@ const ProfilePage = lazy(() => import('../pages/app/ProfilePage'))
 const SubmissionReviewsView = lazy(() => import('../pages/app/SubmissionReviewsView'))
 const UserManagementPage = lazy(() => import('../pages/admin/UserManagementPage'))
 const AuditLogPage = lazy(() => import('../pages/admin/AuditLogPage'))
+const BackupManagement = lazy(() => import('../pages/admin/BackupManagement'))
+const EmailLogPage = lazy(() => import('../pages/admin/EmailLogPage'))
 
 // Author pages
 const AuthorDashboard = lazy(() => import('../pages/author/AuthorDashboard'))
@@ -34,16 +36,19 @@ const SubmissionList = lazy(() => import('../pages/author/SubmissionList'))
 const SubmissionFormPage = lazy(() => import('../pages/author/SubmissionFormPage'))
 const SubmissionDetail = lazy(() => import('../pages/author/SubmissionDetail'))
 const SubmissionEdit = lazy(() => import('../pages/author/SubmissionEdit'))
+const CameraReadyUpload = lazy(() => import('../pages/author/CameraReadyUpload'))
 const RebuttalFormPage = lazy(() => import('../pages/author/RebuttalFormPage'))
 
 // PC/Reviewer pages
 const AssignedPaperList = lazy(() => import('../pages/pc/AssignedPaperList'))
 const ReviewFormPage = lazy(() => import('../pages/pc/ReviewFormPage'))
 const DiscussionPage = lazy(() => import('../pages/pc/DiscussionPage'))
+const PaperDiscussionBoard = lazy(() => import('../pages/pc/PaperDiscussionBoard'))
 const COIDeclaration = lazy(() => import('../pages/pc/COIDeclaration'))
 const InvitationAcceptPage = lazy(() => import('../pages/pc/InvitationAcceptPage'))
 const MyCOIsList = lazy(() => import('../pages/pc/MyCOIsList'))
 const ReviewerWorkload = lazy(() => import('../pages/pc/ReviewerWorkload'))
+const ReviewerSubmissionDetail = lazy(() => import('../pages/pc/ReviewerSubmissionDetail'))
 
 // Chair pages
 const ConferenceListPage = lazy(() => import('../pages/chair/ConferenceListPage'))
@@ -62,10 +67,9 @@ const ReviewStatisticsDashboard = lazy(() => import('../pages/chair/ReviewStatis
 const AssignmentStatisticsDashboard = lazy(() => import('../pages/chair/AssignmentStatisticsDashboard'))
 const AssignmentQualityMetrics = lazy(() => import('../pages/chair/AssignmentQualityMetrics'))
 const BulkAssignmentPage = lazy(() => import('../pages/chair/BulkAssignmentPage'))
+const SubmissionBoard = lazy(() => import('../pages/chair/SubmissionBoard'))
+const CameraReadyManagement = lazy(() => import('../pages/chair/CameraReadyManagement'))
 const NotificationManagement = lazy(() => import('../pages/chair/NotificationManagement'))
-
-// Camera-ready pages
-const CameraReadyUpload = lazy(() => import('../pages/author/CameraReadyUpload'))
 
 /**
  * Route configuration cho UTH-ConfMS
@@ -296,7 +300,6 @@ export const routes: RouteObject[] = [
             <CameraReadyUpload />
           </Suspense>
         ),
-        handle: { roles: ['AUTHOR'] as UserRole[] },
       },
       {
         path: 'author/submissions/:id/rebuttal',
@@ -311,9 +314,22 @@ export const routes: RouteObject[] = [
             <RebuttalFormPage />
           </Suspense>
         ),
-        handle: { roles: ['AUTHOR'] as UserRole[] },
       },
       // PC/Reviewer routes
+      {
+        path: 'pc/submissions/:id',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <ReviewerSubmissionDetail />
+          </Suspense>
+        ),
+      },
       {
         path: 'pc/assignments',
         element: (
@@ -367,6 +383,20 @@ export const routes: RouteObject[] = [
             }
           >
             <DiscussionPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'pc/discussions',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <PaperDiscussionBoard />
           </Suspense>
         ),
       },
@@ -548,6 +578,36 @@ export const routes: RouteObject[] = [
         handle: { roles: ['CHAIR'] as UserRole[] },
       },
       {
+        path: 'chair/submissions',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <SubmissionBoard />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
+        path: 'chair/camera-ready',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <CameraReadyManagement />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR'] as UserRole[] },
+      },
+      {
         path: 'chair/decisions',
         element: (
           <Suspense
@@ -711,6 +771,20 @@ export const routes: RouteObject[] = [
           </Suspense>
         ),
       },
+      {
+        path: 'settings',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <ProfilePage />
+          </Suspense>
+        ),
+      },
       // Admin routes
       {
         path: 'admin/users',
@@ -738,6 +812,36 @@ export const routes: RouteObject[] = [
             }
           >
             <AuditLogPage />
+          </Suspense>
+        ),
+        handle: { roles: ['ADMIN'] as UserRole[] },
+      },
+      {
+        path: 'admin/backup',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <BackupManagement />
+          </Suspense>
+        ),
+        handle: { roles: ['ADMIN'] as UserRole[] },
+      },
+      {
+        path: 'admin/email-logs',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <EmailLogPage />
           </Suspense>
         ),
         handle: { roles: ['ADMIN'] as UserRole[] },

@@ -4,6 +4,8 @@ import com.uth.confms.auth.entity.User;
 import com.uth.confms.auth.repository.UserRepository;
 import com.uth.confms.common.dto.ApiResponse;
 import com.uth.confms.decision.dto.BulkNotificationRequestDTO;
+import com.uth.confms.decision.dto.BulkDecisionRequestDTO;
+import com.uth.confms.decision.dto.DecisionHistoryDTO;
 import com.uth.confms.decision.dto.DecisionRequestDTO;
 import com.uth.confms.decision.dto.DecisionResultDTO;
 import com.uth.confms.decision.service.DecisionService;
@@ -60,6 +62,21 @@ public class DecisionController {
       @Valid @RequestBody DecisionRequestDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
     return ResponseEntity.ok(ApiResponse.success(decisionService.makeDecision(dto, chairId)));
+  }
+
+  @PostMapping("/bulk")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<List<DecisionResultDTO>>> makeBulkDecisions(
+      @Valid @RequestBody BulkDecisionRequestDTO dto, Authentication authentication) {
+    Long chairId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(decisionService.makeBulkDecisions(dto, chairId)));
+  }
+
+  @GetMapping("/{id}/history")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<List<DecisionHistoryDTO>>> getDecisionHistory(
+      @PathVariable Long id) {
+    return ResponseEntity.ok(ApiResponse.success(decisionService.getDecisionHistoryDTOs(id)));
   }
 
   @GetMapping("/submission/{submissionId}")

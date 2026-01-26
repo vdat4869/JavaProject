@@ -1,4 +1,6 @@
+
 import React from 'react'
+import { Navigate } from 'react-router-dom'
 import { CCard, CCardBody, CCardHeader } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
@@ -11,6 +13,11 @@ import { useAuth } from '../../context/AuthContext'
 const DashboardPage: React.FC = () => {
   const { t } = useTranslation()
   const { user } = useAuth()
+
+  // Đối với Author, chuyển hướng về Author Dashboard riêng
+  if (user?.roles.includes('AUTHOR') && !user?.roles.includes('ADMIN') && !user?.roles.includes('CHAIR')) {
+    return <Navigate to="/app/author" replace />
+  }
 
   return (
     <CCard>

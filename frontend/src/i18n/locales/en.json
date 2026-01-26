@@ -20,7 +20,9 @@
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
-    "backToLogin": "Back to Login"
+    "backToLogin": "Back to login",
+    "profile": "Profile",
+    "settings": "Settings"
   },
   "auth": {
     "loginTitle": "Login to UTH-ConfMS",
@@ -55,12 +57,64 @@
     "passwordMismatch": "Passwords do not match",
     "invalidEmail": "Invalid email address",
     "registrationSuccess": "Registration successful! Please check your email to verify your account.",
-    "registrationFailed": "Registration failed"
+    "registrationFailed": "Registration failed",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "passwordChangedSuccess": "Password changed successfully",
+    "passwordChangeFailed": "Failed to change password",
+    "passwordSameAsCurrent": "New password must be different from current password"
   },
   "dashboard": {
     "title": "Dashboard",
     "mySubmissions": "My Submissions",
     "assignedReviews": "Assigned Reviews",
     "pendingDecisions": "Pending Decisions"
+  },
+  "author": {
+    "title": "Author",
+    "mySubmissions": "My Submissions",
+    "newSubmission": "New Submission",
+    "dashboard": "Author Dashboard"
+  },
+  "profile": {
+    "title": "Personal Profile",
+    "profile": "Information",
+    "changePassword": "Change Password",
+    "profileInformation": "Profile Information",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "affiliation": "Affiliation",
+    "phone": "Phone Number",
+    "status": "Status",
+    "roles": "Roles",
+    "noRoles": "No roles assigned",
+    "emailVerified": "Email verified",
+    "emailNotVerified": "Email not verified",
+    "updateSuccess": "Profile updated successfully",
+    "updateFailed": "Failed to update profile",
+    "userNotFound": "User not found"
+  },
+  "settings": {
+    "title": "Account Settings"
+  },
+  "ai": {
+    "assistant": "AI Assistant",
+    "spellCheck": "Spell & Grammar Check",
+    "abstractPolish": "Polish Abstract",
+    "suggestKeywords": "Suggest Keywords",
+    "applySelected": "Apply selected changes",
+    "auditNotice": "Note: AI usage is logged for audit purposes.",
+    "suggestedKeywords": "Suggested Keywords",
+    "commonTerm": "Common",
+    "keywords": "keywords",
+    "neutralNotice": "This information is generated neutrally from the abstract and contains no author or judgment info.",
+    "extractKeyPoints": "Extract Key Points",
+    "viewSummary": "View AI Summary",
+    "draftEmail": "Draft email with AI",
+    "error": "AI Assistant error: {{message}}",
+    "noIssues": "No issues found!",
+    "foundSuggestions": "Found {{count}} suggestions",
+    "processing": "AI is processing..."
   }
 }

@@ -20,7 +20,9 @@
     "back": "Quay lại",
     "next": "Tiếp theo",
     "previous": "Trước",
-    "backToLogin": "Quay lại đăng nhập"
+    "backToLogin": "Quay lại đăng nhập",
+    "profile": "Hồ sơ cá nhân",
+    "settings": "Cài đặt tài khoản"
   },
   "auth": {
     "loginTitle": "Đăng nhập vào UTH-ConfMS",
@@ -55,12 +57,64 @@
     "passwordMismatch": "Mật khẩu xác nhận không khớp",
     "invalidEmail": "Email không hợp lệ",
     "registrationSuccess": "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.",
-    "registrationFailed": "Đăng ký thất bại"
+    "registrationFailed": "Đăng ký thất bại",
+    "changePassword": "Đổi mật khẩu",
+    "currentPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "passwordChangedSuccess": "Đổi mật khẩu thành công",
+    "passwordChangeFailed": "Đổi mật khẩu thất bại",
+    "passwordSameAsCurrent": "Mật khẩu mới phải khác mật khẩu hiện tại"
   },
   "dashboard": {
     "title": "Bảng điều khiển",
     "mySubmissions": "Bài nộp của tôi",
     "assignedReviews": "Bài đánh giá được giao",
     "pendingDecisions": "Quyết định đang chờ"
+  },
+  "author": {
+    "title": "Tác giả",
+    "mySubmissions": "Bài nộp của tôi",
+    "newSubmission": "Nộp bài mới",
+    "dashboard": "Bảng điều khiển tác giả"
+  },
+  "profile": {
+    "title": "Hồ sơ cá nhân",
+    "profile": "Thông tin",
+    "changePassword": "Đổi mật khẩu",
+    "profileInformation": "Thông tin cá nhân",
+    "firstName": "Họ và tên đệm",
+    "lastName": "Tên",
+    "affiliation": "Tổ chức/Trường",
+    "phone": "Số điện thoại",
+    "status": "Trạng thái",
+    "roles": "Vai trò",
+    "noRoles": "Không có vai trò",
+    "emailVerified": "Đã xác thực email",
+    "emailNotVerified": "Chưa xác thực email",
+    "updateSuccess": "Cập nhật thông tin thành công",
+    "updateFailed": "Cập nhật thông tin thất bại",
+    "userNotFound": "Không tìm thấy người dùng"
+  },
+  "settings": {
+    "title": "Cài đặt tài khoản"
+  },
+  "ai": {
+    "assistant": "Trợ lý AI",
+    "spellCheck": "Kiểm tra chính tả & ngữ pháp",
+    "abstractPolish": "Cải thiện Abstract",
+    "suggestKeywords": "Gợi ý từ khóa",
+    "applySelected": "Áp dụng thay đổi đã chọn",
+    "auditNotice": "Lưu ý: Mọi thao tác sử dụng AI đều được ghi lại trong nhật ký hệ thống.",
+    "suggestedKeywords": "Từ khóa được gợi ý",
+    "commonTerm": "Phổ biến",
+    "keywords": "từ khóa",
+    "neutralNotice": "Thông tin này được tạo khách quan từ abstract, không chứa nhận xét cá nhân hoặc thông tin tác giả.",
+    "extractKeyPoints": "Trích xuất các điểm chính",
+    "viewSummary": "Xem tóm tắt AI",
+    "draftEmail": "Soạn email với AI",
+    "error": "Lỗi trợ lý AI: {{message}}",
+    "noIssues": "Không tìm thấy vấn đề nào!",
+    "foundSuggestions": "Tìm thấy {{count}} gợi ý",
+    "processing": "AI đang xử lý..."
   }
 }

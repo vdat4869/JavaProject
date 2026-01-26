@@ -29,6 +29,8 @@ import {
   DecisionType,
   CreateDecisionRequest,
   UpdateDecisionRequest,
+  BulkDecisionRequest,
+  DecisionHistory,
 } from '../../services/decision.service'
 
 /**
@@ -62,6 +64,13 @@ const DecisionBoard: React.FC = () => {
   const [editType, setEditType] = useState<DecisionType>('ACCEPT')
   const [editComments, setEditComments] = useState('')
   const [editReason, setEditReason] = useState('')
+  // Bulk states
+  const [selectedSubmissionIds, setSelectedSubmissionIds] = useState<number[]>([])
+  const [showBulkModal, setShowBulkModal] = useState(false)
+  // History states
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
+  const [historyList, setHistoryList] = useState<DecisionHistory[]>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
 
   useEffect(() => {
     if (conferenceId) {
@@ -112,6 +121,60 @@ const DecisionBoard: React.FC = () => {
       setError(error.response?.data?.message || 'Không thể tạo quyết định')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleSelectAll = (pendingList: Decision[]) => {
+    if (selectedSubmissionIds.length === pendingList.length) {
+      setSelectedSubmissionIds([])
+    } else {
+      setSelectedSubmissionIds(pendingList.map(item => item.submissionId))
+    }
+  }
+
+  const handleSelectOne = (submissionId: number) => {
+    if (selectedSubmissionIds.includes(submissionId)) {
+      setSelectedSubmissionIds(selectedSubmissionIds.filter(id => id !== submissionId))
+    } else {
+      setSelectedSubmissionIds([...selectedSubmissionIds, submissionId])
+    }
+  }
+
+  const handleMakeBulkDecision = async () => {
+    if (selectedSubmissionIds.length === 0) return
+
+    try {
+      setSaving(true)
+      setError('')
+      const request: BulkDecisionRequest = {
+        submissionIds: selectedSubmissionIds,
+        type: decisionType,
+        comments: comments.trim() || undefined,
+        sendNotification,
+      }
+      await decisionService.createBulkDecisions(request)
+      setSuccess(`Đã tạo quyết định cho ${selectedSubmissionIds.length} bài báo thành công`)
+      setShowBulkModal(false)
+      setSelectedSubmissionIds([])
+      setComments('')
+      await loadDecisions()
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Không thể tạo quyết định hàng loạt')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleViewHistory = async (decisionId: number) => {
+    try {
+      setLoadingHistory(true)
+      setShowHistoryModal(true)
+      const logs = await decisionService.getDecisionHistory(decisionId)
+      setHistoryList(logs)
+    } catch (error: any) {
+      setError('Không thể tải lịch sử quyết định')
+    } finally {
+      setLoadingHistory(false)
     }
   }
 
@@ -205,7 +268,14 @@ const DecisionBoard: React.FC = () => {
     <>
       <CCard className="mb-4">
         <CCardHeader>
-          <h4>Submissions cần quyết định</h4>
+          <div className="d-flex justify-content-between align-items-center">
+            <h4>Submissions cần quyết định</h4>
+            {selectedSubmissionIds.length > 0 && (
+              <CButton color="primary" onClick={() => setShowBulkModal(true)}>
+                Quyết định hàng loạt ({selectedSubmissionIds.length})
+              </CButton>
+            )}
+          </div>
         </CCardHeader>
         <CCardBody>
           {error && (
@@ -225,6 +295,12 @@ const DecisionBoard: React.FC = () => {
             <CTable hover>
               <CTableHead>
                 <CTableRow>
+                  <CTableHeaderCell>
+                    <CFormCheck
+                      checked={selectedSubmissionIds.length === pendingSubmissions.length && pendingSubmissions.length > 0}
+                      onChange={() => handleSelectAll(pendingSubmissions)}
+                    />
+                  </CTableHeaderCell>
                   <CTableHeaderCell>ID</CTableHeaderCell>
                   <CTableHeaderCell>Tiêu đề</CTableHeaderCell>
                   <CTableHeaderCell>Số reviews</CTableHeaderCell>
@@ -235,6 +311,12 @@ const DecisionBoard: React.FC = () => {
               <CTableBody>
                 {pendingSubmissions.map((item) => (
                   <CTableRow key={item.submissionId}>
+                    <CTableDataCell>
+                      <CFormCheck
+                        checked={selectedSubmissionIds.includes(item.submissionId)}
+                        onChange={() => handleSelectOne(item.submissionId)}
+                      />
+                    </CTableDataCell>
                     <CTableDataCell>{item.submissionId}</CTableDataCell>
                     <CTableDataCell>{item.submissionTitle}</CTableDataCell>
                     <CTableDataCell>{item.reviewSummary?.reviewCount || 0}</CTableDataCell>
@@ -323,6 +405,13 @@ const DecisionBoard: React.FC = () => {
                             )}
                           </CButton>
                         )}
+                        <CButton
+                          color="secondary"
+                          size="sm"
+                          onClick={() => handleViewHistory(item.id)}
+                        >
+                          Lịch sử
+                        </CButton>
                       </div>
                     </CTableDataCell>
                   </CTableRow>
@@ -332,6 +421,114 @@ const DecisionBoard: React.FC = () => {
           )}
         </CCardBody>
       </CCard>
+
+      {/* Bulk Decision Modal */}
+      <CModal visible={showBulkModal} onClose={() => setShowBulkModal(false)} size="lg">
+        <CModalHeader>
+          <CModalTitle>Quyết định hàng loạt ({selectedSubmissionIds.length} bài)</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <CAlert color="info">
+            Bạn đang ra quyết định cho {selectedSubmissionIds.length} bài báo đã chọn.
+          </CAlert>
+          <div className="mb-3">
+            <CFormLabel>Loại quyết định *</CFormLabel>
+            <select
+              className="form-select"
+              value={decisionType}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setDecisionType(e.target.value as DecisionType)
+              }
+            >
+              <option value="ACCEPT">Chấp nhận</option>
+              <option value="CONDITIONAL_ACCEPT">Chấp nhận có điều kiện</option>
+              <option value="REJECT">Từ chối</option>
+            </select>
+          </div>
+          <div className="mb-3">
+            <CFormLabel>Nhận xét chung (tùy chọn)</CFormLabel>
+            <CFormTextarea
+              value={comments}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setComments(e.target.value)
+              }
+              rows={5}
+              placeholder="Nhập nhận xét chung cho các bài báo này"
+            />
+          </div>
+          <div className="mb-3">
+            <CFormCheck
+              id="sendBulkNotification"
+              label="Gửi email thông báo ngay cho tất cả"
+              checked={sendNotification}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSendNotification(e.target.checked)
+              }
+            />
+          </div>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setShowBulkModal(false)}>
+            Hủy
+          </CButton>
+          <CButton color="primary" onClick={handleMakeBulkDecision} disabled={saving}>
+            {saving ? <CSpinner size="sm" /> : 'Lưu tất cả'}
+          </CButton>
+        </CModalFooter>
+      </CModal>
+
+      {/* History Modal */}
+      <CModal visible={showHistoryModal} onClose={() => setShowHistoryModal(false)} size="lg">
+        <CModalHeader>
+          <CModalTitle>Lịch sử thay đổi quyết định</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          {loadingHistory ? (
+            <div className="text-center p-3">
+              <CSpinner color="primary" />
+            </div>
+          ) : historyList.length === 0 ? (
+            <p className="text-muted">Không có dữ liệu lịch sử</p>
+          ) : (
+            <CTable hover small responsive>
+              <CTableHead>
+                <CTableRow>
+                  <CTableHeaderCell>Thời gian</CTableHeaderCell>
+                  <CTableHeaderCell>Hành động</CTableHeaderCell>
+                  <CTableHeaderCell>Người thực hiện</CTableHeaderCell>
+                  <CTableHeaderCell>Chi tiết</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody>
+                {historyList.map((log) => (
+                  <CTableRow key={log.id}>
+                    <CTableDataCell>
+                      <small>{new Date(log.changedAt).toLocaleString('vi-VN')}</small>
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      <CBadge color="info">{log.changeType}</CBadge>
+                    </CTableDataCell>
+                    <CTableDataCell>{log.changedByName}</CTableDataCell>
+                    <CTableDataCell>
+                      <div className="small">
+                        {log.fieldName && <div><strong>Trường:</strong> {log.fieldName}</div>}
+                        {log.oldValue && <div><strong>Cũ:</strong> {log.oldValue}</div>}
+                        {log.newValue && <div><strong>Mới:</strong> {log.newValue}</div>}
+                        {log.description && <div className="text-muted italic">{log.description}</div>}
+                      </div>
+                    </CTableDataCell>
+                  </CTableRow>
+                ))}
+              </CTableBody>
+            </CTable>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setShowHistoryModal(false)}>
+            Đóng
+          </CButton>
+        </CModalFooter>
+      </CModal>
 
       {/* Decision Modal */}
       <CModal visible={showDecisionModal} onClose={() => setShowDecisionModal(false)}>

@@ -16,19 +16,20 @@ import {
   CAlert,
   CPagination,
   CPaginationItem,
-  CInputGroup,
+  CBadge,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilSearch, cilReload, cilDownload } from '@coreui/icons'
+import { cilSearch, cilReload, cilDownload, cilInfo } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { auditService, AuditLogDTO, AuditLogQueryParams } from '../../services/audit.service'
 
 /**
  * AuditLogPage - Trang xem audit logs (ADMIN only)
- *
- * Features:
- * - Danh sách audit logs với filters
- * - Export audit logs to CSV
  */
 const AuditLogPage: React.FC = () => {
   const { t } = useTranslation()
@@ -39,6 +40,10 @@ const AuditLogPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [totalElements, setTotalElements] = useState(0)
+
+  // Detail modal states
+  const [selectedLog, setSelectedLog] = useState<AuditLogDTO | null>(null)
+  const [showModal, setShowModal] = useState(false)
 
   const [filters, setFilters] = useState<AuditLogQueryParams>({
     page: 0,
@@ -51,7 +56,7 @@ const AuditLogPage: React.FC = () => {
 
   useEffect(() => {
     loadLogs()
-  }, [currentPage, filters.userId, filters.action, filters.resource, filters.startDate, filters.endDate])
+  }, [currentPage, filters.userId, filters.action, filters.resource, filters.resourceId, filters.startDate, filters.endDate])
 
   const loadLogs = async () => {
     try {
@@ -73,10 +78,10 @@ const AuditLogPage: React.FC = () => {
     }
   }
 
-  const handleFilterChange = (name: string, value: string | number | undefined) => {
+  const handleFilterChange = (name: string, value: any) => {
     setFilters((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: value === '' ? undefined : value,
     }))
     setCurrentPage(0)
   }
@@ -87,7 +92,7 @@ const AuditLogPage: React.FC = () => {
       const params: AuditLogQueryParams = {
         ...filters,
         page: 0,
-        size: 10000, // Export all
+        size: 10000,
       }
       const blob = await auditService.exportAuditLogs(params, 'CSV')
       const url = window.URL.createObjectURL(blob)
@@ -105,6 +110,11 @@ const AuditLogPage: React.FC = () => {
     }
   }
 
+  const handleShowDetail = (log: AuditLogDTO) => {
+    setSelectedLog(log)
+    setShowModal(true)
+  }
+
   const formatDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleString('vi-VN')
@@ -117,136 +127,121 @@ const AuditLogPage: React.FC = () => {
     <div>
       <h2 className="mb-4">{t('admin.auditLogs') || 'Audit Logs'}</h2>
 
-      <CCard className="mb-3">
+      <CCard className="mb-3 shadow-sm">
         <CCardHeader>
-          <h5>{t('admin.filters') || 'Bộ lọc'}</h5>
+          <h5>{t('admin.filters') || 'Bộ lọc nâng cao'}</h5>
         </CCardHeader>
         <CCardBody>
           <div className="row g-3">
-            <div className="col-md-3">
+            <div className="col-md-2">
               <CFormInput
                 type="number"
-                placeholder={t('admin.userId') || 'User ID'}
+                placeholder="User ID"
                 value={filters.userId || ''}
-                onChange={(e) =>
-                  handleFilterChange('userId', e.target.value ? parseInt(e.target.value) : undefined)
-                }
+                onChange={(e) => handleFilterChange('userId', e.target.value ? parseInt(e.target.value) : undefined)}
               />
             </div>
-            <div className="col-md-3">
+            <div className="col-md-2">
               <CFormInput
                 type="text"
-                placeholder={t('admin.action') || 'Action'}
+                placeholder="Action (e.target.value)"
                 value={filters.action || ''}
-                onChange={(e) => handleFilterChange('action', e.target.value || undefined)}
+                onChange={(e) => handleFilterChange('action', e.target.value)}
               />
             </div>
-            <div className="col-md-3">
+            <div className="col-md-2">
               <CFormInput
                 type="text"
-                placeholder={t('admin.resource') || 'Resource'}
+                placeholder="Resource"
                 value={filters.resource || ''}
-                onChange={(e) => handleFilterChange('resource', e.target.value || undefined)}
+                onChange={(e) => handleFilterChange('resource', e.target.value)}
               />
             </div>
-            <div className="col-md-3">
+            <div className="col-md-2">
+              <CFormInput
+                type="number"
+                placeholder="Resource ID"
+                value={filters.resourceId || ''}
+                onChange={(e) => handleFilterChange('resourceId', e.target.value ? parseInt(e.target.value) : undefined)}
+              />
+            </div>
+            <div className="col-md-2">
               <CFormInput
                 type="datetime-local"
-                placeholder={t('admin.startDate') || 'Start Date'}
                 value={filters.startDate || ''}
-                onChange={(e) => handleFilterChange('startDate', e.target.value || undefined)}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                label="Từ ngày"
               />
             </div>
-            <div className="col-md-3">
+            <div className="col-md-2">
               <CFormInput
                 type="datetime-local"
-                placeholder={t('admin.endDate') || 'End Date'}
                 value={filters.endDate || ''}
-                onChange={(e) => handleFilterChange('endDate', e.target.value || undefined)}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                label="Đến ngày"
               />
             </div>
-            <div className="col-md-3">
-              <CFormSelect
-                value={filters.sortDir || 'DESC'}
-                onChange={(e) => handleFilterChange('sortDir', e.target.value as 'ASC' | 'DESC')}
-              >
-                <option value="DESC">{t('common.descending') || 'Giảm dần'}</option>
-                <option value="ASC">{t('common.ascending') || 'Tăng dần'}</option>
-              </CFormSelect>
-            </div>
-            <div className="col-md-3">
-              <CButton color="primary" onClick={loadLogs} className="w-100">
+            <div className="col-md-12 d-flex justify-content-end gap-2">
+              <CButton color="secondary" variant="outline" onClick={() => setFilters({ page: 0, size: 20, sortBy: 'timestamp', sortDir: 'DESC' })}>
+                Xóa lọc
+              </CButton>
+              <CButton color="primary" onClick={loadLogs}>
                 <CIcon icon={cilSearch} /> {t('common.search') || 'Tìm kiếm'}
               </CButton>
-            </div>
-            <div className="col-md-3">
-              <CButton color="secondary" onClick={handleExport} disabled={exporting} className="w-100">
-                <CIcon icon={cilDownload} />{' '}
-                {exporting ? t('common.exporting') || 'Đang export...' : t('common.export') || 'Export CSV'}
+              <CButton color="success" onClick={handleExport} disabled={exporting}>
+                <CIcon icon={cilDownload} /> Export
               </CButton>
             </div>
           </div>
         </CCardBody>
       </CCard>
 
-      <CCard>
-        <CCardHeader>
-          <div className="d-flex justify-content-between align-items-center">
-            <h5>{t('admin.auditLogList') || 'Danh sách Audit Logs'}</h5>
-            <CButton color="secondary" size="sm" onClick={loadLogs}>
-              <CIcon icon={cilReload} /> {t('common.refresh') || 'Làm mới'}
-            </CButton>
-          </div>
+      <CCard className="shadow-sm">
+        <CCardHeader className="d-flex justify-content-between align-items-center">
+          <h5>{t('admin.auditLogList') || 'Danh sách Hoạt động'}</h5>
+          <CButton color="light" size="sm" onClick={loadLogs}>
+            <CIcon icon={cilReload} /> Làm mới
+          </CButton>
         </CCardHeader>
         <CCardBody>
-          {error && (
-            <CAlert color="danger" className="mb-3">
-              {error}
-            </CAlert>
-          )}
+          {error && <CAlert color="danger" dismissible onClose={() => setError('')}>{error}</CAlert>}
 
           {loading ? (
-            <div className="text-center py-5">
-              <CSpinner color="primary" />
-            </div>
+            <div className="text-center py-5"><CSpinner color="primary" /></div>
           ) : (
             <>
-              <CTable hover responsive>
-                <CTableHead>
+              <CTable hover responsive align="middle" className="mb-0">
+                <CTableHead color="light">
                   <CTableRow>
-                    <CTableHeaderCell>{t('common.id') || 'ID'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('common.user') || 'User'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('admin.action') || 'Action'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('admin.resource') || 'Resource'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('admin.resourceId') || 'Resource ID'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('admin.details') || 'Details'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('common.timestamp') || 'Timestamp'}</CTableHeaderCell>
+                    <CTableHeaderCell>Thời gian</CTableHeaderCell>
+                    <CTableHeaderCell>Người dùng</CTableHeaderCell>
+                    <CTableHeaderCell>Hành động</CTableHeaderCell>
+                    <CTableHeaderCell>IP Address</CTableHeaderCell>
+                    <CTableHeaderCell>Đối tượng</CTableHeaderCell>
+                    <CTableHeaderCell>Thao tác</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
                   {logs.length === 0 ? (
-                    <CTableRow>
-                      <CTableDataCell colSpan={7} className="text-center">
-                        {t('admin.noAuditLogs') || 'Không có audit log nào'}
-                      </CTableDataCell>
-                    </CTableRow>
+                    <CTableRow><CTableDataCell colSpan={6} className="text-center py-4 text-muted">Không tìm thấy bản ghi nào</CTableDataCell></CTableRow>
                   ) : (
                     logs.map((log) => (
                       <CTableRow key={log.id}>
-                        <CTableDataCell>{log.id}</CTableDataCell>
+                        <CTableDataCell><small>{formatDate(log.timestamp)}</small></CTableDataCell>
                         <CTableDataCell>
-                          {log.username} ({log.userId})
+                          <div><strong>{log.username}</strong></div>
+                          <small className="text-muted">ID: {log.userId}</small>
+                        </CTableDataCell>
+                        <CTableDataCell><CBadge color="info">{log.action}</CBadge></CTableDataCell>
+                        <CTableDataCell><small>{log.ipAddress || '-'}</small></CTableDataCell>
+                        <CTableDataCell>
+                          <div>{log.resource || '-'}</div>
+                          {log.resourceId && <CBadge color="secondary" variant="outline">ID: {log.resourceId}</CBadge>}
                         </CTableDataCell>
                         <CTableDataCell>
-                          <code>{log.action}</code>
-                        </CTableDataCell>
-                        <CTableDataCell>{log.resource || '-'}</CTableDataCell>
-                        <CTableDataCell>{log.resourceId || '-'}</CTableDataCell>
-                        <CTableDataCell>
-                          <small>{log.details || '-'}</small>
-                        </CTableDataCell>
-                        <CTableDataCell>
-                          <small>{formatDate(log.timestamp)}</small>
+                          <CButton color="info" variant="ghost" size="sm" onClick={() => handleShowDetail(log)}>
+                            <CIcon icon={cilInfo} /> Chi tiết
+                          </CButton>
                         </CTableDataCell>
                       </CTableRow>
                     ))
@@ -254,40 +249,66 @@ const AuditLogPage: React.FC = () => {
                 </CTableBody>
               </CTable>
 
-              {totalPages > 1 && (
-                <CPagination className="mt-3">
-                  <CPaginationItem
-                    disabled={currentPage === 0}
-                    onClick={() => setCurrentPage(currentPage - 1)}
-                  >
-                    {t('common.previous') || 'Trước'}
-                  </CPaginationItem>
-                  {Array.from({ length: totalPages }, (_, i) => i).map((page) => (
-                    <CPaginationItem
-                      key={page}
-                      active={page === currentPage}
-                      onClick={() => setCurrentPage(page)}
-                    >
-                      {page + 1}
-                    </CPaginationItem>
-                  ))}
-                  <CPaginationItem
-                    disabled={currentPage >= totalPages - 1}
-                    onClick={() => setCurrentPage(currentPage + 1)}
-                  >
-                    {t('common.next') || 'Sau'}
-                  </CPaginationItem>
-                </CPagination>
-              )}
-
-              <div className="mt-3 text-muted">
-                {t('common.showing') || 'Hiển thị'} {logs.length} / {totalElements}{' '}
-                {t('admin.auditLogs') || 'audit logs'}
+              <div className="d-flex justify-content-between align-items-center mt-3">
+                <small className="text-muted">Hiển thị {logs.length} / {totalElements} bản ghi</small>
+                {totalPages > 1 && (
+                  <CPagination>
+                    <CPaginationItem disabled={currentPage === 0} onClick={() => setCurrentPage(currentPage - 1)}>Trước</CPaginationItem>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i).map((p) => (
+                      <CPaginationItem key={p} active={p === currentPage} onClick={() => setCurrentPage(p)}>{p + 1}</CPaginationItem>
+                    ))}
+                    <CPaginationItem disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage(currentPage + 1)}>Sau</CPaginationItem>
+                  </CPagination>
+                )}
               </div>
             </>
           )}
         </CCardBody>
       </CCard>
+
+      {/* Detail Modal */}
+      <CModal visible={showModal} onClose={() => setShowModal(false)} size="lg">
+        <CModalHeader><CModalTitle>Chi tiết Hoạt động #{selectedLog?.id}</CModalTitle></CModalHeader>
+        <CModalBody>
+          {selectedLog && (
+            <div className="audit-detail">
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted">Thời gian:</div>
+                <div className="col-sm-8">{formatDate(selectedLog.timestamp)}</div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted">Người dùng:</div>
+                <div className="col-sm-8">{selectedLog.username} (ID: {selectedLog.userId})</div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted">Hành động:</div>
+                <div className="col-sm-8"><CBadge color="info">{selectedLog.action}</CBadge></div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted">Đối tượng:</div>
+                <div className="col-sm-8">{selectedLog.resource} {selectedLog.resourceId && `(ID: ${selectedLog.resourceId})`}</div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted">IP Address:</div>
+                <div className="col-sm-8"><code>{selectedLog.ipAddress || 'N/A'}</code></div>
+              </div>
+              <div className="row mb-2">
+                <div className="col-sm-4 text-muted">Thiết bị (User Agent):</div>
+                <div className="col-sm-8 small">{selectedLog.userAgent || 'N/A'}</div>
+              </div>
+              <div className="mt-3">
+                <div className="text-muted mb-1">Dữ liệu chi tiết:</div>
+                <pre className="p-3 bg-light border rounded" style={{ maxHeight: '300px', overflow: 'auto' }}>
+                  {selectedLog.details || 'Không có dữ liệu chi tiết'}
+                </pre>
+              </div>
+            </div>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setShowModal(false)}>Đóng</CButton>
+        </CModalFooter>
+      </CModal>
     </div>
   )
 }

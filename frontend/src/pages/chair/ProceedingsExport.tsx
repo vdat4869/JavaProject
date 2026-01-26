@@ -1,138 +1,163 @@
 import React, { useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   CCard,
   CCardBody,
   CCardHeader,
-  CForm,
-  CFormLabel,
-  CFormCheck,
   CButton,
   CAlert,
   CSpinner,
+  CRow,
+  CCol,
 } from '@coreui/react'
-import { proceedingsService, ProceedingsExportRequest } from '../../services/proceedings.service'
+import CIcon from '@coreui/icons-react'
+import { cilCloudDownload, cilFile, cilLibrary, cilCode, cilSettings } from '@coreui/icons'
+import { cameraReadyService } from '../../services/camera-ready.service'
 
 /**
- * ProceedingsExport - Trang export proceedings cho CHAIR
- *
- * Features:
- * - Export proceedings (PDF, ZIP, BOTH)
- * - Options: include accepted only, include abstracts
- * - Download proceedings file
+ * ProceedingsExport - Trang xuất bản kỷ yếu (Proceedings) cho CHAIR (API v1)
  */
 const ProceedingsExport: React.FC = () => {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const conferenceId = searchParams.get('conferenceId')
-    ? parseInt(searchParams.get('conferenceId')!)
-    : null
-  const [format, setFormat] = useState<'PDF' | 'ZIP' | 'BOTH'>('PDF')
-  const [includeAcceptedOnly, setIncludeAcceptedOnly] = useState(true)
-  const [includeAbstracts, setIncludeAbstracts] = useState(true)
-  const [exporting, setExporting] = useState(false)
+
+  const [exporting, setExporting] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
-  const handleExport = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleExport = async (format: 'zip' | 'pdf' | 'json' | 'csv') => {
     if (!conferenceId) {
-      setError('Missing conferenceId')
+      setError('Thiếu tham số conferenceId')
       return
     }
 
     try {
-      setExporting(true)
+      setExporting(format)
       setError('')
-      const result = await proceedingsService.export({
-        conferenceId,
-        format,
-        includeAcceptedOnly,
-        includeAbstracts,
-      })
-      setSuccess(`Export thành công! File: ${result.fileName}`)
+      setSuccess('')
+
+      const blob = await cameraReadyService.exportProceedings(conferenceId, format)
 
       // Download file
-      await proceedingsService.download(result.downloadUrl, result.fileName)
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Không thể export proceedings')
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      const extension = format === 'zip' ? 'zip' : format === 'pdf' ? 'pdf' : format === 'json' ? 'json' : 'csv'
+      link.setAttribute('download', `proceedings-${conferenceId}.${extension}`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+
+      setSuccess(`Xuất bản định dạng ${format.toUpperCase()} thành công!`)
+    } catch (err: any) {
+      setError(err.response?.data?.message || `Không thể xuất bản định dạng ${format.toUpperCase()}`)
     } finally {
-      setExporting(false)
+      setExporting(null)
     }
   }
 
   if (!conferenceId) {
     return (
-      <CCard>
-        <CCardBody>
-          <CAlert color="danger">Missing conferenceId</CAlert>
-        </CCardBody>
-      </CCard>
+      <CAlert color="danger">
+        Thiếu tham số conferenceId. Vui lòng quay lại từ trang quản lý hội nghị.
+      </CAlert>
     )
   }
 
   return (
-    <CCard>
-      <CCardHeader>
-        <h4>Export Proceedings</h4>
-      </CCardHeader>
-      <CCardBody>
-        {error && (
-          <CAlert color="danger" className="mb-3">
-            {error}
-          </CAlert>
-        )}
-        {success && (
-          <CAlert color="success" className="mb-3">
-            {success}
-          </CAlert>
-        )}
+    <div className="container-lg">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h3>Xuất bản kỷ yếu (Proceedings)</h3>
+        <CButton color="secondary" onClick={() => navigate(-1)}>Quay lại</CButton>
+      </div>
 
-        <CForm onSubmit={handleExport}>
-          <div className="mb-3">
-            <CFormLabel>Format *</CFormLabel>
-            <select
-              className="form-select"
-              value={format}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setFormat(e.target.value as 'PDF' | 'ZIP' | 'BOTH')
-              }
-            >
-              <option value="PDF">PDF</option>
-              <option value="ZIP">ZIP</option>
-              <option value="BOTH">PDF + ZIP</option>
-            </select>
-          </div>
+      <CCard className="mb-4">
+        <CCardHeader>
+          <CIcon icon={cilSettings} className="me-2" />
+          Tùy chọn xuất bản
+        </CCardHeader>
+        <CCardBody>
+          <p className="text-muted mb-4">
+            Hệ thống sẽ tổng hợp tất cả các bài báo đã được <strong>PHÊ DUYỆT (APPROVED)</strong> trong giai đoạn Camera-ready để tạo kỷ yếu.
+          </p>
 
-          <div className="mb-3">
-            <CFormCheck
-              type="checkbox"
-              id="includeAcceptedOnly"
-              label="Chỉ bao gồm các bài đã được chấp nhận"
-              checked={includeAcceptedOnly}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setIncludeAcceptedOnly(e.target.checked)
-              }
-            />
-          </div>
+          {error && <CAlert color="danger" dismissible onClose={() => setError('')}>{error}</CAlert>}
+          {success && <CAlert color="success" dismissible onClose={() => setSuccess('')}>{success}</CAlert>}
 
-          <div className="mb-3">
-            <CFormCheck
-              type="checkbox"
-              id="includeAbstracts"
-              label="Bao gồm abstracts"
-              checked={includeAbstracts}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setIncludeAbstracts(e.target.checked)
-              }
-            />
-          </div>
+          <CRow>
+            <CCol md={6} lg={3} className="mb-3">
+              <CCard className="h-100 text-center p-3 border-primary">
+                <div className="mb-3">
+                  <CIcon icon={cilLibrary} size="xl" className="text-primary" />
+                </div>
+                <h5>Tất cả PDF (ZIP)</h5>
+                <p className="small text-muted flex-grow-1">Bao gói tất cả các tệp PDF camera-ready thành một bản nén ZIP duy nhất.</p>
+                <CButton
+                  color="primary"
+                  disabled={!!exporting}
+                  onClick={() => handleExport('zip')}
+                >
+                  {exporting === 'zip' ? <CSpinner size="sm" /> : 'Tải ZIP'}
+                </CButton>
+              </CCard>
+            </CCol>
 
-          <CButton type="submit" color="primary" disabled={exporting}>
-            {exporting ? <CSpinner size="sm" /> : 'Export Proceedings'}
-          </CButton>
-        </CForm>
-      </CCardBody>
-    </CCard>
+            <CCol md={6} lg={3} className="mb-3">
+              <CCard className="h-100 text-center p-3 border-danger">
+                <div className="mb-3">
+                  <CIcon icon={cilFile} size="xl" className="text-danger" />
+                </div>
+                <h5>Kỷ yếu (PDF)</h5>
+                <p className="small text-muted flex-grow-1">Tạo một tệp PDF duy nhất bao gồm bìa, mục lục và toàn bộ nội dung các bài báo.</p>
+                <CButton
+                  color="danger"
+                  disabled={!!exporting}
+                  onClick={() => handleExport('pdf')}
+                >
+                  {exporting === 'pdf' ? <CSpinner size="sm" /> : 'Tải PDF'}
+                </CButton>
+              </CCard>
+            </CCol>
+
+            <CCol md={6} lg={3} className="mb-3">
+              <CCard className="h-100 text-center p-3 border-info">
+                <div className="mb-3">
+                  <CIcon icon={cilCode} size="xl" className="text-info" />
+                </div>
+                <h5>Siêu dữ liệu (JSON)</h5>
+                <p className="small text-muted flex-grow-1">Dữ liệu cấu trúc chứa tiêu đề, tác giả, tóm tắt bài báo để tích hợp hệ thống khác.</p>
+                <CButton
+                  color="info"
+                  disabled={!!exporting}
+                  onClick={() => handleExport('json')}
+                >
+                  {exporting === 'json' ? <CSpinner size="sm" /> : 'Tải JSON'}
+                </CButton>
+              </CCard>
+            </CCol>
+
+            <CCol md={6} lg={3} className="mb-3">
+              <CCard className="h-100 text-center p-3 border-success">
+                <div className="mb-3">
+                  <CIcon icon={cilCloudDownload} size="xl" className="text-success" />
+                </div>
+                <h5>Bảng tổng hợp (CSV)</h5>
+                <p className="small text-muted flex-grow-1">Danh sách chi tiết bài nộp định dạng bảng Excel để quản lý hành chính.</p>
+                <CButton
+                  color="success"
+                  disabled={!!exporting}
+                  onClick={() => handleExport('csv')}
+                >
+                  {exporting === 'csv' ? <CSpinner size="sm" /> : 'Tải CSV'}
+                </CButton>
+              </CCard>
+            </CCol>
+          </CRow>
+        </CCardBody>
+      </CCard>
+    </div>
   )
 }
 

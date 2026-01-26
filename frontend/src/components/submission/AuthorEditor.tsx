@@ -19,7 +19,7 @@ import {
   CModalTitle,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPlus, cilPencil, cilTrash, cilArrowUp, cilArrowDown } from '@coreui/icons'
+import { cilPlus, cilPencil, cilTrash, cilArrowTop, cilArrowBottom } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { SubmissionAuthor } from '../../services/submission.service'
 
@@ -198,7 +198,7 @@ const AuthorEditor: React.FC<AuthorEditorProps> = ({ authors, onChange }) => {
                       disabled={index === 0}
                       title={t('submission.moveUp') || 'Lên'}
                     >
-                      <CIcon icon={cilArrowUp} />
+                      <CIcon icon={cilArrowTop} />
                     </CButton>
                     <CButton
                       color="link"
@@ -207,7 +207,7 @@ const AuthorEditor: React.FC<AuthorEditorProps> = ({ authors, onChange }) => {
                       disabled={index === authors.length - 1}
                       title={t('submission.moveDown') || 'Xuống'}
                     >
-                      <CIcon icon={cilArrowDown} />
+                      <CIcon icon={cilArrowBottom} />
                     </CButton>
                     <CButton
                       color="primary"

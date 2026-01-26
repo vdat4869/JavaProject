@@ -53,13 +53,13 @@ public class AuthController {
   private final RefreshTokenRepository refreshTokenRepository;
   private final com.uth.confms.auth.service.UserService userService;
 
-  @Value("${oauth2.enabled:true}")
+  @Value("${app.oauth2.enabled:true}")
   private boolean oauth2Enabled;
 
   @Value("${spring.security.oauth2.client.registration.google.client-id:}")
   private String googleClientId;
 
-  @Value("${oauth2.redirect-uri:http://localhost:8080/login/oauth2/code/google}")
+  @Value("${spring.security.oauth2.client.registration.google.redirect-uri:http://localhost:8080/login/oauth2/code/google}")
   private String oauth2RedirectUri;
 
   public AuthController(AuthService authService, TokenService tokenService,
@@ -178,16 +178,11 @@ public class AuthController {
     if (!oauth2Enabled) {
       throw new BusinessException("SSO is not enabled");
     }
-    if (googleClientId == null || googleClientId.isEmpty()) {
-      throw new BusinessException("Google OAuth2 is not configured");
-    }
 
-    String redirectUrl = "https://accounts.google.com/o/oauth2/v2/auth" +
-        "?client_id=" + googleClientId +
-        "&redirect_uri=" + java.net.URLEncoder.encode(oauth2RedirectUri, java.nio.charset.StandardCharsets.UTF_8) +
-        "&response_type=code" +
-        "&scope=openid%20email%20profile" +
-        "&access_type=offline";
+    // Redirect to Spring Security's OAuth2 authorization endpoint
+    // This ensures that the AuthorizationRequest is stored in the session
+    // and the 'state' parameter is correctly validated on callback.
+    String redirectUrl = "http://localhost:8080/oauth2/authorization/google";
 
     return ResponseEntity.ok(ApiResponse.success(Map.of("redirectUrl", redirectUrl)));
   }

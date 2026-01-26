@@ -24,14 +24,14 @@ export interface Submission {
   title: string
   abstractText: string // Note: backend uses "abstractText" not "abstract"
   status:
-    | 'DRAFT'
-    | 'SUBMITTED'
-    | 'UNDER_REVIEW'
-    | 'REVIEWED'
-    | 'ACCEPTED'
-    | 'REJECTED'
-    | 'WITHDRAWN'
-    | 'CAMERA_READY'
+  | 'DRAFT'
+  | 'SUBMITTED'
+  | 'UNDER_REVIEW'
+  | 'REVIEWED'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'WITHDRAWN'
+  | 'CAMERA_READY'
   pdfFilePath?: string
   trackId?: number
   keywords?: string // Note: backend stores as string, not array
@@ -62,7 +62,7 @@ export interface CreateSubmissionRequest {
   title: string
   abstractText: string // Note: backend uses "abstractText"
   trackId?: number
-  keywords?: string // Note: backend stores as string, not array
+  keywords?: string | string[] // Note: backend stores as string, not array
   authors?: SubmissionAuthor[]
 }
 
@@ -73,7 +73,7 @@ export interface UpdateSubmissionRequest {
   title?: string
   abstractText?: string // Note: backend uses "abstractText"
   trackId?: number
-  keywords?: string // Note: backend stores as string, not array
+  keywords?: string | string[] // Note: backend stores as string, not array
   authors?: SubmissionAuthor[]
 }
 
@@ -152,6 +152,13 @@ export const submissionService = {
       abstract: submission.abstractText, // Legacy field
       keywordsArray: submission.keywords ? submission.keywords.split(',').map((k: string) => k.trim()) : [], // Legacy field
     }
+  },
+
+  /**
+   * Alias for getSubmission
+   */
+  getSubmissionById: async (id: number): Promise<Submission> => {
+    return submissionService.getSubmission(id)
   },
 
   /**

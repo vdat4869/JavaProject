@@ -52,7 +52,7 @@ const SubmissionList: React.FC = () => {
     const message = isDraft
       ? 'Bạn có chắc chắn muốn xóa bài nộp này?'
       : 'Bạn có chắc chắn muốn rút bài nộp này?'
-    
+
     if (!window.confirm(message)) {
       return
     }
@@ -97,7 +97,7 @@ const SubmissionList: React.FC = () => {
       <CCardHeader>
         <div className="d-flex justify-content-between align-items-center">
           <h4>Danh sách bài nộp</h4>
-          <CButton color="primary" onClick={() => navigate('/author/submissions/new')}>
+          <CButton color="primary" onClick={() => navigate('/app/author/submissions/new')}>
             Nộp bài mới
           </CButton>
         </div>
@@ -106,7 +106,7 @@ const SubmissionList: React.FC = () => {
         {submissions.length === 0 ? (
           <div className="text-center py-5">
             <p className="text-muted">Chưa có bài nộp nào</p>
-            <CButton color="primary" onClick={() => navigate('/author/submissions/new')}>
+            <CButton color="primary" onClick={() => navigate('/app/author/submissions/new')}>
               Nộp bài đầu tiên
             </CButton>
           </div>
@@ -138,7 +138,7 @@ const SubmissionList: React.FC = () => {
                     <CButton
                       color="link"
                       size="sm"
-                      onClick={() => navigate(`/author/submissions/${submission.id}`)}
+                      onClick={() => navigate(`/app/author/submissions/${submission.id}`)}
                     >
                       Xem
                     </CButton>
@@ -146,7 +146,7 @@ const SubmissionList: React.FC = () => {
                       <CButton
                         color="link"
                         size="sm"
-                        onClick={() => navigate(`/author/submissions/${submission.id}/edit`)}
+                        onClick={() => navigate(`/app/author/submissions/${submission.id}/edit`)}
                       >
                         Sửa
                       </CButton>

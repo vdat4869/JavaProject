@@ -43,11 +43,11 @@ const AppHeaderDropdown = () => {
         <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">
           {user?.fullName || user?.email}
         </CDropdownHeader>
-        <CDropdownItem onClick={() => navigate('/profile')}>
+        <CDropdownItem onClick={() => navigate('/app/profile')}>
           <CIcon icon={cilUser} className="me-2" />
           {t('common.profile') || 'Profile'}
         </CDropdownItem>
-        <CDropdownItem onClick={() => navigate('/settings')}>
+        <CDropdownItem onClick={() => navigate('/app/settings')}>
           <CIcon icon={cilSettings} className="me-2" />
           {t('common.settings') || 'Settings'}
         </CDropdownItem>

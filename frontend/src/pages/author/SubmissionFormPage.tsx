@@ -25,7 +25,7 @@ const SubmissionFormPage: React.FC = () => {
       <CCard>
         <CCardBody>
           <p className="text-danger">Vui lòng chọn hội nghị</p>
-          <button onClick={() => navigate('/author')}>Quay lại</button>
+          <button onClick={() => navigate('/app/author')}>Quay lại</button>
         </CCardBody>
       </CCard>
     )
@@ -56,7 +56,7 @@ const SubmissionFormPage: React.FC = () => {
         await submissionService.uploadPdf(submission.id, data.file)
       }
 
-      navigate('/author/submissions')
+      navigate('/app/author/submissions')
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Không thể tạo submission')
     } finally {
@@ -73,7 +73,7 @@ const SubmissionFormPage: React.FC = () => {
         <SubmissionForm
           conferenceId={conferenceId}
           onSubmit={handleSubmit}
-          onCancel={() => navigate('/author/submissions')}
+          onCancel={() => navigate('/app/author/submissions')}
           loading={loading}
         />
       </CCardBody>

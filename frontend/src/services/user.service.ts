@@ -45,8 +45,8 @@ export const userService = {
    * GET /api/users/me
    */
   getCurrentUser: async (): Promise<UserDTO> => {
-    const response = await apiClient.get<UserDTO>('/users/me')
-    return response.data
+    const response = await apiClient.get<any>('/users/me')
+    return response.data?.data || response.data
   },
 
   /**
@@ -54,8 +54,8 @@ export const userService = {
    * PUT /api/users/me
    */
   updateCurrentUser: async (data: Partial<UserDTO>): Promise<UserDTO> => {
-    const response = await apiClient.put<UserDTO>('/users/me', data)
-    return response.data
+    const response = await apiClient.put<any>('/users/me', data)
+    return response.data?.data || response.data
   },
 
   /**

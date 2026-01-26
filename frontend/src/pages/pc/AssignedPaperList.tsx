@@ -184,17 +184,15 @@ const AssignedPaperList: React.FC = () => {
                           </CButton>
                         </>
                       )}
-                      {assignment.status === 'ACCEPTED' && (
-                        <CButton
-                          color="primary"
-                          size="sm"
-                          onClick={() =>
-                            navigate(`/pc/reviews/new?assignmentId=${assignment.id}`)
-                          }
-                        >
-                          Đánh giá
-                        </CButton>
-                      )}
+                      <CButton
+                        color="primary"
+                        size="sm"
+                        onClick={() =>
+                          navigate(`/pc/submissions/${assignment.submissionId}`)
+                        }
+                      >
+                        Chi tiết & Đánh giá
+                      </CButton>
                       <CButton
                         color="link"
                         size="sm"

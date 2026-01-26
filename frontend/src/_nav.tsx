@@ -11,6 +11,10 @@ import {
   cilCloudUpload,
   cilPrint,
   cilChart,
+  cilShieldAlt,
+  cilEnvelopeLetter,
+  cilUser,
+  cilSettings,
 } from '@coreui/icons'
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 
@@ -40,14 +44,14 @@ const _nav: any[] = [
   },
   {
     component: CNavItem,
-    name: 'Bài nộp',
+    name: 'author.mySubmissions',
     to: '/app/author/submissions',
     icon: <CIcon icon={cilList} customClassName="nav-icon" />,
     roles: ['AUTHOR'],
   },
   {
     component: CNavItem,
-    name: 'Nộp bài mới',
+    name: 'author.newSubmission',
     to: '/app/author/submissions/new',
     icon: <CIcon icon={cilPlus} customClassName="nav-icon" />,
     roles: ['AUTHOR'],
@@ -55,14 +59,21 @@ const _nav: any[] = [
   {
     component: CNavTitle,
     name: 'PC / Reviewer',
-    roles: ['PC', 'REVIEWER', 'PC_MEMBER'],
+    roles: ['PC', 'REVIEWER'],
   },
   {
     component: CNavItem,
     name: 'Bài được giao',
     to: '/app/pc/assignments',
     icon: <CIcon icon={cilList} customClassName="nav-icon" />,
-    roles: ['PC', 'REVIEWER', 'PC_MEMBER'],
+    roles: ['PC', 'REVIEWER'],
+  },
+  {
+    component: CNavItem,
+    name: 'Thảo luận nội bộ',
+    to: '/app/pc/discussions',
+    icon: <CIcon icon={cilCommentSquare} customClassName="nav-icon" />,
+    roles: ['PC', 'REVIEWER'],
   },
   {
     component: CNavTitle,
@@ -88,6 +99,13 @@ const _nav: any[] = [
     name: 'Assignment Dashboard',
     to: '/app/chair/assignments?conferenceId=1',
     icon: <CIcon icon={cilList} customClassName="nav-icon" />,
+    roles: ['CHAIR', 'ADMIN'],
+  },
+  {
+    component: CNavItem,
+    name: 'Quản lý bài nộp',
+    to: '/app/chair/submissions?conferenceId=1',
+    icon: <CIcon icon={cilFile} customClassName="nav-icon" />,
     roles: ['CHAIR', 'ADMIN'],
   },
   {
@@ -119,11 +137,49 @@ const _nav: any[] = [
     roles: ['CHAIR', 'ADMIN'],
   },
   {
+    component: CNavTitle,
+    name: 'Hệ thống',
+    roles: ['ADMIN'],
+  },
+  {
     component: CNavItem,
-    name: 'Camera-ready',
-    to: '/app/author/submissions/1/camera-ready',
-    icon: <CIcon icon={cilCloudUpload} customClassName="nav-icon" />,
-    roles: ['AUTHOR'],
+    name: 'Quản lý Sao lưu',
+    to: '/app/admin/backup',
+    icon: <CIcon icon={cilShieldAlt} customClassName="nav-icon" />,
+    roles: ['ADMIN'],
+  },
+  {
+    component: CNavItem,
+    name: 'Nhật ký Email',
+    to: '/app/admin/email-logs',
+    icon: <CIcon icon={cilEnvelopeLetter} customClassName="nav-icon" />,
+    roles: ['ADMIN'],
+  },
+  {
+    component: CNavItem,
+    name: 'Nhật ký hệ thống',
+    to: '/app/admin/audit-logs',
+    icon: <CIcon icon={cilList} customClassName="nav-icon" />,
+    roles: ['ADMIN'],
+  },
+  {
+    component: CNavTitle,
+    name: 'common.settings',
+    roles: ['AUTHOR', 'PC', 'CHAIR', 'ADMIN'],
+  },
+  {
+    component: CNavItem,
+    name: 'common.profile',
+    to: '/app/profile',
+    icon: <CIcon icon={cilUser} customClassName="nav-icon" />,
+    roles: ['AUTHOR', 'PC', 'CHAIR', 'ADMIN'],
+  },
+  {
+    component: CNavItem,
+    name: 'common.settings',
+    to: '/app/settings',
+    icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
+    roles: ['AUTHOR', 'PC', 'CHAIR', 'ADMIN'],
   },
 ]
 

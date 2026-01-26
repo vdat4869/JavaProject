@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * @version 1.0
  */
 @Configuration
-@ConditionalOnProperty(name = "oauth2.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(name = "app.oauth2.enabled", havingValue = "true", matchIfMissing = false)
 public class OAuth2Config {
 
   private static final Logger log = LoggerFactory.getLogger(OAuth2Config.class);
@@ -141,7 +141,7 @@ public class OAuth2Config {
 
             // Redirect về frontend với token
             String redirectUrl = String.format(
-                "%s/auth/callback?token=%s&refreshToken=%s",
+                "%s/auth/sso/callback?token=%s&refreshToken=%s",
                 frontendUrl,
                 accessToken,
                 refreshToken);

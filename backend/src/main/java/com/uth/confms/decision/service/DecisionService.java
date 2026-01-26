@@ -7,6 +7,8 @@ import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.conference.entity.Conference;
 import com.uth.confms.conference.repository.ConferenceRepository;
+import com.uth.confms.decision.dto.BulkDecisionRequestDTO;
+import com.uth.confms.decision.dto.DecisionHistoryDTO;
 import com.uth.confms.decision.dto.DecisionRequestDTO;
 import com.uth.confms.decision.dto.DecisionResultDTO;
 import com.uth.confms.decision.dto.ReviewSummaryDTO;
@@ -67,6 +69,39 @@ public class DecisionService {
     this.notificationService = notificationService;
     this.reviewRepository = reviewRepository;
     this.decisionHistoryRepository = decisionHistoryRepository;
+  }
+
+  @Transactional
+  public List<DecisionResultDTO> makeBulkDecisions(BulkDecisionRequestDTO dto, Long chairId) {
+    return dto.getSubmissionIds().stream()
+        .map(subId -> {
+          DecisionRequestDTO request = new DecisionRequestDTO();
+          request.setSubmissionId(subId);
+          request.setType(dto.getType());
+          request.setComments(dto.getComments());
+          request.setSendNotification(dto.getSendNotification());
+          return makeDecision(request, chairId);
+        })
+        .collect(Collectors.toList());
+  }
+
+  public List<DecisionHistoryDTO> getDecisionHistoryDTOs(Long decisionId) {
+    return decisionHistoryRepository.findByDecisionIdOrderByChangedAtDesc(decisionId).stream()
+        .map(h -> {
+          User changer = userRepository.findById(h.getChangedBy()).orElse(null);
+          return new DecisionHistoryDTO(
+              h.getId(),
+              h.getDecisionId(),
+              h.getChangedBy(),
+              changer != null ? changer.getFullName() : "Unknown",
+              h.getChangeType().name(),
+              h.getOldValue(),
+              h.getNewValue(),
+              h.getFieldName(),
+              h.getDescription(),
+              h.getChangedAt());
+        })
+        .collect(Collectors.toList());
   }
 
   @Transactional

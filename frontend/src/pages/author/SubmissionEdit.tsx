@@ -37,7 +37,7 @@ const SubmissionEdit: React.FC = () => {
       // Kiểm tra nếu không thể edit
       if (!data.canEdit) {
         // Redirect về detail page
-        navigate(`/author/submissions/${id}`)
+        navigate(`/app/author/submissions/${id}`)
       }
     } catch (error) {
       console.error('Error loading submission:', error)
@@ -171,7 +171,7 @@ const SubmissionEdit: React.FC = () => {
           }}
           conferenceId={submission.conferenceId}
           onSubmit={handleFormSubmit}
-          onCancel={() => navigate(`/author/submissions/${id}`)}
+          onCancel={() => navigate(`/app/author/submissions/${id}`)}
           loading={saving}
         />
       </CCardBody>

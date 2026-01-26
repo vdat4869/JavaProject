@@ -122,8 +122,16 @@ export const conferenceService = {
    * GET /api/conferences/public
    */
   getPublishedConferences: async (): Promise<ConferenceResponse[]> => {
-    const response = await apiClient.get<ConferenceResponse[]>('/conferences/public')
-    return response.data
+    const response = await apiClient.get<any>('/conferences/public')
+    const data = response.data?.data || response.data
+    return Array.isArray(data) ? data : []
+  },
+
+  /**
+   * Alias for getPublishedConferences to match existing usage
+   */
+  getConferences: async (): Promise<ConferenceResponse[]> => {
+    return conferenceService.getPublishedConferences()
   },
 
   /**

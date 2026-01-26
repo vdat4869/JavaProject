@@ -17,15 +17,16 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Controller quản lý hội nghị (Conference)
  *
- * <p>Các endpoints:
+ * <p>
+ * Các endpoints:
  *
  * <ul>
- *   <li>GET /api/conferences/public - Lấy danh sách hội nghị đã publish (public)
- *   <li>GET /api/conferences/{id} - Lấy thông tin hội nghị (public)
- *   <li>GET /api/conferences/my - Lấy danh sách hội nghị của chair (CHAIR/ADMIN)
- *   <li>POST /api/conferences - Tạo hội nghị mới (CHAIR/ADMIN)
- *   <li>PUT /api/conferences/{id} - Cập nhật hội nghị (CHAIR/ADMIN)
- *   <li>DELETE /api/conferences/{id} - Xóa hội nghị (CHAIR/ADMIN)
+ * <li>GET /api/conferences/public - Lấy danh sách hội nghị đã publish (public)
+ * <li>GET /api/conferences/{id} - Lấy thông tin hội nghị (public)
+ * <li>GET /api/conferences/my - Lấy danh sách hội nghị của chair (CHAIR/ADMIN)
+ * <li>POST /api/conferences - Tạo hội nghị mới (ADMIN only)
+ * <li>PUT /api/conferences/{id} - Cập nhật hội nghị (CHAIR/ADMIN)
+ * <li>DELETE /api/conferences/{id} - Xóa hội nghị (ADMIN only)
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -63,7 +64,7 @@ public class ConferenceController {
   }
 
   @PostMapping
-  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<ApiResponse<ConferenceResponseDTO>> createConference(
       @Valid @RequestBody ConferenceCreateDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -82,7 +83,7 @@ public class ConferenceController {
   }
 
   @DeleteMapping("/{id}")
-  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  @PreAuthorize("hasRole('ADMIN')")
   public ResponseEntity<ApiResponse<Void>> deleteConference(
       @PathVariable Long id, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);

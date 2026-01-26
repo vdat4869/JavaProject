@@ -1,31 +1,23 @@
 import apiClient from './api'
 
 /**
- * Report Statistics interface
+ * Report Statistics interface (matches ReportResponseDTO)
  */
 export interface ReportStatistics {
+  id?: number
+  conferenceId: number
   totalSubmissions: number
-  acceptedSubmissions: number
-  rejectedSubmissions: number
-  pendingSubmissions: number
+  acceptedCount: number
+  rejectedCount: number
+  pendingCount: number
+  acceptanceRate: number
   totalReviews: number
   completedReviews: number
-  averageRating: number
-  submissionsByTrack: Array<{
-    trackName: string
-    count: number
-    accepted: number
-    rejected: number
-  }>
-  submissionsByStatus: Array<{
-    status: string
-    count: number
-  }>
-  reviewProgress: {
-    completed: number
-    inProgress: number
-    pending: number
-  }
+  pendingReviews: number
+  totalAssignments: number
+  acceptedAssignments: number
+  declinedAssignments: number
+  snapshotAt?: string
 }
 
 /**
@@ -48,23 +40,51 @@ export interface ReportExportResponse {
 }
 
 /**
- * Reports Service - Xử lý các API calls liên quan đến reports
+ * Reports Service - API v1 (/api/reporting)
  */
 export const reportsService = {
   /**
-   * Lấy thống kê cho conference
-   * GET /api/reports/statistics?conferenceId={id}
+   * Lấy báo cáo mới nhất (hoặc generate on-the-fly)
+   * GET /api/reporting/conference/{id}
    */
-  getStatistics: async (conferenceId: number): Promise<ReportStatistics> => {
+  getLatestReport: async (conferenceId: number): Promise<ReportStatistics> => {
     const response = await apiClient.get<ReportStatistics>(
-      `/reports/statistics?conferenceId=${conferenceId}`,
+      `/reporting/conference/${conferenceId}`
     )
     return response.data
   },
 
   /**
-   * Export report
-   * GET /api/reports/export?conferenceId={id}&reportType={type}&format={format}
+   * Tạo snapshot mới
+   * POST /api/reporting/conference/{id}/snapshot
+   */
+  createSnapshot: async (conferenceId: number): Promise<ReportStatistics> => {
+    const response = await apiClient.post<ReportStatistics>(
+      `/reporting/conference/${conferenceId}/snapshot`
+    )
+    return response.data
+  },
+
+  /**
+   * Lấy lịch sử snapshots
+   * GET /api/reporting/conference/{id}/history
+   */
+  getReportHistory: async (conferenceId: number): Promise<ReportStatistics[]> => {
+    const response = await apiClient.get<ReportStatistics[]>(
+      `/reporting/conference/${conferenceId}/history`
+    )
+    return response.data
+  },
+
+  /**
+   * Legacy wrapper for backward compatibility
+   */
+  getStatistics: async (conferenceId: number): Promise<any> => {
+    return reportsService.getLatestReport(conferenceId)
+  },
+
+  /**
+   * Export report (Giữ nguyên path cũ nếu backend chưa refactor endpoint này)
    */
   export: async (data: ReportExportRequest): Promise<ReportExportResponse> => {
     const params = new URLSearchParams({

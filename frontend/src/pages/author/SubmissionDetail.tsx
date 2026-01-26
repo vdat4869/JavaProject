@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { CCard, CCardBody, CCardHeader, CButton, CBadge, CSpinner, CAlert } from '@coreui/react'
+import CIcon from '@coreui/icons-react'
+import { cilFile, cilPencil, cilTrash, cilCloudUpload, cilCheckCircle, cilHistory, cilArrowLeft } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { submissionService, Submission } from '../../services/submission.service'
+import { conferenceService, ConferenceResponse } from '../../services/conference.service'
 import ReviewResultView from '../../components/submission/ReviewResultView'
 import FileVersionHistory from '../../components/submission/FileVersionHistory'
 
@@ -49,7 +52,7 @@ const SubmissionDetail: React.FC = () => {
     const message = isDraft
       ? 'Bạn có chắc chắn muốn xóa bài nộp này?'
       : 'Bạn có chắc chắn muốn rút bài nộp này?'
-    
+
     if (!window.confirm(message)) {
       return
     }
@@ -60,7 +63,7 @@ const SubmissionDetail: React.FC = () => {
       } else {
         await submissionService.withdrawSubmission(parseInt(id!))
       }
-      navigate('/author/submissions')
+      navigate('/app/author/submissions')
     } catch (error) {
       alert('Không thể thực hiện thao tác. Vui lòng thử lại.')
     }
@@ -170,9 +173,34 @@ const SubmissionDetail: React.FC = () => {
                 <CButton
                   color="primary"
                   size="sm"
-                  onClick={() => navigate(`/author/submissions/${id}/edit`)}
+                  onClick={() => navigate(`/app/author/submissions/${id}/edit`)}
                 >
                   Sửa
+                </CButton>
+              )}
+              <CButton
+                color="secondary"
+                size="sm"
+                onClick={() => navigate('/app/author/submissions')}
+              >
+                <CIcon icon={cilArrowLeft} /> Quay lại
+              </CButton>
+              {submission.status === 'REVIEWED' && (
+                <CButton
+                  color="warning"
+                  size="sm"
+                  onClick={() => navigate(`/app/author/submissions/${id}/rebuttal`)}
+                >
+                  Gửi phản hồi (Rebuttal)
+                </CButton>
+              )}
+              {(submission.status === 'ACCEPTED' || submission.status === 'CAMERA_READY') && (
+                <CButton
+                  color="success"
+                  size="sm"
+                  onClick={() => navigate(`/app/author/submissions/${id}/camera-ready`)}
+                >
+                  Nộp bản thảo cuối (Camera-ready)
                 </CButton>
               )}
               {submission.canWithdraw && (
@@ -217,8 +245,8 @@ const SubmissionDetail: React.FC = () => {
               {submission.keywordsArray
                 ? submission.keywordsArray.join(', ')
                 : submission.keywords
-                ? submission.keywords.split(',').map((k: string) => k.trim()).join(', ')
-                : ''}
+                  ? submission.keywords.split(',').map((k: string) => k.trim()).join(', ')
+                  : ''}
             </div>
           )}
 

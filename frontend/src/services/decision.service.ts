@@ -53,6 +53,32 @@ export interface BulkNotificationRequest {
 }
 
 /**
+ * Decision History interface
+ */
+export interface DecisionHistory {
+  id: number
+  decisionId: number
+  changedBy: number
+  changedByName: string
+  changeType: string
+  oldValue?: string
+  newValue?: string
+  fieldName?: string
+  description?: string
+  changedAt: string
+}
+
+/**
+ * Bulk Decision Request
+ */
+export interface BulkDecisionRequest {
+  submissionIds: number[]
+  type: DecisionType
+  comments?: string
+  sendNotification?: boolean
+}
+
+/**
  * Update Decision request - khớp backend UpdateDecisionRequestDTO
  */
 export interface UpdateDecisionRequest {
@@ -118,6 +144,29 @@ export const decisionService = {
   getPendingNotifications: async (): Promise<Decision[]> => {
     const response = await apiClient.get<{ success: boolean; data: Decision[] }>(
       '/decisions/pending-notifications'
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Tạo bulk decisions
+   * POST /api/decisions/bulk
+   */
+  createBulkDecisions: async (data: BulkDecisionRequest): Promise<Decision[]> => {
+    const response = await apiClient.post<{ success: boolean; data: Decision[] }>(
+      '/decisions/bulk',
+      data
+    )
+    return response.data.data || response.data
+  },
+
+  /**
+   * Lấy lịch sử decision
+   * GET /api/decisions/{id}/history
+   */
+  getDecisionHistory: async (decisionId: number): Promise<DecisionHistory[]> => {
+    const response = await apiClient.get<{ success: boolean; data: DecisionHistory[] }>(
+      `/decisions/${decisionId}/history`
     )
     return response.data.data || response.data
   },

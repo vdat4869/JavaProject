@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
 
 /**
  * User roles trong hệ thống
  */
-export type UserRole = 'GUEST' | 'AUTHOR' | 'REVIEWER' | 'PC' | 'PC_MEMBER' | 'CHAIR' | 'ADMIN'
+export type UserRole = 'GUEST' | 'AUTHOR' | 'REVIEWER' | 'PC' | 'CHAIR' | 'ADMIN'
 
 /**
  * User interface
@@ -35,6 +35,7 @@ interface AuthContextType {
   hasRole: (role: UserRole) => boolean
   hasAnyRole: (roles: UserRole[]) => boolean
   refreshUser: () => Promise<void>
+  loginWithTokens: (accessToken: string, refreshToken: string) => Promise<{ success: boolean; error?: string }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -57,8 +58,8 @@ const normalizeRoles = (roles: string[] | undefined): UserRole[] => {
   }
   return roles
     .map((role: string) => role.toUpperCase() as UserRole)
-    .filter((role: UserRole) => 
-      ['GUEST', 'AUTHOR', 'REVIEWER', 'PC', 'PC_MEMBER', 'CHAIR', 'ADMIN'].includes(role)
+    .filter((role: UserRole) =>
+      ['GUEST', 'AUTHOR', 'REVIEWER', 'PC', 'CHAIR', 'ADMIN'].includes(role)
     )
 }
 
@@ -120,7 +121,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   /**
    * Đăng nhập với email và password (Local account)
    */
-  const login = async (
+  const login = useCallback(async (
     email: string,
     password: string,
   ): Promise<{ success: boolean; error?: string; requiresVerification?: boolean }> => {
@@ -150,12 +151,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(user)
       setIsAuthenticated(true)
 
-      // TODO: Email verification is disabled - always allow login
-      // Kiểm tra nếu email chưa verified (local account) - DISABLED
-      // if (!userData.emailVerified) {
-      //   return { success: true, requiresVerification: true }
-      // }
-
       return { success: true }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.'
@@ -164,12 +159,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         error: errorMessage,
       }
     }
-  }
+  }, [])
+
+  /**
+   * Đăng nhập trực tiếp với tokens (thường dùng sau SSO)
+   */
+  const loginWithTokens = useCallback(async (
+    accessToken: string,
+    refreshToken: string,
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      localStorage.setItem('accessToken', accessToken)
+      localStorage.setItem('refreshToken', refreshToken)
+
+      // Set authenticated trước để AppLayout không redirect về login
+      setIsAuthenticated(true)
+
+      // Sau đó mới lấy thông tin user chi tiết
+      await refreshUser()
+
+      return { success: true }
+    } catch (error: any) {
+      console.error('Login with tokens failed:', error)
+      return {
+        success: false,
+        error: 'Failed to establish session with tokens.',
+      }
+    }
+  }, [])
 
   /**
    * Xử lý SSO callback và đăng nhập
    */
-  const handleSSOCallback = async (
+  const handleSSOCallback = useCallback(async (
     code: string,
     state?: string | null,
   ): Promise<{ success: boolean; error?: string }> => {
@@ -207,12 +229,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         error: errorMessage,
       }
     }
-  }
+  }, [])
 
   /**
    * Đăng xuất
    */
-  const logout = async (): Promise<void> => {
+  const logout = useCallback(async (): Promise<void> => {
     try {
       const { authService } = await import('../services/auth.service')
       await authService.logout()
@@ -228,7 +250,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null)
       setIsAuthenticated(false)
     }
-  }
+  }, [])
 
   /**
    * Kiểm tra user có role cụ thể không
@@ -249,35 +271,39 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   /**
    * Refresh user data từ API
    */
-  const refreshUser = async (): Promise<void> => {
+  const refreshUser = useCallback(async (): Promise<void> => {
     try {
       const { authService } = await import('../services/auth.service')
-      const userData = await authService.getCurrentUser()
-      const { accessToken, refreshToken, userId, ...rest } = userData
+      const response: any = await authService.getCurrentUser()
+
+      // Backend wraps in ApiResponse: { success: true, data: UserDTO }
+      const userData = response.data || response
 
       // Normalize roles từ backend
-      const normalizedRoles = normalizeRoles(rest.roles)
+      const normalizedRoles = normalizeRoles(userData.roles)
 
       // Map userId to id for User interface
       const user: User = {
-        id: userId,
-        email: rest.email,
-        fullName: rest.fullName,
+        id: userData.id || userData.userId,
+        email: userData.email,
+        fullName: userData.fullName || `${userData.firstName} ${userData.lastName}`,
         roles: normalizedRoles,
-        emailVerified: rest.emailVerified,
+        emailVerified: userData.emailVerified,
       }
       setUser(user)
       localStorage.setItem('user', JSON.stringify(user))
     } catch (error) {
       console.error('Error refreshing user:', error)
+      throw error // Rethrow to let caller know it failed
     }
-  }
+  }, [])
 
   const value: AuthContextType = {
     user,
     loading,
     isAuthenticated,
     login,
+    loginWithTokens,
     handleSSOCallback,
     logout,
     hasRole,

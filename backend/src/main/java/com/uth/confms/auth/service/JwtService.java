@@ -21,13 +21,14 @@ import org.springframework.stereotype.Service;
 /**
  * Service xử lý JWT tokens
  *
- * <p>Service này xử lý các nghiệp vụ liên quan đến:
+ * <p>
+ * Service này xử lý các nghiệp vụ liên quan đến:
  *
  * <ul>
- *   <li>Generate access token và refresh token
- *   <li>Validate tokens
- *   <li>Extract claims từ tokens
- *   <li>Token expiration management
+ * <li>Generate access token và refresh token
+ * <li>Validate tokens
+ * <li>Extract claims từ tokens
+ * <li>Token expiration management
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -129,6 +130,10 @@ public class JwtService {
 
   public String generateAccessToken(UserDetails userDetails) {
     Map<String, Object> claims = new HashMap<>();
+    List<String> roles = userDetails.getAuthorities().stream()
+        .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+        .collect(Collectors.toList());
+    claims.put("roles", roles);
     return createToken(claims, userDetails.getUsername(), accessTokenValidity);
   }
 
@@ -140,9 +145,10 @@ public class JwtService {
    */
   public String generateAccessToken(User user) {
     Map<String, Object> claims = new HashMap<>();
-    // Thêm roles vào claims với prefix "ROLE_" để nhất quán với Spring Security
+    // Không thêm prefix "ROLE_" vì đã config setDefaultRolePrefix("") trong
+    // MethodSecurityConfig
     List<String> roles = user.getRoles().stream()
-        .map(role -> "ROLE_" + role.getName().name())
+        .map(role -> role.getName().name())
         .collect(Collectors.toList());
     claims.put("roles", roles);
     return createToken(claims, user.getEmail(), accessTokenValidity);
@@ -150,6 +156,10 @@ public class JwtService {
 
   public String generateRefreshToken(UserDetails userDetails) {
     Map<String, Object> claims = new HashMap<>();
+    List<String> roles = userDetails.getAuthorities().stream()
+        .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+        .collect(Collectors.toList());
+    claims.put("roles", roles);
     return createToken(claims, userDetails.getUsername(), refreshTokenValidity);
   }
 
@@ -161,9 +171,8 @@ public class JwtService {
    */
   public String generateRefreshToken(User user) {
     Map<String, Object> claims = new HashMap<>();
-    // Thêm roles vào claims với prefix "ROLE_" để nhất quán với Spring Security
     List<String> roles = user.getRoles().stream()
-        .map(role -> "ROLE_" + role.getName().name())
+        .map(role -> role.getName().name())
         .collect(Collectors.toList());
     claims.put("roles", roles);
     return createToken(claims, user.getEmail(), refreshTokenValidity);

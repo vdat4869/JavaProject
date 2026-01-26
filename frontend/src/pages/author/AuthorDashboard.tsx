@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { CCard, CCardBody, CCardHeader, CButton, CRow, CCol, CSpinner, CBadge } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
 import { submissionService, Submission } from '../../services/submission.service'
-import { conferenceService, Conference } from '../../services/conference.service'
+import { conferenceService, ConferenceResponse } from '../../services/conference.service'
 
 /**
  * AuthorDashboard - Dashboard cho Author
@@ -17,7 +17,7 @@ const AuthorDashboard: React.FC = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [submissions, setSubmissions] = useState<Submission[]>([])
-  const [conferences, setConferences] = useState<Conference[]>([])
+  const [conferences, setConferences] = useState<ConferenceResponse[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -31,8 +31,8 @@ const AuthorDashboard: React.FC = () => {
         submissionService.getMySubmissions(),
         conferenceService.getConferences(),
       ])
-      setSubmissions(submissionsData)
-      setConferences(conferencesData.filter((c) => c.active))
+      setSubmissions(Array.isArray(submissionsData) ? submissionsData : [])
+      setConferences(Array.isArray(conferencesData) ? conferencesData : []) // conferencesData are already public/active
     } catch (error) {
       console.error('Error loading dashboard data:', error)
     } finally {
@@ -106,7 +106,7 @@ const AuthorDashboard: React.FC = () => {
             <CCardHeader>
               <div className="d-flex justify-content-between align-items-center">
                 <h5>Bài nộp gần đây</h5>
-                <CButton color="primary" size="sm" onClick={() => navigate('/author/submissions')}>
+                <CButton color="primary" size="sm" onClick={() => navigate('/app/author/submissions')}>
                   Xem tất cả
                 </CButton>
               </div>
@@ -135,7 +135,7 @@ const AuthorDashboard: React.FC = () => {
                             <CButton
                               color="link"
                               size="sm"
-                              onClick={() => navigate(`/author/submissions/${submission.id}`)}
+                              onClick={() => navigate(`/app/author/submissions/${submission.id}`)}
                             >
                               Xem
                             </CButton>
@@ -168,7 +168,7 @@ const AuthorDashboard: React.FC = () => {
                         color="primary"
                         size="sm"
                         onClick={() =>
-                          navigate(`/author/submissions/new?conferenceId=${conference.id}`)
+                          navigate(`/app/author/submissions/new?conferenceId=${conference.id}`)
                         }
                       >
                         Nộp bài

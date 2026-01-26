@@ -74,8 +74,8 @@ export const authService = {
    * POST /api/auth/login
    */
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    const response = await apiClient.post<LoginResponse>('/auth/login', credentials)
-    return response.data
+    const response = await apiClient.post<any>('/auth/login', credentials)
+    return response.data?.data || response.data
   },
 
   /**
@@ -94,8 +94,8 @@ export const authService = {
    * POST /api/auth/sso/callback
    */
   handleSSOCallback: async (data: SSOCallbackRequest): Promise<SSOCallbackResponse> => {
-    const response = await apiClient.post<SSOCallbackResponse>('/auth/sso/callback', data)
-    return response.data
+    const response = await apiClient.post<any>('/auth/sso/callback', data)
+    return response.data?.data || response.data
   },
 
   /**
@@ -111,8 +111,8 @@ export const authService = {
    * GET /api/auth/me
    */
   getCurrentUser: async (): Promise<LoginResponse> => {
-    const response = await apiClient.get<LoginResponse>('/auth/me')
-    return response.data
+    const response = await apiClient.get<any>('/users/me')
+    return response.data?.data || response.data
   },
 
   /**

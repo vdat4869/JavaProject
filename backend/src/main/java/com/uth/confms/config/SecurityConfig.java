@@ -29,20 +29,23 @@ public class SecurityConfig {
   private final JwtAuthenticationFilter jwtAuthFilter;
   private final UserDetailsService userDetailsService;
   private final CorsConfigurationSource corsConfigurationSource;
-  
+  private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+
   @Autowired(required = false)
   private OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService;
-  
+
   @Autowired(required = false)
   private AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
 
   public SecurityConfig(
       JwtAuthenticationFilter jwtAuthFilter,
       UserDetailsService userDetailsService,
-      CorsConfigurationSource corsConfigurationSource) {
+      CorsConfigurationSource corsConfigurationSource,
+      CustomAuthenticationEntryPoint customAuthenticationEntryPoint) {
     this.jwtAuthFilter = jwtAuthFilter;
     this.userDetailsService = userDetailsService;
     this.corsConfigurationSource = corsConfigurationSource;
+    this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
   }
 
   @Bean
@@ -50,25 +53,24 @@ public class SecurityConfig {
     http.csrf(csrf -> csrf.disable())
         .cors(cors -> cors.configurationSource(corsConfigurationSource))
         .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers(
-                        "/api/auth/**",
-                        "/api/conferences/public",
-                        "/oauth2/**",
-                        "/login/oauth2/**",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/api-docs/**",
-                        "/v3/api-docs/**",
-                        "/favicon.ico",
-                        "/error")
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
+            auth -> auth.requestMatchers(
+                "/api/auth/**",
+                "/api/conferences/public",
+                "/oauth2/**",
+                "/login/oauth2/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html",
+                "/api-docs/**",
+                "/v3/api-docs/**",
+                "/favicon.ico",
+                "/error")
+                .permitAll()
+                .anyRequest()
+                .authenticated())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authenticationProvider(authenticationProvider());
-    
+
     // Tích hợp OAuth2 nếu được bật
     if (oidcUserService != null && oauth2AuthenticationSuccessHandler != null) {
       http.oauth2Login(oauth2 -> oauth2
@@ -76,8 +78,12 @@ public class SecurityConfig {
               .oidcUserService(oidcUserService))
           .successHandler(oauth2AuthenticationSuccessHandler));
     }
-    
+
     http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+    // Xử lý exception khi chưa authen (trả về 401 thay vì redirect)
+    http.exceptionHandling(exception -> exception
+        .authenticationEntryPoint(customAuthenticationEntryPoint));
 
     return http.build();
   }

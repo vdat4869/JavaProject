@@ -63,7 +63,7 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID:}
             client-secret: ${GOOGLE_CLIENT_SECRET:}
             scope: openid,profile,email
-            redirect-uri: ${OAUTH2_REDIRECT_URI:}
+            redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:8080/login/oauth2/code/google}
 
 server:
   port: ${SERVER_PORT:8080}
@@ -186,7 +186,7 @@ app:
       max-requests: ${RATE_LIMITING_API_MAX:100}
       window-seconds: ${RATE_LIMITING_API_WINDOW:60}
   oauth2:
-    enabled: ${OAUTH2_ENABLED:false}
+    enabled: ${OAUTH2_ENABLED:true}
     providers:
       google:
         client-id: ${GOOGLE_CLIENT_ID:}
@@ -199,3 +199,12 @@ app:
 # Google OAuth2 Configuration (for GoogleTokenService)
 google:
   client-id: ${GOOGLE_CLIENT_ID:}
+
+# AI Module Configuration
+ai:
+  enabled: ${AI_ENABLED:false}
+  timeout-seconds: ${AI_TIMEOUT_SECONDS:30}
+  openai:
+    api-key: ${AI_OPENAI_API_KEY:}
+    model: ${AI_OPENAI_MODEL:gpt-4o-mini}
+    base-url: ${AI_OPENAI_BASE_URL:https://api.openai.com/v1}

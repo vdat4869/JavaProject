@@ -19,6 +19,7 @@ import CIcon from '@coreui/icons-react'
 import { cilPlus, cilPencil, cilTrash, cilCheckCircle, cilXCircle } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { conferenceService, ConferenceResponse } from '../../services/conference.service'
+import { useAuth } from '../../context/AuthContext'
 
 /**
  * ConferenceListPage - Trang danh sách conferences của chair
@@ -32,6 +33,8 @@ import { conferenceService, ConferenceResponse } from '../../services/conference
 const ConferenceListPage: React.FC = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { hasRole } = useAuth()
+  const isAdmin = hasRole('ADMIN')
   const [conferences, setConferences] = useState<ConferenceResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -82,9 +85,11 @@ const ConferenceListPage: React.FC = () => {
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>{t('conference.myConferences') || 'Hội nghị của tôi'}</h2>
-        <CButton color="primary" onClick={() => navigate('/app/chair/conferences/new')}>
-          <CIcon icon={cilPlus} /> {t('conference.createNew') || 'Tạo hội nghị mới'}
-        </CButton>
+        {isAdmin && (
+          <CButton color="primary" onClick={() => navigate('/app/chair/conferences/new')}>
+            <CIcon icon={cilPlus} /> {t('conference.createNew') || 'Tạo hội nghị mới'}
+          </CButton>
+        )}
       </div>
 
       {error && (
@@ -105,9 +110,11 @@ const ConferenceListPage: React.FC = () => {
           ) : conferences.length === 0 ? (
             <div className="text-center py-5">
               <p className="text-muted">{t('conference.noConferences') || 'Chưa có hội nghị nào'}</p>
-              <CButton color="primary" onClick={() => navigate('/app/chair/conferences/new')}>
-                <CIcon icon={cilPlus} /> {t('conference.createFirst') || 'Tạo hội nghị đầu tiên'}
-              </CButton>
+              {isAdmin && (
+                <CButton color="primary" onClick={() => navigate('/app/chair/conferences/new')}>
+                  <CIcon icon={cilPlus} /> {t('conference.createFirst') || 'Tạo hội nghị đầu tiên'}
+                </CButton>
+              )}
             </div>
           ) : (
             <CTable hover responsive>
@@ -158,20 +165,22 @@ const ConferenceListPage: React.FC = () => {
                       >
                         <CIcon icon={cilPencil} /> {t('common.edit') || 'Sửa'}
                       </CButton>
-                      <CButton
-                        color="danger"
-                        size="sm"
-                        onClick={() => handleDelete(conference.id)}
-                        disabled={deletingId === conference.id}
-                      >
-                        {deletingId === conference.id ? (
-                          <CSpinner size="sm" />
-                        ) : (
-                          <>
-                            <CIcon icon={cilTrash} /> {t('common.delete') || 'Xóa'}
-                          </>
-                        )}
-                      </CButton>
+                      {isAdmin && (
+                        <CButton
+                          color="danger"
+                          size="sm"
+                          onClick={() => handleDelete(conference.id)}
+                          disabled={deletingId === conference.id}
+                        >
+                          {deletingId === conference.id ? (
+                            <CSpinner size="sm" />
+                          ) : (
+                            <>
+                              <CIcon icon={cilTrash} /> {t('common.delete') || 'Xóa'}
+                            </>
+                          )}
+                        </CButton>
+                      )}
                     </CTableDataCell>
                   </CTableRow>
                 ))}
