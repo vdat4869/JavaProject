@@ -9,15 +9,16 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Entity đại diện cho submission (bài nộp) của author
  *
- * <p>Submission có các trạng thái:
+ * <p>
+ * Submission có các trạng thái:
  *
  * <ul>
- *   <li>DRAFT - Đang soạn thảo, chưa submit
- *   <li>SUBMITTED - Đã submit, chờ review
- *   <li>UNDER_REVIEW - Đang được review
- *   <li>ACCEPTED - Đã được chấp nhận
- *   <li>REJECTED - Đã bị từ chối
- *   <li>CAMERA_READY - Đã upload camera-ready version
+ * <li>DRAFT - Đang soạn thảo, chưa submit
+ * <li>SUBMITTED - Đã submit, chờ review
+ * <li>UNDER_REVIEW - Đang được review
+ * <li>ACCEPTED - Đã được chấp nhận
+ * <li>REJECTED - Đã bị từ chối
+ * <li>CAMERA_READY - Đã upload camera-ready version
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -61,7 +62,8 @@ public class Submission {
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @LastModifiedDate private LocalDateTime updatedAt;
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
 
   public Submission() {
     this.status = SubmissionStatus.DRAFT;
@@ -199,6 +201,8 @@ public class Submission {
     SUBMITTED,
     /** Đang được review */
     UNDER_REVIEW,
+    /** Đã hoàn thành phản biện (đủ số lượng review) */
+    REVIEWED,
     /** Đã được chấp nhận */
     ACCEPTED,
     /** Đã bị từ chối */

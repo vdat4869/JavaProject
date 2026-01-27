@@ -20,7 +20,7 @@ import {
 import CIcon from '@coreui/icons-react'
 import { cilSearch, cilFilter } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
-import { pcService, COIHistory, COIType } from '../../services/pc.service'
+import { pcService, COIHistory as COIHistoryData, COIType } from '../../services/pc.service'
 
 /**
  * COIHistory - Trang hiển thị lịch sử COI của conference
@@ -36,8 +36,8 @@ const COIHistory: React.FC = () => {
   const conferenceId = searchParams.get('conferenceId')
     ? parseInt(searchParams.get('conferenceId')!)
     : null
-  const [history, setHistory] = useState<COIHistory[]>([])
-  const [filteredHistory, setFilteredHistory] = useState<COIHistory[]>([])
+  const [history, setHistory] = useState<COIHistoryData[]>([])
+  const [filteredHistory, setFilteredHistory] = useState<COIHistoryData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
@@ -119,13 +119,13 @@ const COIHistory: React.FC = () => {
     return <CBadge color={colorMap[type] || 'secondary'}>{getCOITypeLabel(type)}</CBadge>
   }
 
-  const getActionBadge = (action: COIHistory['action']) => {
-    const colorMap: Record<COIHistory['action'], string> = {
+  const getActionBadge = (action: COIHistoryData['action']) => {
+    const colorMap: Record<COIHistoryData['action'], string> = {
       DECLARED: 'success',
       REMOVED: 'danger',
       AUTO_DETECTED: 'info',
     }
-    const labelMap: Record<COIHistory['action'], string> = {
+    const labelMap: Record<COIHistoryData['action'], string> = {
       DECLARED: 'Đã khai báo',
       REMOVED: 'Đã xóa',
       AUTO_DETECTED: 'Tự động phát hiện',

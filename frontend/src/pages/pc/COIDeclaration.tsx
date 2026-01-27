@@ -13,7 +13,7 @@ import {
   CSpinner,
 } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
-import { pcService, COIDeclaration, COIType } from '../../services/pc.service'
+import { pcService, COIDeclaration as COIDecl, COIType } from '../../services/pc.service'
 import CIcon from '@coreui/icons-react'
 import { cilTrash } from '@coreui/icons'
 import { reviewService, Assignment } from '../../services/review.service'
@@ -35,7 +35,7 @@ const COIDeclaration: React.FC = () => {
     : null
   const [coiType, setCoiType] = useState<COIType | ''>('')
   const [reason, setReason] = useState('')
-  const [existingCOI, setExistingCOI] = useState<COIDeclaration | null>(null)
+  const [existingCOI, setExistingCOI] = useState<COIDecl | null>(null)
   const [assignment, setAssignment] = useState<Assignment | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -68,8 +68,11 @@ const COIDeclaration: React.FC = () => {
         setCoiType(myCOI.type)
         setReason(myCOI.reason || '')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading COI data:', error)
+      if (error.response?.status === 403 || error.response?.status === 401) {
+        console.error('DEBUG: Auth error in COIDeclaration:', error.response.status, error.response.data)
+      }
     } finally {
       setLoading(false)
     }
@@ -96,7 +99,7 @@ const COIDeclaration: React.FC = () => {
         type: coiType as COIType,
         reason: reason.trim() || undefined,
       })
-      navigate('/pc/assignments')
+      navigate('/app/pc/assignments')
     } catch (error: any) {
       setError(error.response?.data?.message || 'Không thể khai báo COI')
     } finally {
@@ -114,7 +117,7 @@ const COIDeclaration: React.FC = () => {
     try {
       setSaving(true)
       await pcService.deleteCOI(existingCOI.id)
-      navigate('/pc/assignments')
+      navigate('/app/pc/assignments')
     } catch (error: any) {
       setError(error.response?.data?.message || 'Không thể xóa COI')
     } finally {
@@ -221,12 +224,12 @@ const COIDeclaration: React.FC = () => {
                   coiType === 'CO_AUTHOR'
                     ? 'Mô tả mối quan hệ đồng tác giả...'
                     : coiType === 'COLLABORATOR'
-                    ? 'Mô tả mối quan hệ cộng tác...'
-                    : coiType === 'ADVISOR'
-                    ? 'Mô tả mối quan hệ cố vấn...'
-                    : coiType === 'INSTITUTIONAL'
-                    ? 'Mô tả mối quan hệ tổ chức...'
-                    : 'Mô tả lý do Conflict of Interest...'
+                      ? 'Mô tả mối quan hệ cộng tác...'
+                      : coiType === 'ADVISOR'
+                        ? 'Mô tả mối quan hệ cố vấn...'
+                        : coiType === 'INSTITUTIONAL'
+                          ? 'Mô tả mối quan hệ tổ chức...'
+                          : 'Mô tả lý do Conflict of Interest...'
                 }
               />
             </div>
@@ -235,7 +238,7 @@ const COIDeclaration: React.FC = () => {
           <div className="d-flex justify-content-end gap-2">
             <CButton
               color="secondary"
-              onClick={() => navigate('/pc/assignments')}
+              onClick={() => navigate('/app/pc/assignments')}
               disabled={saving}
             >
               Hủy

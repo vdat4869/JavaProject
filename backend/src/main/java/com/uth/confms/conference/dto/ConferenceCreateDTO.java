@@ -6,21 +6,23 @@ import java.util.List;
 /**
  * DTO cho request tạo conference mới
  *
- * <p>DTO này chứa thông tin cần thiết để tạo conference:
+ * <p>
+ * DTO này chứa thông tin cần thiết để tạo conference:
  *
  * <ul>
- *   <li>name - Tên conference (required)
- *   <li>acronym - Tên viết tắt (optional)
- *   <li>description - Mô tả (optional)
- *   <li>tracks - Danh sách tracks (optional)
- *   <li>deadlines - Danh sách deadlines (optional)
+ * <li>name - Tên conference (required)
+ * <li>acronym - Tên viết tắt (optional)
+ * <li>description - Mô tả (optional)
+ * <li>tracks - Danh sách tracks (optional)
+ * <li>deadlines - Danh sách deadlines (optional)
  * </ul>
  *
  * @author UTH-ConfMS Team
  * @version 1.0
  */
 public class ConferenceCreateDTO {
-  @NotBlank private String name;
+  @NotBlank
+  private String name;
 
   private String acronym;
 
@@ -35,6 +37,8 @@ public class ConferenceCreateDTO {
   private List<TrackDTO> tracks;
 
   private List<DeadlineDTO> deadlines;
+
+  private Long chairId; // Assigned chair ID (Admin only)
 
   public String getName() {
     return name;
@@ -98,5 +102,13 @@ public class ConferenceCreateDTO {
 
   public void setDeadlines(List<DeadlineDTO> deadlines) {
     this.deadlines = deadlines;
+  }
+
+  public Long getChairId() {
+    return chairId;
+  }
+
+  public void setChairId(Long chairId) {
+    this.chairId = chairId;
   }
 }

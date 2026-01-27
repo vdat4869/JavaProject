@@ -17,7 +17,7 @@ import {
   CTableRow,
   CBadge,
 } from '@coreui/react'
-import { assignmentService, AssignmentQualityMetrics } from '../../services/assignment.service'
+import { assignmentService, AssignmentQualityMetrics as AssignmentQualityMetricsData } from '../../services/assignment.service'
 
 /**
  * AssignmentQualityMetrics - Dashboard hiển thị quality metrics của assignments
@@ -26,7 +26,7 @@ const AssignmentQualityMetrics: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const conferenceId = id ? parseInt(id) : null
-  const [metrics, setMetrics] = useState<AssignmentQualityMetrics | null>(null)
+  const [metrics, setMetrics] = useState<AssignmentQualityMetricsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 

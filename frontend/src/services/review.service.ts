@@ -11,7 +11,7 @@ export interface Assignment {
   conferenceId: number
   conferenceName: string
   trackName?: string
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'DECLINED'
+  status: 'ASSIGNED' | 'ACCEPTED' | 'COMPLETED' | 'DECLINED'
   deadline: string
   canReview: boolean
   hasCOI: boolean
@@ -151,8 +151,8 @@ export const reviewService = {
    * GET /api/assignments
    */
   getAssignments: async (): Promise<Assignment[]> => {
-    const response = await apiClient.get<Assignment[]>('/assignments')
-    return response.data
+    const response = await apiClient.get<{ success: boolean; data: Assignment[] }>('/assignments/my')
+    return response.data.data || (response.data as any)
   },
 
   /**
@@ -263,13 +263,10 @@ export const reviewService = {
    * POST /api/reviews/submission/{submissionId}/comments
    * Note: Backend expects String content in request body, not JSON object
    */
-  addInternalComment: async (
-    submissionId: number,
-    content: string
-  ): Promise<ReviewComment> => {
+  addInternalComment: async (submissionId: number, content: string): Promise<ReviewComment> => {
     const response = await apiClient.post<{ success: boolean; data: ReviewComment }>(
       `/reviews/submission/${submissionId}/comments`,
-      content, // Send as plain string, not JSON
+      content,
       {
         headers: {
           'Content-Type': 'text/plain',

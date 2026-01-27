@@ -2,6 +2,8 @@ package com.uth.confms.ai.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.uth.confms.ai.config.AIConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * AI Gateway Service - Giao tiếp với OpenAI API.
- * Đây là service trung tâm xử lý tất cả các request đến AI.
+ * AI Gateway Service - Giao tiếp với OpenAI hoặc Google Gemini.
  */
 @Service
 public class AIGatewayService {
@@ -34,20 +35,26 @@ public class AIGatewayService {
         this.objectMapper = new ObjectMapper();
     }
 
-    /**
-     * Gọi OpenAI Chat Completion API.
-     *
-     * @param systemPrompt System prompt để định hướng AI
-     * @param userPrompt   User prompt (nội dung cần xử lý)
-     * @return Response từ AI
-     */
     public AIResponse chat(String systemPrompt, String userPrompt) {
         if (!aiConfig.isConfigured()) {
-            throw new IllegalStateException("AI is not configured. Please set AI_OPENAI_API_KEY.");
+            throw new IllegalStateException("AI is not configured correctly.");
         }
 
-        long startTime = System.currentTimeMillis();
+        if (aiConfig.isMockMode()) {
+            log.info("AI Mock Mode: Generating simulated response.");
+            String mockContent = generateMockResponse(systemPrompt, userPrompt);
+            return AIResponse.success(mockContent, 100, 0);
+        }
 
+        if ("gemini".equalsIgnoreCase(aiConfig.getProvider())) {
+            return callGemini(systemPrompt, userPrompt);
+        } else {
+            return callOpenAI(systemPrompt, userPrompt);
+        }
+    }
+
+    private AIResponse callOpenAI(String systemPrompt, String userPrompt) {
+        long startTime = System.currentTimeMillis();
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -58,8 +65,7 @@ public class AIGatewayService {
                     "messages", List.of(
                             Map.of("role", "system", "content", systemPrompt),
                             Map.of("role", "user", "content", userPrompt)),
-                    "temperature", 0.7,
-                    "max_tokens", 2000);
+                    "temperature", 0.7);
 
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
@@ -69,37 +75,68 @@ public class AIGatewayService {
                     entity,
                     String.class);
 
-            long processingTime = System.currentTimeMillis() - startTime;
-
-            // Parse response
             JsonNode jsonNode = objectMapper.readTree(response.getBody());
-            String content = jsonNode
-                    .path("choices").get(0)
-                    .path("message")
-                    .path("content")
-                    .asText();
+            String content = jsonNode.path("choices").get(0).path("message").path("content").asText();
+            int tokens = jsonNode.path("usage").path("total_tokens").asInt(0);
 
-            int totalTokens = jsonNode.path("usage").path("total_tokens").asInt(0);
-
-            return AIResponse.success(content, processingTime, totalTokens);
-
+            return AIResponse.success(content, System.currentTimeMillis() - startTime, tokens);
         } catch (Exception e) {
-            long processingTime = System.currentTimeMillis() - startTime;
-            log.error("AI Gateway error: {}", e.getMessage(), e);
-            return AIResponse.error(e.getMessage(), processingTime);
+            log.error("OpenAI error: {}", e.getMessage());
+            return AIResponse.error(e.getMessage(), System.currentTimeMillis() - startTime);
         }
     }
 
-    /**
-     * Kiểm tra AI service có sẵn sàng không.
-     */
+    private AIResponse callGemini(String systemPrompt, String userPrompt) {
+        long startTime = System.currentTimeMillis();
+        try {
+            // Gemini expects system instructions and user prompt in a specific format
+            // Combine them for simplicity or use specific fields if using beta features
+            String combinedPrompt = systemPrompt + "\n\nUser Input:\n" + userPrompt;
+
+            ObjectNode requestBody = objectMapper.createObjectNode();
+            ArrayNode contents = requestBody.putArray("contents");
+            ObjectNode contentObj = contents.addObject();
+            ArrayNode parts = contentObj.putArray("parts");
+            parts.addObject().put("text", combinedPrompt);
+
+            // Add safety settings or generation config if needed
+            ObjectNode generationConfig = requestBody.putObject("generationConfig");
+            generationConfig.put("temperature", 0.7);
+            generationConfig.put("maxOutputTokens", 2048);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<String> entity = new HttpEntity<>(objectMapper.writeValueAsString(requestBody), headers);
+
+            String url = String.format("%s/models/%s:generateContent?key=%s",
+                    aiConfig.getGeminiBaseUrl().trim(),
+                    aiConfig.getGeminiModel().trim(),
+                    aiConfig.getGeminiApiKey().trim());
+
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+            JsonNode root = objectMapper.readTree(response.getBody());
+            String content = root.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText();
+
+            return AIResponse.success(content, System.currentTimeMillis() - startTime, 0);
+        } catch (Exception e) {
+            log.error("Gemini error: {}", e.getMessage());
+            return AIResponse.error(e.getMessage(), System.currentTimeMillis() - startTime);
+        }
+    }
+
+    private String generateMockResponse(String systemPrompt, String userPrompt) {
+        if (systemPrompt.contains("summary")) {
+            return "{\"summary\": \"Đây là bản tóm tắt mô phỏng (Gemini Mock Mode).\", \"tone\": \"Trang trọng\"}";
+        }
+        return "{\"claims\": [\"Tính năng mock mới\"], \"methods\": [], \"datasets\": [], \"findings\": []}";
+    }
+
     public boolean isAvailable() {
         return aiConfig.isConfigured();
     }
 
-    /**
-     * Response wrapper cho AI calls.
-     */
     public static class AIResponse {
         private final boolean success;
         private final String content;
@@ -107,8 +144,8 @@ public class AIGatewayService {
         private final long processingTimeMs;
         private final int tokensUsed;
 
-        private AIResponse(boolean success, String content, String errorMessage,
-                long processingTimeMs, int tokensUsed) {
+        private AIResponse(boolean success, String content, String errorMessage, long processingTimeMs,
+                int tokensUsed) {
             this.success = success;
             this.content = content;
             this.errorMessage = errorMessage;

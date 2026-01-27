@@ -22,7 +22,9 @@
     "previous": "Previous",
     "backToLogin": "Back to login",
     "profile": "Profile",
-    "settings": "Settings"
+    "settings": "Settings",
+    "download": "Download",
+    "downloading": "Downloading..."
   },
   "auth": {
     "loginTitle": "Login to UTH-ConfMS",
@@ -115,6 +117,41 @@
     "error": "AI Assistant error: {{message}}",
     "noIssues": "No issues found!",
     "foundSuggestions": "Found {{count}} suggestions",
-    "processing": "AI is processing..."
+    "processing": "AI is processing...",
+    "insights": "AI Insights",
+    "neutralSummary": "Neutral Summary",
+    "neutralSummaryHint": "Summarizes the paper neutrally without judgment.",
+    "generating": "AI is analyzing...",
+    "noContent": "AI could not generate content for this paper.",
+    "summary": "Summary",
+    "keyPoints": "Key Points",
+    "extractKeyPointsHint": "Use AI to extract the main contributions and key points of this paper."
+  },
+  "submission": {
+    "authors": "Authors",
+    "noAuthors": "No authors added",
+    "addAuthor": "Add Author",
+    "firstName": "First Name",
+    "firstNamePlaceholder": "Enter first name",
+    "lastName": "Last Name",
+    "lastNamePlaceholder": "Enter last name",
+    "authorName": "Full Name",
+    "email": "Email",
+    "emailPlaceholder": "Enter email",
+    "affiliation": "Affiliation",
+    "affiliationPlaceholder": "Enter affiliation",
+    "correspondingAuthor": "Corresponding Author",
+    "corresponding": "Corresponding",
+    "correspondingAuthorNote": "This person will receive email notifications for this submission",
+    "remove": "Remove",
+    "fileVersions": "File Version History",
+    "noFileVersions": "No file versions uploaded",
+    "version": "Version",
+    "fileName": "File Name",
+    "fileSize": "Size",
+    "uploadedAt": "Uploaded At",
+    "current": "Current",
+    "old": "Old",
+    "status": "Status"
   }
 }

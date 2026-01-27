@@ -203,8 +203,14 @@ google:
 # AI Module Configuration
 ai:
   enabled: ${AI_ENABLED:false}
+  mock-mode: ${AI_MOCK_MODE:false}
+  provider: ${AI_PROVIDER:gemini} # openapi or gemini
   timeout-seconds: ${AI_TIMEOUT_SECONDS:30}
   openai:
     api-key: ${AI_OPENAI_API_KEY:}
     model: ${AI_OPENAI_MODEL:gpt-4o-mini}
     base-url: ${AI_OPENAI_BASE_URL:https://api.openai.com/v1}
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-2.5-flash}
+    base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1}

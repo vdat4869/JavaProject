@@ -41,14 +41,15 @@ import org.springframework.web.multipart.MultipartFile;
 /**
  * Service quản lý submissions (bài nộp)
  *
- * <p>Service này xử lý các nghiệp vụ liên quan đến:
+ * <p>
+ * Service này xử lý các nghiệp vụ liên quan đến:
  *
  * <ul>
- *   <li>Tạo, cập nhật, xóa submission
- *   <li>Upload PDF file
- *   <li>Submit và withdraw submission
- *   <li>Quản lý authors và metadata
- *   <li>Kiểm tra deadline
+ * <li>Tạo, cập nhật, xóa submission
+ * <li>Upload PDF file
+ * <li>Submit và withdraw submission
+ * <li>Quản lý authors và metadata
+ * <li>Kiểm tra deadline
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -57,7 +58,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @SuppressWarnings("null")
 public class SubmissionService {
-  private static final Logger log = LoggerFactory.getLogger(SubmissionService.class);
+  private static final Logger logger = LoggerFactory.getLogger(SubmissionService.class);
 
   private final SubmissionRepository submissionRepository;
   private final SubmissionAuthorRepository submissionAuthorRepository;
@@ -99,7 +100,7 @@ public class SubmissionService {
   /**
    * Tạo submission mới
    *
-   * @param dto Thông tin submission (title, abstract, keywords, authors)
+   * @param dto      Thông tin submission (title, abstract, keywords, authors)
    * @param authorId ID của author tạo submission
    * @return SubmissionResponseDTO chứa thông tin submission đã tạo
    * @throws BusinessException Nếu deadline đã qua
@@ -109,61 +110,56 @@ public class SubmissionService {
     // Check if submission deadline has passed
     checkSubmissionDeadline(dto.getConferenceId());
 
-    Submission submission =
-        Submission.builder()
-            .conferenceId(dto.getConferenceId())
-            .authorId(authorId)
-            .title(dto.getTitle())
-            .abstractText(dto.getAbstractText())
-            .trackId(dto.getTrackId())
-            .keywords(dto.getKeywords())
-            .status(Submission.SubmissionStatus.DRAFT)
-            .withdrawn(false)
-            .build();
+    Submission submission = Submission.builder()
+        .conferenceId(dto.getConferenceId())
+        .authorId(authorId)
+        .title(dto.getTitle())
+        .abstractText(dto.getAbstractText())
+        .trackId(dto.getTrackId())
+        .keywords(dto.getKeywords())
+        .status(Submission.SubmissionStatus.DRAFT)
+        .withdrawn(false)
+        .build();
 
     Submission savedSubmission = submissionRepository.save(submission);
 
     // Add authors if provided
     if (dto.getAuthors() != null && !dto.getAuthors().isEmpty()) {
       final Submission finalSubmission = savedSubmission;
-      List<SubmissionAuthor> authors =
-          dto.getAuthors().stream()
-              .map(
-                  authorDTO ->
-                      SubmissionAuthor.builder()
-                          .submission(finalSubmission)
-                          .userId(authorDTO.getUserId())
-                          .firstName(authorDTO.getFirstName())
-                          .lastName(authorDTO.getLastName())
-                          .email(authorDTO.getEmail())
-                          .affiliation(authorDTO.getAffiliation())
-                          .isCorresponding(
-                              authorDTO.getIsCorresponding() != null
-                                  ? authorDTO.getIsCorresponding()
-                                  : false)
-                          .orderIndex(
-                              authorDTO.getOrderIndex() != null ? authorDTO.getOrderIndex() : 0)
-                          .build())
-              .collect(Collectors.toList());
+      List<SubmissionAuthor> authors = dto.getAuthors().stream()
+          .map(
+              authorDTO -> SubmissionAuthor.builder()
+                  .submission(finalSubmission)
+                  .userId(authorDTO.getUserId())
+                  .firstName(authorDTO.getFirstName())
+                  .lastName(authorDTO.getLastName())
+                  .email(authorDTO.getEmail())
+                  .affiliation(authorDTO.getAffiliation())
+                  .isCorresponding(
+                      authorDTO.getIsCorresponding() != null
+                          ? authorDTO.getIsCorresponding()
+                          : false)
+                  .orderIndex(
+                      authorDTO.getOrderIndex() != null ? authorDTO.getOrderIndex() : 0)
+                  .build())
+          .collect(Collectors.toList());
       submissionAuthorRepository.saveAll(authors);
     }
 
-    // Automatic COI detection: Check if any PC members are authors of this submission
+    // Automatic COI detection: Check if any PC members are authors of this
+    // submission
     detectCOIForSubmission(savedSubmission);
 
     return mapToDTO(savedSubmission);
   }
 
-  public SubmissionResponseDTO getSubmission(Long id, Long authorId) {
-    Submission submission =
-        submissionRepository
-            .findById(id)
-            .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
+  public SubmissionResponseDTO getSubmission(Long id, Long userId) {
+    Submission submission = submissionRepository
+        .findById(id)
+        .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
 
     // Check authorization
-    if (!submission.getAuthorId().equals(authorId)) {
-      throw new UnauthorizedException("You can only view your own submissions");
-    }
+    validateSubmissionAccess(submission, userId);
 
     return mapToDTO(submission);
   }
@@ -176,10 +172,9 @@ public class SubmissionService {
 
   @Transactional
   public SubmissionResponseDTO updateSubmission(Long id, SubmissionUpdateDTO dto, Long authorId) {
-    Submission submission =
-        submissionRepository
-            .findById(id)
-            .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
+    Submission submission = submissionRepository
+        .findById(id)
+        .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
 
     // Check authorization
     if (!submission.getAuthorId().equals(authorId)) {
@@ -199,12 +194,10 @@ public class SubmissionService {
     // Fix 1.2: Check if submission has been assigned to reviewers
     if (submission.getStatus() == Submission.SubmissionStatus.SUBMITTED) {
       List<Assignment> assignments = assignmentRepository.findBySubmissionId(id);
-      boolean hasAcceptedAssignment =
-          assignments.stream()
-              .anyMatch(
-                  a ->
-                      a.getStatus() == Assignment.AssignmentStatus.ACCEPTED
-                          || a.getStatus() == Assignment.AssignmentStatus.COMPLETED);
+      boolean hasAcceptedAssignment = assignments.stream()
+          .anyMatch(
+              a -> a.getStatus() == Assignment.AssignmentStatus.ACCEPTED
+                  || a.getStatus() == Assignment.AssignmentStatus.COMPLETED);
       if (hasAcceptedAssignment) {
         throw new BusinessException(
             "Cannot edit submission that has been assigned to reviewers. "
@@ -246,25 +239,23 @@ public class SubmissionService {
     if (dto.getAuthors() != null) {
       submissionAuthorRepository.deleteBySubmission(submission);
       final Submission finalSubmission = submission;
-      List<SubmissionAuthor> authors =
-          dto.getAuthors().stream()
-              .map(
-                  authorDTO ->
-                      SubmissionAuthor.builder()
-                          .submission(finalSubmission)
-                          .userId(authorDTO.getUserId())
-                          .firstName(authorDTO.getFirstName())
-                          .lastName(authorDTO.getLastName())
-                          .email(authorDTO.getEmail())
-                          .affiliation(authorDTO.getAffiliation())
-                          .isCorresponding(
-                              authorDTO.getIsCorresponding() != null
-                                  ? authorDTO.getIsCorresponding()
-                                  : false)
-                          .orderIndex(
-                              authorDTO.getOrderIndex() != null ? authorDTO.getOrderIndex() : 0)
-                          .build())
-              .collect(Collectors.toList());
+      List<SubmissionAuthor> authors = dto.getAuthors().stream()
+          .map(
+              authorDTO -> SubmissionAuthor.builder()
+                  .submission(finalSubmission)
+                  .userId(authorDTO.getUserId())
+                  .firstName(authorDTO.getFirstName())
+                  .lastName(authorDTO.getLastName())
+                  .email(authorDTO.getEmail())
+                  .affiliation(authorDTO.getAffiliation())
+                  .isCorresponding(
+                      authorDTO.getIsCorresponding() != null
+                          ? authorDTO.getIsCorresponding()
+                          : false)
+                  .orderIndex(
+                      authorDTO.getOrderIndex() != null ? authorDTO.getOrderIndex() : 0)
+                  .build())
+          .collect(Collectors.toList());
       submissionAuthorRepository.saveAll(authors);
     }
 
@@ -274,10 +265,9 @@ public class SubmissionService {
 
   @Transactional
   public SubmissionResponseDTO submitSubmission(Long id, Long authorId) {
-    Submission submission =
-        submissionRepository
-            .findById(id)
-            .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
+    Submission submission = submissionRepository
+        .findById(id)
+        .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
 
     // Check authorization
     if (!submission.getAuthorId().equals(authorId)) {
@@ -295,31 +285,31 @@ public class SubmissionService {
     submission.setStatus(Submission.SubmissionStatus.SUBMITTED);
     Submission updatedSubmission = submissionRepository.save(submission);
 
-    // Automatic COI detection: Check if any PC members are authors of this submission
+    // Automatic COI detection: Check if any PC members are authors of this
+    // submission
     detectCOIForSubmission(updatedSubmission);
 
     return mapToDTO(updatedSubmission);
   }
 
   /**
-   * Tự động phát hiện COI cho submission: Check nếu PC members là authors của submission
+   * Tự động phát hiện COI cho submission: Check nếu PC members là authors của
+   * submission
    *
    * @param submission Submission cần check
    */
   private void detectCOIForSubmission(Submission submission) {
     try {
       // Get all PC members for this conference
-      List<PCMember> pcMembers =
-          pcMemberRepository.findByConferenceIdAndStatus(
-              submission.getConferenceId(), PCMember.PCMemberStatus.ACCEPTED);
+      List<PCMember> pcMembers = pcMemberRepository.findByConferenceIdAndStatus(
+          submission.getConferenceId(), PCMember.PCMemberStatus.ACCEPTED);
 
       // Get all authors of this submission
       List<SubmissionAuthor> authors = submissionAuthorRepository.findBySubmission(submission);
 
       // For each PC member, check if they are an author
       for (PCMember pcMember : pcMembers) {
-        boolean isAuthor =
-            authors.stream().anyMatch(author -> author.getUserId().equals(pcMember.getUserId()));
+        boolean isAuthor = authors.stream().anyMatch(author -> author.getUserId().equals(pcMember.getUserId()));
 
         if (isAuthor) {
           // Auto-detect COI
@@ -338,10 +328,9 @@ public class SubmissionService {
 
   @Transactional
   public SubmissionResponseDTO withdrawSubmission(Long id, Long authorId) {
-    Submission submission =
-        submissionRepository
-            .findById(id)
-            .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
+    Submission submission = submissionRepository
+        .findById(id)
+        .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
 
     // Check authorization
     if (!submission.getAuthorId().equals(authorId)) {
@@ -366,11 +355,10 @@ public class SubmissionService {
   @Transactional
   public SubmissionFileDTO uploadPdf(Long submissionId, MultipartFile file, Long authorId)
       throws IOException {
-    Submission submission =
-        submissionRepository
-            .findById(submissionId)
-            .orElseThrow(
-                () -> new NotFoundException("Submission with id " + submissionId + " not found"));
+    Submission submission = submissionRepository
+        .findById(submissionId)
+        .orElseThrow(
+            () -> new NotFoundException("Submission with id " + submissionId + " not found"));
 
     // Check authorization
     if (!submission.getAuthorId().equals(authorId)) {
@@ -399,17 +387,16 @@ public class SubmissionService {
             });
 
     // Create submission file record
-    SubmissionFile submissionFile =
-        SubmissionFile.builder()
-            .submission(submission)
-            .versionNumber(versionNumber)
-            .filePath(relativePath)
-            .fileName(file.getOriginalFilename())
-            .fileSize(file.getSize())
-            .contentType(file.getContentType())
-            .checksum(checksum)
-            .isCurrent(true)
-            .build();
+    SubmissionFile submissionFile = SubmissionFile.builder()
+        .submission(submission)
+        .versionNumber(versionNumber)
+        .filePath(relativePath)
+        .fileName(file.getOriginalFilename())
+        .fileSize(file.getSize())
+        .contentType(file.getContentType())
+        .checksum(checksum)
+        .isCurrent(true)
+        .build();
 
     SubmissionFile savedFile = submissionFileRepository.save(submissionFile);
 
@@ -423,12 +410,13 @@ public class SubmissionService {
   /**
    * Kiểm tra deadline cho submission
    *
-   * <p>Fix 1.1: Cải thiện logic deadline với grace period và logging
+   * <p>
+   * Fix 1.1: Cải thiện logic deadline với grace period và logging
    *
    * <ul>
-   *   <li>Hard deadline: Chặn hoàn toàn sau deadline
-   *   <li>Soft deadline: Cho phép trong grace period (mặc định 24 giờ)
-   *   <li>Logging khi bypass deadline (nếu enable)
+   * <li>Hard deadline: Chặn hoàn toàn sau deadline
+   * <li>Soft deadline: Cho phép trong grace period (mặc định 24 giờ)
+   * <li>Logging khi bypass deadline (nếu enable)
    * </ul>
    *
    * @param conferenceId ID của conference
@@ -436,11 +424,10 @@ public class SubmissionService {
    */
   private void checkSubmissionDeadline(Long conferenceId) {
     List<Deadline> deadlines = deadlineRepository.findByConferenceId(conferenceId);
-    Deadline submissionDeadline =
-        deadlines.stream()
-            .filter(d -> d.getType() == DeadlineType.SUBMISSION)
-            .findFirst()
-            .orElse(null);
+    Deadline submissionDeadline = deadlines.stream()
+        .filter(d -> d.getType() == DeadlineType.SUBMISSION)
+        .findFirst()
+        .orElse(null);
 
     if (submissionDeadline == null) {
       // Không có deadline, cho phép
@@ -461,7 +448,7 @@ public class SubmissionService {
         if (now.isAfter(gracePeriodEnd)) {
           // Đã qua cả grace period
           if (enableDeadlineLogging) {
-            log.warn(
+            logger.warn(
                 "Submission deadline passed for conference {}: deadline={}, now={}, gracePeriodEnd={}",
                 conferenceId,
                 dueDate,
@@ -475,7 +462,7 @@ public class SubmissionService {
         } else {
           // Vẫn trong grace period, cho phép nhưng log warning
           if (enableDeadlineLogging) {
-            log.warn(
+            logger.warn(
                 "Submission operation allowed within grace period for conference {}: deadline={}, now={}, gracePeriodEnd={}",
                 conferenceId,
                 dueDate,
@@ -520,15 +507,13 @@ public class SubmissionService {
   }
 
   private SubmissionResponseDTO mapToDTO(Submission submission) {
-    List<SubmissionAuthorDTO> authors =
-        submissionAuthorRepository.findBySubmission(submission).stream()
-            .map(this::mapAuthorToDTO)
-            .collect(Collectors.toList());
+    List<SubmissionAuthorDTO> authors = submissionAuthorRepository.findBySubmission(submission).stream()
+        .map(this::mapAuthorToDTO)
+        .collect(Collectors.toList());
 
-    List<SubmissionFileDTO> files =
-        submissionFileRepository.findBySubmission(submission).stream()
-            .map(this::mapFileToDTO)
-            .collect(Collectors.toList());
+    List<SubmissionFileDTO> files = submissionFileRepository.findBySubmission(submission).stream()
+        .map(this::mapFileToDTO)
+        .collect(Collectors.toList());
 
     return SubmissionResponseDTO.builder()
         .id(submission.getId())
@@ -576,25 +561,62 @@ public class SubmissionService {
   }
 
   /**
+   * Helper method to validate if a user (userId) has access to view/download
+   * submission
+   */
+  private void validateSubmissionAccess(Submission submission, Long userId) {
+    logger.debug("DEBUG: validateSubmissionAccess for submissionId={}, userId={}", submission.getId(), userId);
+    if (submission.getAuthorId().equals(userId)) {
+      logger.debug("DEBUG: Access granted - IS AUTHOR");
+      return;
+    }
+
+    // Check if Chair
+    boolean isChair = conferenceRepository
+        .findById(submission.getConferenceId())
+        .map(c -> c.getChairId().equals(userId))
+        .orElse(false);
+    if (isChair) {
+      logger.debug("DEBUG: Access granted - IS CHAIR");
+      return;
+    }
+
+    // Check if Assigned Reviewer
+    List<Assignment> assignments = assignmentRepository.findBySubmissionId(submission.getId());
+    logger.debug("DEBUG: Found assignments: {}", assignments.size());
+    boolean isAssignedReviewer = assignments.stream()
+        .anyMatch(a -> {
+          boolean match = a.getReviewerId().equals(userId);
+          if (match)
+            logger.debug("DEBUG: Match found in assignment: {}", a.getId());
+          return match;
+        });
+    if (isAssignedReviewer) {
+      logger.debug("DEBUG: Access granted - IS ASSIGNED REVIEWER");
+      return;
+    }
+
+    logger.warn("DEBUG: Access DENIED for userId: {} on submissionId: {}", userId, submission.getId());
+    throw new UnauthorizedException("You do not have permission to access these resources");
+  }
+
+  /**
    * Download PDF file hiện tại của submission
    *
-   * @param id ID của submission
-   * @param authorId ID của author
+   * @param id     ID của submission
+   * @param userId ID của user requesting
    * @return InputStream của file PDF
-   * @throws NotFoundException Nếu submission không tồn tại
-   * @throws UnauthorizedException Nếu author không có quyền truy cập
-   * @throws BusinessException Nếu submission chưa có PDF file
+   * @throws NotFoundException     Nếu submission không tồn tại
+   * @throws UnauthorizedException Nếu user không có quyền truy cập
+   * @throws BusinessException     Nếu submission chưa có PDF file
    */
-  public InputStream downloadPdfFile(Long id, Long authorId) {
-    Submission submission =
-        submissionRepository
-            .findById(id)
-            .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
+  public InputStream downloadPdfFile(Long id, Long userId) {
+    Submission submission = submissionRepository
+        .findById(id)
+        .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
 
     // Check authorization
-    if (!submission.getAuthorId().equals(authorId)) {
-      throw new UnauthorizedException("You can only download files from your own submissions");
-    }
+    validateSubmissionAccess(submission, userId);
 
     // Check if PDF file exists
     if (submission.getPdfFilePath() == null || submission.getPdfFilePath().isEmpty()) {
@@ -607,22 +629,19 @@ public class SubmissionService {
   /**
    * Lấy danh sách tất cả các version của PDF file đã upload
    *
-   * @param id ID của submission
-   * @param authorId ID của author
+   * @param id     ID của submission
+   * @param userId ID của user requesting
    * @return Danh sách SubmissionFileDTO
-   * @throws NotFoundException Nếu submission không tồn tại
-   * @throws UnauthorizedException Nếu author không có quyền truy cập
+   * @throws NotFoundException     Nếu submission không tồn tại
+   * @throws UnauthorizedException Nếu user không có quyền truy cập
    */
-  public List<SubmissionFileDTO> getFileVersions(Long id, Long authorId) {
-    Submission submission =
-        submissionRepository
-            .findById(id)
-            .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
+  public List<SubmissionFileDTO> getFileVersions(Long id, Long userId) {
+    Submission submission = submissionRepository
+        .findById(id)
+        .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
 
     // Check authorization
-    if (!submission.getAuthorId().equals(authorId)) {
-      throw new UnauthorizedException("You can only view files from your own submissions");
-    }
+    validateSubmissionAccess(submission, userId);
 
     return submissionFileRepository.findBySubmission(submission).stream()
         .map(this::mapFileToDTO)
@@ -633,30 +652,25 @@ public class SubmissionService {
    * Download một version cụ thể của PDF file
    *
    * @param submissionId ID của submission
-   * @param fileId ID của file version
-   * @param authorId ID của author
+   * @param fileId       ID của file version
+   * @param userId       ID của user requesting
    * @return InputStream của file PDF
-   * @throws NotFoundException Nếu submission hoặc file không tồn tại
-   * @throws UnauthorizedException Nếu author không có quyền truy cập
+   * @throws NotFoundException     Nếu submission hoặc file không tồn tại
+   * @throws UnauthorizedException Nếu user không có quyền truy cập
    */
-  public InputStream downloadFileVersion(Long submissionId, Long fileId, Long authorId) {
-    Submission submission =
-        submissionRepository
-            .findById(submissionId)
-            .orElseThrow(
-                () ->
-                    new NotFoundException(
-                        "Submission with id " + submissionId + " not found"));
+  public InputStream downloadFileVersion(Long submissionId, Long fileId, Long userId) {
+    Submission submission = submissionRepository
+        .findById(submissionId)
+        .orElseThrow(
+            () -> new NotFoundException(
+                "Submission with id " + submissionId + " not found"));
 
     // Check authorization
-    if (!submission.getAuthorId().equals(authorId)) {
-      throw new UnauthorizedException("You can only download files from your own submissions");
-    }
+    validateSubmissionAccess(submission, userId);
 
-    SubmissionFile file =
-        submissionFileRepository
-            .findById(fileId)
-            .orElseThrow(() -> new NotFoundException("File with id " + fileId + " not found"));
+    SubmissionFile file = submissionFileRepository
+        .findById(fileId)
+        .orElseThrow(() -> new NotFoundException("File with id " + fileId + " not found"));
 
     // Verify file belongs to submission
     if (!file.getSubmission().getId().equals(submissionId)) {
@@ -669,18 +683,18 @@ public class SubmissionService {
   /**
    * Xóa submission (chỉ cho phép xóa draft chưa submit)
    *
-   * @param id ID của submission
+   * @param id       ID của submission
    * @param authorId ID của author
-   * @throws NotFoundException Nếu submission không tồn tại
+   * @throws NotFoundException     Nếu submission không tồn tại
    * @throws UnauthorizedException Nếu author không có quyền truy cập
-   * @throws BusinessException Nếu submission không thể xóa (đã submit hoặc đã được review)
+   * @throws BusinessException     Nếu submission không thể xóa (đã submit hoặc đã
+   *                               được review)
    */
   @Transactional
   public void deleteSubmission(Long id, Long authorId) {
-    Submission submission =
-        submissionRepository
-            .findById(id)
-            .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
+    Submission submission = submissionRepository
+        .findById(id)
+        .orElseThrow(() -> new NotFoundException("Submission with id " + id + " not found"));
 
     // Check authorization
     if (!submission.getAuthorId().equals(authorId)) {
@@ -712,31 +726,35 @@ public class SubmissionService {
   /**
    * Lấy danh sách submissions của một conference (CHAIR/ADMIN only)
    *
-   * <p>Endpoint này được bảo vệ bởi @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')"),
-   * nên chỉ CHAIR hoặc ADMIN mới có thể gọi. Nếu user không phải là chair của conference,
+   * <p>
+   * Endpoint này được bảo vệ bởi @PreAuthorize("hasRole('CHAIR') or
+   * hasRole('ADMIN')"),
+   * nên chỉ CHAIR hoặc ADMIN mới có thể gọi. Nếu user không phải là chair của
+   * conference,
    * thì chắc chắn là ADMIN (vì đã pass qua @PreAuthorize).
    *
    * @param conferenceId ID của conference
-   * @param userId ID của user (chair hoặc admin)
+   * @param userId       ID của user (chair hoặc admin)
    * @return Danh sách SubmissionResponseDTO
-   * @throws NotFoundException Nếu conference không tồn tại
-   * @throws UnauthorizedException Nếu user không phải là chair của conference và không phải admin
+   * @throws NotFoundException     Nếu conference không tồn tại
+   * @throws UnauthorizedException Nếu user không phải là chair của conference và
+   *                               không phải admin
    */
   public List<SubmissionResponseDTO> getSubmissionsByConference(Long conferenceId, Long userId) {
     // Check if conference exists
-    var conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference with id " + conferenceId + " not found"));
+    var conference = conferenceRepository
+        .findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference with id " + conferenceId + " not found"));
 
     // Check authorization - only chair of conference or admin can view submissions
-    // Since endpoint is protected by @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')"),
+    // Since endpoint is protected by @PreAuthorize("hasRole('CHAIR') or
+    // hasRole('ADMIN')"),
     // if user is not chair, they must be admin
     if (!conference.getChairId().equals(userId)) {
       // User is not chair, check if they are admin
       // Since @PreAuthorize already ensures CHAIR or ADMIN, we allow access here
       // Admin can view submissions of any conference
-      log.info("User {} (not chair) accessing submissions for conference {}", userId, conferenceId);
+      logger.info("User {} (not chair) accessing submissions for conference {}", userId, conferenceId);
     }
 
     // Get all submissions for this conference

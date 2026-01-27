@@ -17,10 +17,9 @@ import { useTranslation } from 'react-i18next'
 import {
   conferenceService,
   ConferenceCreateRequest,
-  Track,
-  Deadline,
-  Topic,
 } from '../../services/conference.service'
+import { useAuth } from '../../context/AuthContext'
+import UserSearchSelect from '../../components/UserSearchSelect'
 
 /**
  * CreateConferencePage - Trang tạo conference mới
@@ -32,8 +31,11 @@ import {
 const CreateConferencePage: React.FC = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const { hasRole } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const isAdmin = hasRole('ADMIN')
 
   const [formData, setFormData] = useState<ConferenceCreateRequest>({
     name: '',
@@ -43,13 +45,14 @@ const CreateConferencePage: React.FC = () => {
     topics: [],
     tracks: [],
     deadlines: [],
+    chairId: undefined,
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === 'chairId' ? (value ? parseInt(value) : undefined) : value,
     }))
     setError('')
   }
@@ -103,6 +106,24 @@ const CreateConferencePage: React.FC = () => {
                 required
               />
             </div>
+
+            {isAdmin && (
+              <div className="mb-3">
+                <CFormLabel>
+                  {t('conference.assignChairId') || 'Giao cho Chair (User ID)'}
+                </CFormLabel>
+                <UserSearchSelect
+                  value={formData.chairId}
+                  onChange={(userId) =>
+                    setFormData((prev) => ({ ...prev, chairId: userId }))
+                  }
+                  placeholder={t('conference.chairIdPlaceholder') || 'Gõ tên hoặc email để tìm kiếm Chair...'}
+                />
+                <small className="text-muted">
+                  {t('conference.chairIdHint') || 'Để trống nếu bạn muốn làm Chair của hội nghị này.'}
+                </small>
+              </div>
+            )}
 
             <div className="mb-3">
               <CFormLabel>{t('conference.acronym') || 'Tên viết tắt'}</CFormLabel>

@@ -443,6 +443,20 @@ export const routes: RouteObject[] = [
         ),
       },
       {
+        path: 'pc/invitation/decline',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <InvitationAcceptPage />
+          </Suspense>
+        ),
+      },
+      {
         path: 'pc/workload',
         element: (
           <Suspense
@@ -470,7 +484,7 @@ export const routes: RouteObject[] = [
             <ConferenceListPage />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/conferences/new',
@@ -485,7 +499,7 @@ export const routes: RouteObject[] = [
             <CreateConferencePage />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/conference/:id/config',
@@ -500,7 +514,7 @@ export const routes: RouteObject[] = [
             <ConferenceConfig />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/pc',
@@ -515,7 +529,7 @@ export const routes: RouteObject[] = [
             <PCManagement />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/assignments',
@@ -530,7 +544,7 @@ export const routes: RouteObject[] = [
             <AssignmentDashboard />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/conference/:id/assignment-statistics',
@@ -545,7 +559,7 @@ export const routes: RouteObject[] = [
             <AssignmentStatisticsDashboard />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/conference/:id/assignment-quality',
@@ -560,7 +574,7 @@ export const routes: RouteObject[] = [
             <AssignmentQualityMetrics />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/conference/:id/bulk-assign',
@@ -575,7 +589,7 @@ export const routes: RouteObject[] = [
             <BulkAssignmentPage />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/submissions',
@@ -590,7 +604,7 @@ export const routes: RouteObject[] = [
             <SubmissionBoard />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/camera-ready',
@@ -605,7 +619,7 @@ export const routes: RouteObject[] = [
             <CameraReadyManagement />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/decisions',
@@ -620,7 +634,7 @@ export const routes: RouteObject[] = [
             <DecisionBoard />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/notifications',
@@ -635,7 +649,7 @@ export const routes: RouteObject[] = [
             <NotificationManagement />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/email',
@@ -650,7 +664,7 @@ export const routes: RouteObject[] = [
             <BulkEmailPreview />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/proceedings',
@@ -665,7 +679,7 @@ export const routes: RouteObject[] = [
             <ProceedingsExport />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/reports',
@@ -680,7 +694,7 @@ export const routes: RouteObject[] = [
             <ReportingDashboard />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/conference/:id/workload',
@@ -695,7 +709,7 @@ export const routes: RouteObject[] = [
             <WorkloadDashboard />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/conference/:id/coi/history',
@@ -710,7 +724,7 @@ export const routes: RouteObject[] = [
             <COIHistory />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/conference/:id/coi/statistics',
@@ -725,7 +739,7 @@ export const routes: RouteObject[] = [
             <COIStatistics />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'chair/conference/:id/review-statistics',
@@ -740,7 +754,7 @@ export const routes: RouteObject[] = [
             <ReviewStatisticsDashboard />
           </Suspense>
         ),
-        handle: { roles: ['CHAIR'] as UserRole[] },
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
         path: 'submissions/:id/reviews',

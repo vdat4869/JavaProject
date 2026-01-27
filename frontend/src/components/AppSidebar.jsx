@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useUI } from '../context/UIContext'
 
 import {
@@ -66,21 +67,74 @@ const filterNavigationByRole = (items, userRoles) => {
     .filter((item) => item !== null)
 }
 
+/**
+ * Dynamically updates navigation items to include the current conferenceId
+ */
+const updateNavigationWithId = (items, activeId) => {
+  if (!activeId) return items
+
+  return items.map((item) => {
+    let newItem = { ...item }
+
+    // Replace conferenceId=1 with activeId in 'to' property
+    if (newItem.to && typeof newItem.to === 'string' && newItem.to.includes('conferenceId=1')) {
+      newItem.to = newItem.to.replace('conferenceId=1', `conferenceId=${activeId}`)
+    }
+
+    // Replace /conference/1/ with /conference/:activeId/
+    if (newItem.to && typeof newItem.to === 'string' && newItem.to.includes('/conference/1/')) {
+      newItem.to = newItem.to.replace('/conference/1/', `/conference/${activeId}/`)
+    }
+
+    if (newItem.items && newItem.items.length > 0) {
+      newItem.items = updateNavigationWithId(newItem.items, activeId)
+    }
+
+    return newItem
+  })
+}
+
 const AppSidebar = () => {
   const { sidebarShow, sidebarUnfoldable, setSidebarShow, setSidebarUnfoldable } = useUI()
   const { user } = useAuth()
+  const location = useLocation()
 
-  // Filter navigation based on user roles
+  // Extract conferenceId from URL
+  const activeId = useMemo(() => {
+    // 1. Try to find ID in path: /app/chair/conference/:id/...
+    const pathMatch = location.pathname.match(/\/app\/chair\/conference\/(\d+)/)
+    if (pathMatch) return pathMatch[1]
+
+    // 2. Try to find in query params: ?conferenceId=:id
+    const queryParams = new URLSearchParams(location.search)
+    const queryId = queryParams.get('conferenceId')
+    if (queryId) return queryId
+
+    // 3. Fallback to localStorage or null
+    return localStorage.getItem('activeConferenceId')
+  }, [location])
+
+  // Save activeId to localStorage if found
+  useMemo(() => {
+    if (activeId) {
+      localStorage.setItem('activeConferenceId', activeId)
+    }
+  }, [activeId])
+
+  // Filter navigation based on user roles and inject activeId
   const filteredNavigation = useMemo(() => {
     const userRoles = user?.roles || []
-    // Debug: log user roles để kiểm tra
-    if (userRoles.length > 0) {
-      console.log('User roles:', userRoles)
+
+    // Step 1: Filter by role
+    let processedNav = filterNavigationByRole(navigation, userRoles)
+
+    // Step 2: Inject current conference ID
+    if (activeId) {
+      processedNav = updateNavigationWithId(processedNav, activeId)
     }
-    const filtered = filterNavigationByRole(navigation, userRoles)
-    console.log('Filtered navigation items:', filtered.length, 'out of', navigation.length)
-    return filtered
-  }, [user?.roles])
+
+    return processedNav
+  }, [user?.roles, activeId])
 
   return (
     <CSidebar

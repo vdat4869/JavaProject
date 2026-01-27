@@ -17,7 +17,7 @@ import {
   CBadge,
 } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
-import { pcService, COIStatistics, COIType } from '../../services/pc.service'
+import { pcService, COIStatistics as COIStatisticsData, COIType } from '../../services/pc.service'
 
 /**
  * COIStatistics - Trang hiển thị thống kê COI của conference
@@ -34,7 +34,7 @@ const COIStatistics: React.FC = () => {
   const conferenceId = searchParams.get('conferenceId')
     ? parseInt(searchParams.get('conferenceId')!)
     : null
-  const [stats, setStats] = useState<COIStatistics | null>(null)
+  const [stats, setStats] = useState<COIStatisticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 

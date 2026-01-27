@@ -121,9 +121,10 @@ public class DecisionService {
       throw new UnauthorizedException("Only conference chair can make decisions");
     }
 
-    // Check if submission is in review
-    if (submission.getStatus() != Submission.SubmissionStatus.UNDER_REVIEW) {
-      throw new BusinessException("Submission must be under review before making decision");
+    // Check if submission is in review or submitted
+    if (submission.getStatus() != Submission.SubmissionStatus.UNDER_REVIEW
+        && submission.getStatus() != Submission.SubmissionStatus.SUBMITTED) {
+      throw new BusinessException("Submission must be under review or submitted before making decision");
     }
 
     // Check if decision already exists
@@ -204,13 +205,25 @@ public class DecisionService {
 
     // Get all submissions for this conference
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
-    List<Long> submissionIds = submissions.stream().map(Submission::getId).collect(Collectors.toList());
 
-    // Get decisions for these submissions
-    return submissionIds.stream()
-        .map(submissionId -> decisionRepository.findBySubmissionId(submissionId).orElse(null))
-        .filter(decision -> decision != null)
-        .map(this::mapToDTO)
+    // Return all submissions, mapped to DTO. If decision doesn't exist, fields will
+    // be null.
+    return submissions.stream()
+        .map(submission -> {
+          Decision decision = decisionRepository.findBySubmissionId(submission.getId()).orElse(null);
+          if (decision != null) {
+            return mapToDTO(decision);
+          } else {
+            // If no decision yet, create a partial DTO with submission info and review
+            // summary
+            ReviewSummaryDTO reviewSummary = getReviewSummary(submission.getId());
+            return DecisionResultDTO.builder()
+                .submissionId(submission.getId())
+                .submissionTitle(submission.getTitle())
+                .reviewSummary(reviewSummary)
+                .build();
+          }
+        })
         .collect(Collectors.toList());
   }
 

@@ -11,10 +11,12 @@ public class AssignmentResponseDTO {
   private String reviewerName;
   private String status;
   private Boolean isPrimary;
+  private String submissionAbstract;
   private LocalDateTime assignedAt;
   private LocalDateTime updatedAt;
 
-  public AssignmentResponseDTO() {}
+  public AssignmentResponseDTO() {
+  }
 
   public AssignmentResponseDTO(
       Long id,
@@ -25,6 +27,7 @@ public class AssignmentResponseDTO {
       String reviewerName,
       String status,
       Boolean isPrimary,
+      String submissionAbstract, // Added submissionAbstract here
       LocalDateTime assignedAt,
       LocalDateTime updatedAt) {
     this.id = id;
@@ -35,6 +38,7 @@ public class AssignmentResponseDTO {
     this.reviewerName = reviewerName;
     this.status = status;
     this.isPrimary = isPrimary;
+    this.submissionAbstract = submissionAbstract;
     this.assignedAt = assignedAt;
     this.updatedAt = updatedAt;
   }
@@ -103,6 +107,14 @@ public class AssignmentResponseDTO {
     this.isPrimary = isPrimary;
   }
 
+  public String getSubmissionAbstract() {
+    return submissionAbstract;
+  }
+
+  public void setSubmissionAbstract(String submissionAbstract) {
+    this.submissionAbstract = submissionAbstract;
+  }
+
   public LocalDateTime getAssignedAt() {
     return assignedAt;
   }
@@ -132,6 +144,7 @@ public class AssignmentResponseDTO {
     private String reviewerName;
     private String status;
     private Boolean isPrimary;
+    private String submissionAbstract;
     private LocalDateTime assignedAt;
     private LocalDateTime updatedAt;
 
@@ -175,6 +188,11 @@ public class AssignmentResponseDTO {
       return this;
     }
 
+    public Builder submissionAbstract(String submissionAbstract) {
+      this.submissionAbstract = submissionAbstract;
+      return this;
+    }
+
     public Builder assignedAt(LocalDateTime assignedAt) {
       this.assignedAt = assignedAt;
       return this;
@@ -195,6 +213,7 @@ public class AssignmentResponseDTO {
           reviewerName,
           status,
           isPrimary,
+          submissionAbstract,
           assignedAt,
           updatedAt);
     }

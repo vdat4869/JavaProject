@@ -26,17 +26,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 /**
  * Service quản lý Conflict of Interest (COI) declarations
  *
- * <p>Service này xử lý các nghiệp vụ liên quan đến:
+ * <p>
+ * Service này xử lý các nghiệp vụ liên quan đến:
  *
  * <ul>
- *   <li>Khai báo COI giữa reviewer và submission
- *   <li>Tự động phát hiện COI (nếu reviewer là author)
- *   <li>Kiểm tra COI trước khi assign review
- *   <li>Quản lý COI records
+ * <li>Khai báo COI giữa reviewer và submission
+ * <li>Tự động phát hiện COI (nếu reviewer là author)
+ * <li>Kiểm tra COI trước khi assign review
+ * <li>Quản lý COI records
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -73,9 +75,8 @@ public class COIService {
     submissionRepository
         .findById(dto.getSubmissionId())
         .orElseThrow(
-            () ->
-                new NotFoundException(
-                    "Submission with id " + dto.getSubmissionId() + " not found"));
+            () -> new NotFoundException(
+                "Submission with id " + dto.getSubmissionId() + " not found"));
 
     // Check if COI already exists
     coiRepository
@@ -87,14 +88,13 @@ public class COIService {
               }
             });
 
-    ConflictOfInterest coi =
-        ConflictOfInterest.builder()
-            .reviewerId(reviewerId)
-            .submissionId(dto.getSubmissionId())
-            .type(ConflictOfInterest.COIType.valueOf(dto.getType()))
-            .reason(dto.getReason())
-            .active(true)
-            .build();
+    ConflictOfInterest coi = ConflictOfInterest.builder()
+        .reviewerId(reviewerId)
+        .submissionId(dto.getSubmissionId())
+        .type(ConflictOfInterest.COIType.valueOf(dto.getType()))
+        .reason(dto.getReason())
+        .active(true)
+        .build();
 
     coi = coiRepository.save(coi);
 
@@ -121,10 +121,9 @@ public class COIService {
 
   @Transactional
   public void removeCOI(Long coiId, Long reviewerId, HttpServletRequest request) {
-    ConflictOfInterest coi =
-        coiRepository
-            .findById(coiId)
-            .orElseThrow(() -> new NotFoundException("COI record not found"));
+    ConflictOfInterest coi = coiRepository
+        .findById(coiId)
+        .orElseThrow(() -> new NotFoundException("COI record not found"));
 
     // Check authorization
     if (!coi.getReviewerId().equals(reviewerId)) {
@@ -166,12 +165,11 @@ public class COIService {
         .orElse(false);
   }
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void detectAndSuggestCOI(Long reviewerId, Long submissionId) {
-    Submission submission =
-        submissionRepository
-            .findById(submissionId)
-            .orElseThrow(() -> new NotFoundException("Submission not found"));
+    Submission submission = submissionRepository
+        .findById(submissionId)
+        .orElseThrow(() -> new NotFoundException("Submission not found"));
 
     // Check if reviewer is an author of the submission
     List<SubmissionAuthor> authors = submissionAuthorRepository.findBySubmission(submission);
@@ -180,14 +178,13 @@ public class COIService {
     if (isAuthor) {
       // Auto-declare COI
       if (!hasCOI(reviewerId, submissionId)) {
-        ConflictOfInterest coi =
-            ConflictOfInterest.builder()
-                .reviewerId(reviewerId)
-                .submissionId(submissionId)
-                .type(ConflictOfInterest.COIType.CO_AUTHOR)
-                .reason("Reviewer is an author of this submission")
-                .active(true)
-                .build();
+        ConflictOfInterest coi = ConflictOfInterest.builder()
+            .reviewerId(reviewerId)
+            .submissionId(submissionId)
+            .type(ConflictOfInterest.COIType.CO_AUTHOR)
+            .reason("Reviewer is an author of this submission")
+            .active(true)
+            .build();
         coi = coiRepository.save(coi);
 
         // Audit log for auto-detection
@@ -209,14 +206,13 @@ public class COIService {
    * Lấy COI history cho một conference
    *
    * @param conferenceId ID của conference
-   * @param chairId ID của chair (for authorization)
+   * @param chairId      ID của chair (for authorization)
    * @return List of COIHistoryDTO
    */
   public List<COIHistoryDTO> getCOIHistory(Long conferenceId, Long chairId) {
-    Conference conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -228,18 +224,16 @@ public class COIService {
     List<Long> submissionIds = submissions.stream().map(Submission::getId).collect(Collectors.toList());
 
     // Get all COIs for these submissions
-    List<ConflictOfInterest> allCOIs =
-        coiRepository.findAll().stream()
-            .filter(coi -> submissionIds.contains(coi.getSubmissionId()))
-            .collect(Collectors.toList());
+    List<ConflictOfInterest> allCOIs = coiRepository.findAll().stream()
+        .filter(coi -> submissionIds.contains(coi.getSubmissionId()))
+        .collect(Collectors.toList());
 
     // Map to COIHistoryDTO
     return allCOIs.stream()
         .map(
             coi -> {
               User reviewer = userRepository.findById(coi.getReviewerId()).orElse(null);
-              Submission submission =
-                  submissionRepository.findById(coi.getSubmissionId()).orElse(null);
+              Submission submission = submissionRepository.findById(coi.getSubmissionId()).orElse(null);
 
               // Determine action type
               String action = "DECLARED";
@@ -273,14 +267,13 @@ public class COIService {
    * Lấy COI statistics cho một conference
    *
    * @param conferenceId ID của conference
-   * @param chairId ID của chair (for authorization)
+   * @param chairId      ID của chair (for authorization)
    * @return COIStatisticsDTO
    */
   public COIStatisticsDTO getCOIStatistics(Long conferenceId, Long chairId) {
-    Conference conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -292,10 +285,9 @@ public class COIService {
     List<Long> submissionIds = submissions.stream().map(Submission::getId).collect(Collectors.toList());
 
     // Get all COIs for these submissions
-    List<ConflictOfInterest> allCOIs =
-        coiRepository.findAll().stream()
-            .filter(coi -> submissionIds.contains(coi.getSubmissionId()))
-            .collect(Collectors.toList());
+    List<ConflictOfInterest> allCOIs = coiRepository.findAll().stream()
+        .filter(coi -> submissionIds.contains(coi.getSubmissionId()))
+        .collect(Collectors.toList());
 
     int totalCOIs = allCOIs.size();
     int activeCOIs = (int) allCOIs.stream().filter(ConflictOfInterest::getActive).count();
@@ -311,28 +303,24 @@ public class COIService {
     }
 
     // Unique reviewers with COIs
-    Set<Long> reviewersWithCOIsSet =
-        allCOIs.stream()
-            .filter(ConflictOfInterest::getActive)
-            .map(ConflictOfInterest::getReviewerId)
-            .collect(Collectors.toSet());
+    Set<Long> reviewersWithCOIsSet = allCOIs.stream()
+        .filter(ConflictOfInterest::getActive)
+        .map(ConflictOfInterest::getReviewerId)
+        .collect(Collectors.toSet());
     int reviewersWithCOIs = reviewersWithCOIsSet.size();
 
     // Unique submissions with COIs
-    Set<Long> submissionsWithCOIsSet =
-        allCOIs.stream()
-            .filter(ConflictOfInterest::getActive)
-            .map(ConflictOfInterest::getSubmissionId)
-            .collect(Collectors.toSet());
+    Set<Long> submissionsWithCOIsSet = allCOIs.stream()
+        .filter(ConflictOfInterest::getActive)
+        .map(ConflictOfInterest::getSubmissionId)
+        .collect(Collectors.toSet());
     int submissionsWithCOIs = submissionsWithCOIsSet.size();
 
     // Recent COIs (last 30 days)
     LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
-    int recentCOIs =
-        (int)
-            allCOIs.stream()
-                .filter(coi -> coi.getDeclaredAt().isAfter(thirtyDaysAgo))
-                .count();
+    int recentCOIs = (int) allCOIs.stream()
+        .filter(coi -> coi.getDeclaredAt().isAfter(thirtyDaysAgo))
+        .count();
 
     return COIStatisticsDTO.builder()
         .conferenceId(conferenceId)

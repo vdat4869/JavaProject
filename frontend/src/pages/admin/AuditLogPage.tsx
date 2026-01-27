@@ -24,7 +24,7 @@ import {
   CModalFooter,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilSearch, cilReload, cilDownload, cilInfo } from '@coreui/icons'
+import { cilSearch, cilReload, cilCloudDownload, cilInfo } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { auditService, AuditLogDTO, AuditLogQueryParams } from '../../services/audit.service'
 
@@ -189,7 +189,7 @@ const AuditLogPage: React.FC = () => {
                 <CIcon icon={cilSearch} /> {t('common.search') || 'Tìm kiếm'}
               </CButton>
               <CButton color="success" onClick={handleExport} disabled={exporting}>
-                <CIcon icon={cilDownload} /> Export
+                <CIcon icon={cilCloudDownload} /> Export
               </CButton>
             </div>
           </div>
@@ -236,7 +236,7 @@ const AuditLogPage: React.FC = () => {
                         <CTableDataCell><small>{log.ipAddress || '-'}</small></CTableDataCell>
                         <CTableDataCell>
                           <div>{log.resource || '-'}</div>
-                          {log.resourceId && <CBadge color="secondary" variant="outline">ID: {log.resourceId}</CBadge>}
+                          {log.resourceId && <CBadge color="secondary">ID: {log.resourceId}</CBadge>}
                         </CTableDataCell>
                         <CTableDataCell>
                           <CButton color="info" variant="ghost" size="sm" onClick={() => handleShowDetail(log)}>

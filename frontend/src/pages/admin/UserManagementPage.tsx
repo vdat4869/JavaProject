@@ -239,7 +239,9 @@ const UserManagementPage: React.FC = () => {
                           )}
                         </CTableDataCell>
                         <CTableDataCell>
-                          {user.roles?.join(', ') || t('common.noRoles') || 'Không có vai trò'}
+                          {user.roles
+                            ? user.roles.map((r) => t(`common.roleNames.${r}`) || r).join(', ')
+                            : t('common.noRoles') || 'Không có vai trò'}
                         </CTableDataCell>
                         <CTableDataCell>
                           {user.active ? (

@@ -20,8 +20,8 @@ export const backupService = {
      * GET /api/storage/backup
      */
     getAllBackups: async (): Promise<BackupRecord[]> => {
-        const response = await apiClient.get<BackupRecord[]>('/storage/backup')
-        return response.data
+        const response = await apiClient.get<any>('/storage/backup')
+        return response.data?.data || response.data || []
     },
 
     /**
@@ -29,8 +29,8 @@ export const backupService = {
      * GET /api/storage/backup/conference/{id}
      */
     getConferenceBackups: async (conferenceId: number): Promise<BackupRecord[]> => {
-        const response = await apiClient.get<BackupRecord[]>(`/storage/backup/conference/${conferenceId}`)
-        return response.data
+        const response = await apiClient.get<any>(`/storage/backup/conference/${conferenceId}`)
+        return response.data?.data || response.data || []
     },
 
     /**
@@ -38,8 +38,8 @@ export const backupService = {
      * POST /api/storage/backup/all
      */
     backupAll: async (): Promise<BackupRecord> => {
-        const response = await apiClient.post<BackupRecord>('/storage/backup/all')
-        return response.data
+        const response = await apiClient.post<any>('/storage/backup/all')
+        return response.data?.data || response.data
     },
 
     /**
@@ -47,8 +47,8 @@ export const backupService = {
      * POST /api/storage/backup/conference/{id}
      */
     backupConference: async (conferenceId: number): Promise<BackupRecord> => {
-        const response = await apiClient.post<BackupRecord>(`/storage/backup/conference/${conferenceId}`)
-        return response.data
+        const response = await apiClient.post<any>(`/storage/backup/conference/${conferenceId}`)
+        return response.data?.data || response.data
     },
 
     /**
@@ -56,8 +56,8 @@ export const backupService = {
      * POST /api/storage/backup/{id}/restore
      */
     restore: async (backupId: number): Promise<boolean> => {
-        const response = await apiClient.post<boolean>(`/storage/backup/${backupId}/restore`)
-        return response.data
+        const response = await apiClient.post<any>(`/storage/backup/${backupId}/restore`)
+        return response.data?.data ?? response.data ?? false
     },
 
     /**
@@ -65,7 +65,7 @@ export const backupService = {
      * POST /api/storage/backup/conference/{id}/restore
      */
     restoreConference: async (conferenceId: number): Promise<boolean> => {
-        const response = await apiClient.post<boolean>(`/storage/backup/conference/${conferenceId}/restore`)
-        return response.data
+        const response = await apiClient.post<any>(`/storage/backup/conference/${conferenceId}/restore`)
+        return response.data?.data ?? response.data ?? false
     },
 }

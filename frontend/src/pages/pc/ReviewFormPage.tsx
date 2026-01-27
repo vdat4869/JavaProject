@@ -32,7 +32,7 @@ const ReviewFormPage: React.FC = () => {
       // Use createOrUpdateDraft for both create and update
       await reviewService.createOrUpdateDraft(data)
 
-      navigate('/pc/assignments')
+      navigate('/app/pc/assignments')
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Không thể lưu review')
     } finally {
@@ -54,7 +54,7 @@ const ReviewFormPage: React.FC = () => {
     try {
       setSubmitting(true)
       await reviewService.submitReview(reviewId)
-      navigate('/pc/assignments')
+      navigate('/app/pc/assignments')
     } catch (error: any) {
       alert(error.response?.data?.message || 'Không thể submit review')
     } finally {
@@ -78,7 +78,7 @@ const ReviewFormPage: React.FC = () => {
         assignmentId={assignmentId}
         reviewId={reviewId}
         onSubmit={handleSubmit}
-        onCancel={() => navigate('/pc/assignments')}
+        onCancel={() => navigate('/app/pc/assignments')}
         loading={loading}
       />
     </CCard>

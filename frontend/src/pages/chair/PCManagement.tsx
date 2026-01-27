@@ -13,6 +13,7 @@ import {
   CButton,
   CFormInput,
   CFormLabel,
+  CFormSelect,
   CModal,
   CModalBody,
   CModalFooter,
@@ -29,6 +30,7 @@ import {
   CTabPane,
 } from '@coreui/react'
 import { pcService, PCMember, InvitePCRequest, PCInvitation } from '../../services/pc.service'
+import { userService, UserDTO } from '../../services/user.service'
 
 /**
  * PCManagement - Trang quản lý PC members
@@ -52,6 +54,8 @@ const PCManagement: React.FC = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [activeTab, setActiveTab] = useState<'members' | 'invitations'>('members')
+  const [allUsers, setAllUsers] = useState<UserDTO[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
 
   const loadMembers = useCallback(async () => {
     try {
@@ -74,6 +78,28 @@ const PCManagement: React.FC = () => {
       loadMembers()
     }
   }, [conferenceId, loadMembers])
+
+  useEffect(() => {
+    if (showInviteModal) {
+      loadUsers()
+    }
+  }, [showInviteModal])
+
+  const loadUsers = async () => {
+    try {
+      setLoadingUsers(true)
+      const data = await userService.getAllUsers()
+      setAllUsers(data.content || [])
+    } catch (error) {
+      console.error('Error loading users:', error)
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
+
+  const handleUserSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setInviteEmail(e.target.value)
+  }
 
   const handleInvite = async () => {
     if (!inviteEmail.trim()) {
@@ -138,122 +164,130 @@ const PCManagement: React.FC = () => {
           </div>
         </CCardHeader>
         <CCardBody>
-          <CTabs activeTab={activeTab} onActiveTabChange={setActiveTab}>
-            <CNav variant="tabs">
-              <CNavItem>
-                <CNavLink>PC Members ({members.length})</CNavLink>
-              </CNavItem>
-              <CNavItem>
-                <CNavLink>
-                  Invitations ({invitations.length})
-                  {invitations.filter((i) => i.status === 'PENDING').length > 0 && (
-                    <CBadge color="warning" className="ms-2">
-                      {invitations.filter((i) => i.status === 'PENDING').length} pending
-                    </CBadge>
-                  )}
-                </CNavLink>
-              </CNavItem>
-            </CNav>
-            <CTabContent>
-              <CTabPane>
-                <div className="mt-3">
-          {error && (
-            <CAlert color="danger" className="mb-3">
-              {error}
-            </CAlert>
-          )}
-          {success && (
-            <CAlert color="success" className="mb-3">
-              {success}
-            </CAlert>
-          )}
+          <CNav variant="tabs">
+            <CNavItem>
+              <CNavLink
+                active={activeTab === 'members'}
+                style={{ cursor: 'pointer' }}
+                onClick={() => setActiveTab('members')}
+              >
+                PC Members ({members.length})
+              </CNavLink>
+            </CNavItem>
+            <CNavItem>
+              <CNavLink
+                active={activeTab === 'invitations'}
+                style={{ cursor: 'pointer' }}
+                onClick={() => setActiveTab('invitations')}
+              >
+                Invitations ({invitations.length})
+                {invitations.filter((i) => i.status === 'PENDING').length > 0 && (
+                  <CBadge color="warning" className="ms-2">
+                    {invitations.filter((i) => i.status === 'PENDING').length} pending
+                  </CBadge>
+                )}
+              </CNavLink>
+            </CNavItem>
+          </CNav>
+          <CTabContent>
+            <CTabPane visible={activeTab === 'members'}>
+              <div className="mt-3">
+                {error && (
+                  <CAlert color="danger" className="mb-3">
+                    {error}
+                  </CAlert>
+                )}
+                {success && (
+                  <CAlert color="success" className="mb-3">
+                    {success}
+                  </CAlert>
+                )}
 
-          {members.length === 0 ? (
-            <p className="text-muted">Chưa có PC member nào</p>
-          ) : (
-            <CTable hover>
-              <CTableHead>
-                <CTableRow>
-                  <CTableHeaderCell>Email</CTableHeaderCell>
-                  <CTableHeaderCell>Họ tên</CTableHeaderCell>
-                  <CTableHeaderCell>Trạng thái</CTableHeaderCell>
-                  <CTableHeaderCell>Ngày mời</CTableHeaderCell>
-                  <CTableHeaderCell>Ngày phản hồi</CTableHeaderCell>
-                </CTableRow>
-              </CTableHead>
-              <CTableBody>
-                {members.map((member) => (
-                  <CTableRow key={member.id}>
-                    <CTableDataCell>{member.email}</CTableDataCell>
-                    <CTableDataCell>{member.fullName}</CTableDataCell>
-                    <CTableDataCell>{getStatusBadge(member.status)}</CTableDataCell>
-                    <CTableDataCell>
-                      {new Date(member.invitedAt).toLocaleDateString('vi-VN')}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {member.respondedAt
-                        ? new Date(member.respondedAt).toLocaleDateString('vi-VN')
-                        : '-'}
-                    </CTableDataCell>
-                  </CTableRow>
-                ))}
-            </CTableBody>
-          </CTable>
-          )}
-                </div>
-              </CTabPane>
-              <CTabPane>
-                <div className="mt-3">
-                  {invitations.length === 0 ? (
-                    <p className="text-muted">Chưa có invitation nào</p>
-                  ) : (
-                    <CTable hover>
-                      <CTableHead>
-                        <CTableRow>
-                          <CTableHeaderCell>Email</CTableHeaderCell>
-                          <CTableHeaderCell>Trạng thái</CTableHeaderCell>
-                          <CTableHeaderCell>Ngày mời</CTableHeaderCell>
-                          <CTableHeaderCell>Hết hạn</CTableHeaderCell>
+                {members.length === 0 ? (
+                  <p className="text-muted">Chưa có PC member nào</p>
+                ) : (
+                  <CTable hover>
+                    <CTableHead>
+                      <CTableRow>
+                        <CTableHeaderCell>Email</CTableHeaderCell>
+                        <CTableHeaderCell>Họ tên</CTableHeaderCell>
+                        <CTableHeaderCell>Trạng thái</CTableHeaderCell>
+                        <CTableHeaderCell>Ngày mời</CTableHeaderCell>
+                        <CTableHeaderCell>Ngày phản hồi</CTableHeaderCell>
+                      </CTableRow>
+                    </CTableHead>
+                    <CTableBody>
+                      {members.map((member) => (
+                        <CTableRow key={member.id}>
+                          <CTableDataCell>{member.email}</CTableDataCell>
+                          <CTableDataCell>{member.fullName}</CTableDataCell>
+                          <CTableDataCell>{getStatusBadge(member.status)}</CTableDataCell>
+                          <CTableDataCell>
+                            {new Date(member.createdAt).toLocaleDateString('vi-VN')}
+                          </CTableDataCell>
+                          <CTableDataCell>
+                            {member.status !== 'PENDING'
+                              ? new Date(member.updatedAt).toLocaleDateString('vi-VN')
+                              : '-'}
+                          </CTableDataCell>
                         </CTableRow>
-                      </CTableHead>
-                      <CTableBody>
-                        {invitations.map((invitation) => (
-                          <CTableRow key={invitation.id}>
-                            <CTableDataCell>{invitation.invitedUserEmail}</CTableDataCell>
-                            <CTableDataCell>
-                              <CBadge
-                                color={
-                                  invitation.status === 'PENDING'
-                                    ? 'warning'
-                                    : invitation.status === 'ACCEPTED'
+                      ))}
+                    </CTableBody>
+                  </CTable>
+                )}
+              </div>
+            </CTabPane>
+            <CTabPane visible={activeTab === 'invitations'}>
+              <div className="mt-3">
+                {invitations.length === 0 ? (
+                  <p className="text-muted">Chưa có invitation nào</p>
+                ) : (
+                  <CTable hover>
+                    <CTableHead>
+                      <CTableRow>
+                        <CTableHeaderCell>Email</CTableHeaderCell>
+                        <CTableHeaderCell>Trạng thái</CTableHeaderCell>
+                        <CTableHeaderCell>Ngày mời</CTableHeaderCell>
+                        <CTableHeaderCell>Hết hạn</CTableHeaderCell>
+                      </CTableRow>
+                    </CTableHead>
+                    <CTableBody>
+                      {invitations.map((invitation) => (
+                        <CTableRow key={invitation.id}>
+                          <CTableDataCell>{invitation.invitedUserEmail}</CTableDataCell>
+                          <CTableDataCell>
+                            <CBadge
+                              color={
+                                invitation.status === 'PENDING'
+                                  ? 'warning'
+                                  : invitation.status === 'ACCEPTED'
                                     ? 'success'
                                     : 'danger'
-                                }
-                              >
-                                {invitation.status}
-                              </CBadge>
-                            </CTableDataCell>
-                            <CTableDataCell>
-                              {new Date(invitation.createdAt).toLocaleDateString('vi-VN')}
-                            </CTableDataCell>
-                            <CTableDataCell>
-                              {new Date(invitation.expiresAt).toLocaleDateString('vi-VN')}
-                              {new Date(invitation.expiresAt) < new Date() &&
-                                invitation.status === 'PENDING' && (
-                                  <CBadge color="danger" className="ms-2">
-                                    Hết hạn
-                                  </CBadge>
-                                )}
-                            </CTableDataCell>
-                          </CTableRow>
-                        ))}
-                      </CTableBody>
-                    </CTable>
-                  )}
-                </div>
-              </CTabPane>
-            </CTabContent>
-          </CTabs>
+                              }
+                            >
+                              {invitation.status}
+                            </CBadge>
+                          </CTableDataCell>
+                          <CTableDataCell>
+                            {new Date(invitation.createdAt).toLocaleDateString('vi-VN')}
+                          </CTableDataCell>
+                          <CTableDataCell>
+                            {new Date(invitation.expiresAt).toLocaleDateString('vi-VN')}
+                            {new Date(invitation.expiresAt) < new Date() &&
+                              invitation.status === 'PENDING' && (
+                                <CBadge color="danger" className="ms-2">
+                                  Hết hạn
+                                </CBadge>
+                              )}
+                          </CTableDataCell>
+                        </CTableRow>
+                      ))}
+                    </CTableBody>
+                  </CTable>
+                )}
+              </div>
+            </CTabPane>
+          </CTabContent>
         </CCardBody>
       </CCard>
 
@@ -269,7 +303,19 @@ const PCManagement: React.FC = () => {
             </CAlert>
           )}
           <div className="mb-3">
-            <CFormLabel>Email *</CFormLabel>
+            <CFormLabel>Chọn từ hệ thống</CFormLabel>
+            <CFormSelect onChange={handleUserSelect} disabled={loadingUsers}>
+              <option value="">-- Chọn user --</option>
+              {allUsers.map((u) => (
+                <option key={u.id} value={u.email}>
+                  {u.firstName} {u.lastName} ({u.email})
+                </option>
+              ))}
+            </CFormSelect>
+            {loadingUsers && <CSpinner size="sm" className="mt-2" />}
+          </div>
+          <div className="mb-3">
+            <CFormLabel>Hoặc nhập Email mới *</CFormLabel>
             <CFormInput
               type="email"
               value={inviteEmail}
@@ -293,3 +339,4 @@ const PCManagement: React.FC = () => {
 }
 
 export default PCManagement
+

@@ -85,6 +85,7 @@ export interface ConferenceCreateRequest {
   keywordIds?: number[]
   tracks?: Track[]
   deadlines?: Deadline[]
+  chairId?: number
 }
 
 /**
@@ -99,6 +100,7 @@ export interface ConferenceUpdateRequest {
   keywordIds?: number[]
   tracks?: Track[]
   deadlines?: Deadline[]
+  published?: boolean
 }
 
 /**
@@ -139,8 +141,9 @@ export const conferenceService = {
    * GET /api/conferences/my
    */
   getMyConferences: async (): Promise<ConferenceResponse[]> => {
-    const response = await apiClient.get<ConferenceResponse[]>('/conferences/my')
-    return response.data
+    const response = await apiClient.get<any>('/conferences/my')
+    const data = response.data?.data || response.data
+    return Array.isArray(data) ? data : []
   },
 
   /**
@@ -148,8 +151,8 @@ export const conferenceService = {
    * GET /api/conferences/{id}
    */
   getConference: async (id: number): Promise<ConferenceResponse> => {
-    const response = await apiClient.get<ConferenceResponse>(`/conferences/${id}`)
-    return response.data
+    const response = await apiClient.get<any>(`/conferences/${id}`)
+    return response.data?.data || response.data
   },
 
   /**
@@ -157,8 +160,8 @@ export const conferenceService = {
    * POST /api/conferences
    */
   createConference: async (data: ConferenceCreateRequest): Promise<ConferenceResponse> => {
-    const response = await apiClient.post<ConferenceResponse>('/conferences', data)
-    return response.data
+    const response = await apiClient.post<any>('/conferences', data)
+    return response.data?.data || response.data
   },
 
   /**
@@ -169,8 +172,8 @@ export const conferenceService = {
     id: number,
     data: ConferenceUpdateRequest,
   ): Promise<ConferenceResponse> => {
-    const response = await apiClient.put<ConferenceResponse>(`/conferences/${id}`, data)
-    return response.data
+    const response = await apiClient.put<any>(`/conferences/${id}`, data)
+    return response.data?.data || response.data
   },
 
   /**
@@ -186,8 +189,8 @@ export const conferenceService = {
    * GET /api/cfp/conference/{conferenceId}
    */
   getCFP: async (conferenceId: number): Promise<CFPResponse> => {
-    const response = await apiClient.get<CFPResponse>(`/cfp/conference/${conferenceId}`)
-    return response.data
+    const response = await apiClient.get<any>(`/cfp/conference/${conferenceId}`)
+    return response.data?.data || response.data
   },
 
   /**
@@ -195,8 +198,8 @@ export const conferenceService = {
    * POST /api/cfp
    */
   createOrUpdateCFP: async (data: CFPRequest): Promise<CFPResponse> => {
-    const response = await apiClient.post<CFPResponse>('/cfp', data)
-    return response.data
+    const response = await apiClient.post<any>('/cfp', data)
+    return response.data?.data || response.data
   },
 
   /**
@@ -204,8 +207,8 @@ export const conferenceService = {
    * POST /api/cfp/{conferenceId}/publish
    */
   publishCFP: async (conferenceId: number): Promise<CFPResponse> => {
-    const response = await apiClient.post<CFPResponse>(`/cfp/${conferenceId}/publish`)
-    return response.data
+    const response = await apiClient.post<any>(`/cfp/${conferenceId}/publish`)
+    return response.data?.data || response.data
   },
 
   /**
@@ -213,8 +216,8 @@ export const conferenceService = {
    * POST /api/cfp/{conferenceId}/close
    */
   closeCFP: async (conferenceId: number): Promise<CFPResponse> => {
-    const response = await apiClient.post<CFPResponse>(`/cfp/${conferenceId}/close`)
-    return response.data
+    const response = await apiClient.post<any>(`/cfp/${conferenceId}/close`)
+    return response.data?.data || response.data
   },
 }
 

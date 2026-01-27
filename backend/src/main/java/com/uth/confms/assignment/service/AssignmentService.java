@@ -29,6 +29,7 @@ import com.uth.confms.review.repository.ReviewRepository;
 import com.uth.confms.submission.entity.Submission;
 import com.uth.confms.submission.repository.SubmissionRepository;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,14 +42,15 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Service quản lý assignment (phân công reviewer cho submission)
  *
- * <p>Service này xử lý các nghiệp vụ liên quan đến:
+ * <p>
+ * Service này xử lý các nghiệp vụ liên quan đến:
  *
  * <ul>
- *   <li>Tạo assignment (chỉ chair)
- *   <li>Reviewer accept/decline assignments
- *   <li>Xóa assignments
- *   <li>Kiểm tra COI trước khi assign
- *   <li>Quản lý assignment status
+ * <li>Tạo assignment (chỉ chair)
+ * <li>Reviewer accept/decline assignments
+ * <li>Xóa assignments
+ * <li>Kiểm tra COI trước khi assign
+ * <li>Quản lý assignment status
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -93,18 +95,15 @@ public class AssignmentService {
 
   @Transactional
   public AssignmentResponseDTO createAssignment(AssignmentCreateDTO dto, Long chairId) {
-    Submission submission =
-        submissionRepository
-            .findById(dto.getSubmissionId())
-            .orElseThrow(
-                () ->
-                    new NotFoundException(
-                        "Submission with id " + dto.getSubmissionId() + " not found"));
+    Submission submission = submissionRepository
+        .findById(dto.getSubmissionId())
+        .orElseThrow(
+            () -> new NotFoundException(
+                "Submission with id " + dto.getSubmissionId() + " not found"));
 
-    Conference conference =
-        conferenceRepository
-            .findById(submission.getConferenceId())
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(submission.getConferenceId())
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization - only chair can assign
     if (!conference.getChairId().equals(chairId)) {
@@ -112,11 +111,10 @@ public class AssignmentService {
     }
 
     // Check if reviewer is a PC member
-    PCMember pcMember =
-        pcMemberRepository
-            .findByConferenceIdAndUserId(submission.getConferenceId(), dto.getReviewerId())
-            .orElseThrow(
-                () -> new BusinessException("Reviewer must be a PC member of this conference"));
+    PCMember pcMember = pcMemberRepository
+        .findByConferenceIdAndUserId(submission.getConferenceId(), dto.getReviewerId())
+        .orElseThrow(
+            () -> new BusinessException("Reviewer must be a PC member of this conference"));
 
     if (pcMember.getStatus() != PCMember.PCMemberStatus.ACCEPTED) {
       throw new BusinessException("Reviewer must have accepted the PC invitation");
@@ -153,13 +151,13 @@ public class AssignmentService {
     }
 
     // Create assignment
-    Assignment assignment =
-        Assignment.builder()
-            .submissionId(dto.getSubmissionId())
-            .reviewerId(dto.getReviewerId())
-            .status(Assignment.AssignmentStatus.ASSIGNED)
-            .isPrimary(dto.getIsPrimary() != null ? dto.getIsPrimary() : false)
-            .build();
+    Assignment assignment = Assignment.builder()
+        .submissionId(dto.getSubmissionId())
+        .reviewerId(dto.getReviewerId())
+        .status(Assignment.AssignmentStatus.ASSIGNED)
+        .isPrimary(dto.getIsPrimary() != null ? dto.getIsPrimary() : false)
+        .assignedAt(LocalDateTime.now())
+        .build();
 
     assignment = assignmentRepository.save(assignment);
 
@@ -182,10 +180,9 @@ public class AssignmentService {
 
   @Transactional
   public AssignmentResponseDTO acceptAssignment(Long assignmentId, Long reviewerId) {
-    Assignment assignment =
-        assignmentRepository
-            .findById(assignmentId)
-            .orElseThrow(() -> new NotFoundException("Assignment not found"));
+    Assignment assignment = assignmentRepository
+        .findById(assignmentId)
+        .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
     // Check authorization
     if (!assignment.getReviewerId().equals(reviewerId)) {
@@ -199,15 +196,22 @@ public class AssignmentService {
     assignment.setStatus(Assignment.AssignmentStatus.ACCEPTED);
     assignment = assignmentRepository.save(assignment);
 
+    // Automatically transition submission to UNDER_REVIEW if it's currently
+    // SUBMITTED
+    Submission submission = submissionRepository.findById(assignment.getSubmissionId()).orElse(null);
+    if (submission != null && submission.getStatus() == Submission.SubmissionStatus.SUBMITTED) {
+      submission.setStatus(Submission.SubmissionStatus.UNDER_REVIEW);
+      submissionRepository.save(submission);
+    }
+
     return mapToDTO(assignment);
   }
 
   @Transactional
   public AssignmentResponseDTO declineAssignment(Long assignmentId, Long reviewerId) {
-    Assignment assignment =
-        assignmentRepository
-            .findById(assignmentId)
-            .orElseThrow(() -> new NotFoundException("Assignment not found"));
+    Assignment assignment = assignmentRepository
+        .findById(assignmentId)
+        .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
     // Check authorization
     if (!assignment.getReviewerId().equals(reviewerId)) {
@@ -226,20 +230,17 @@ public class AssignmentService {
 
   @Transactional
   public void deleteAssignment(Long assignmentId, Long chairId) {
-    Assignment assignment =
-        assignmentRepository
-            .findById(assignmentId)
-            .orElseThrow(() -> new NotFoundException("Assignment not found"));
+    Assignment assignment = assignmentRepository
+        .findById(assignmentId)
+        .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
-    Submission submission =
-        submissionRepository
-            .findById(assignment.getSubmissionId())
-            .orElseThrow(() -> new NotFoundException("Submission not found"));
+    Submission submission = submissionRepository
+        .findById(assignment.getSubmissionId())
+        .orElseThrow(() -> new NotFoundException("Submission not found"));
 
-    Conference conference =
-        conferenceRepository
-            .findById(submission.getConferenceId())
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(submission.getConferenceId())
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -253,27 +254,24 @@ public class AssignmentService {
    * Reassign assignment từ reviewer cũ sang reviewer mới
    *
    * @param assignmentId ID của assignment cần reassign
-   * @param dto Request DTO chứa newReviewerId và reason
-   * @param chairId ID của chair
+   * @param dto          Request DTO chứa newReviewerId và reason
+   * @param chairId      ID của chair
    * @return AssignmentResponseDTO của assignment mới
    */
   @Transactional
   public AssignmentResponseDTO reassignAssignment(
       Long assignmentId, ReassignRequestDTO dto, Long chairId) {
-    Assignment oldAssignment =
-        assignmentRepository
-            .findById(assignmentId)
-            .orElseThrow(() -> new NotFoundException("Assignment not found"));
+    Assignment oldAssignment = assignmentRepository
+        .findById(assignmentId)
+        .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
-    Submission submission =
-        submissionRepository
-            .findById(oldAssignment.getSubmissionId())
-            .orElseThrow(() -> new NotFoundException("Submission not found"));
+    Submission submission = submissionRepository
+        .findById(oldAssignment.getSubmissionId())
+        .orElseThrow(() -> new NotFoundException("Submission not found"));
 
-    Conference conference =
-        conferenceRepository
-            .findById(submission.getConferenceId())
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(submission.getConferenceId())
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -289,11 +287,10 @@ public class AssignmentService {
     }
 
     // Validate new reviewer (same validations as createAssignment)
-    PCMember newPCMember =
-        pcMemberRepository
-            .findByConferenceIdAndUserId(submission.getConferenceId(), newReviewerId)
-            .orElseThrow(
-                () -> new BusinessException("New reviewer must be a PC member of this conference"));
+    PCMember newPCMember = pcMemberRepository
+        .findByConferenceIdAndUserId(submission.getConferenceId(), newReviewerId)
+        .orElseThrow(
+            () -> new BusinessException("New reviewer must be a PC member of this conference"));
 
     if (newPCMember.getStatus() != PCMember.PCMemberStatus.ACCEPTED) {
       throw new BusinessException("New reviewer must have accepted the PC invitation");
@@ -321,14 +318,13 @@ public class AssignmentService {
     // Delete old assignment
     assignmentRepository.delete(oldAssignment);
 
-    // Create new assignment
-    Assignment newAssignment =
-        Assignment.builder()
-            .submissionId(submission.getId())
-            .reviewerId(newReviewerId)
-            .status(Assignment.AssignmentStatus.ASSIGNED)
-            .isPrimary(oldAssignment.getIsPrimary())
-            .build();
+    Assignment newAssignment = Assignment.builder()
+        .submissionId(submission.getId())
+        .reviewerId(newReviewerId)
+        .status(Assignment.AssignmentStatus.ASSIGNED)
+        .isPrimary(oldAssignment.getIsPrimary())
+        .assignedAt(LocalDateTime.now())
+        .build();
 
     newAssignment = assignmentRepository.save(newAssignment);
 
@@ -366,15 +362,13 @@ public class AssignmentService {
   }
 
   public List<AssignmentResponseDTO> getAssignmentsBySubmission(Long submissionId, Long chairId) {
-    Submission submission =
-        submissionRepository
-            .findById(submissionId)
-            .orElseThrow(() -> new NotFoundException("Submission not found"));
+    Submission submission = submissionRepository
+        .findById(submissionId)
+        .orElseThrow(() -> new NotFoundException("Submission not found"));
 
-    Conference conference =
-        conferenceRepository
-            .findById(submission.getConferenceId())
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(submission.getConferenceId())
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -393,20 +387,17 @@ public class AssignmentService {
   }
 
   public AssignmentResponseDTO getAssignment(Long assignmentId, Long userId) {
-    Assignment assignment =
-        assignmentRepository
-            .findById(assignmentId)
-            .orElseThrow(() -> new NotFoundException("Assignment not found"));
+    Assignment assignment = assignmentRepository
+        .findById(assignmentId)
+        .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
-    Submission submission =
-        submissionRepository
-            .findById(assignment.getSubmissionId())
-            .orElseThrow(() -> new NotFoundException("Submission not found"));
+    Submission submission = submissionRepository
+        .findById(assignment.getSubmissionId())
+        .orElseThrow(() -> new NotFoundException("Submission not found"));
 
-    Conference conference =
-        conferenceRepository
-            .findById(submission.getConferenceId())
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(submission.getConferenceId())
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization - reviewer or chair
     if (!assignment.getReviewerId().equals(userId) && !conference.getChairId().equals(userId)) {
@@ -419,24 +410,22 @@ public class AssignmentService {
   /**
    * Tự động assign reviewers cho submission dựa trên suggestions
    *
-   * @param dto Request DTO chứa submissionId và numberOfReviewers
+   * @param dto     Request DTO chứa submissionId và numberOfReviewers
    * @param chairId ID của chair
-   * @return AutoAssignResponseDTO chứa danh sách assignments đã tạo và failed assignments
+   * @return AutoAssignResponseDTO chứa danh sách assignments đã tạo và failed
+   *         assignments
    */
   @Transactional
   public AutoAssignResponseDTO autoAssign(AutoAssignRequestDTO dto, Long chairId) {
-    Submission submission =
-        submissionRepository
-            .findById(dto.getSubmissionId())
-            .orElseThrow(
-                () ->
-                    new NotFoundException(
-                        "Submission with id " + dto.getSubmissionId() + " not found"));
+    Submission submission = submissionRepository
+        .findById(dto.getSubmissionId())
+        .orElseThrow(
+            () -> new NotFoundException(
+                "Submission with id " + dto.getSubmissionId() + " not found"));
 
-    Conference conference =
-        conferenceRepository
-            .findById(submission.getConferenceId())
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(submission.getConferenceId())
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -448,8 +437,8 @@ public class AssignmentService {
 
     // Take top N suggestions
     int numberOfReviewers = dto.getNumberOfReviewers() != null ? dto.getNumberOfReviewers() : 3;
-    List<AssignmentSuggestionDTO> topSuggestions =
-        suggestions.stream().limit(numberOfReviewers).collect(Collectors.toList());
+    List<AssignmentSuggestionDTO> topSuggestions = suggestions.stream().limit(numberOfReviewers)
+        .collect(Collectors.toList());
 
     List<AssignmentResponseDTO> createdAssignments = new ArrayList<>();
     List<AutoAssignResponseDTO.FailedAssignmentDTO> failedAssignments = new ArrayList<>();
@@ -486,9 +475,10 @@ public class AssignmentService {
   /**
    * Bulk assign reviewers cho nhiều submissions
    *
-   * @param dto Request DTO chứa danh sách assignments
+   * @param dto     Request DTO chứa danh sách assignments
    * @param chairId ID của chair
-   * @return BulkAssignResponseDTO chứa danh sách assignments đã tạo và failed assignments
+   * @return BulkAssignResponseDTO chứa danh sách assignments đã tạo và failed
+   *         assignments
    */
   @Transactional
   public BulkAssignResponseDTO bulkAssign(BulkAssignRequestDTO dto, Long chairId) {
@@ -521,14 +511,13 @@ public class AssignmentService {
    * Lấy assignment statistics cho một conference
    *
    * @param conferenceId ID của conference
-   * @param chairId ID của chair
+   * @param chairId      ID của chair
    * @return AssignmentStatisticsDTO chứa các thống kê
    */
   public AssignmentStatisticsDTO getAssignmentStatistics(Long conferenceId, Long chairId) {
-    Conference conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -547,7 +536,7 @@ public class AssignmentService {
 
     // Calculate statistics
     int totalAssignments = allAssignments.size();
-    
+
     // Get unique reviewers
     Set<Long> reviewerIds = allAssignments.stream()
         .map(Assignment::getReviewerId)
@@ -555,8 +544,8 @@ public class AssignmentService {
     int totalReviewers = reviewerIds.size();
 
     // Calculate average assignments per reviewer
-    double averageAssignmentsPerReviewer = totalReviewers > 0 
-        ? (double) totalAssignments / totalReviewers 
+    double averageAssignmentsPerReviewer = totalReviewers > 0
+        ? (double) totalAssignments / totalReviewers
         : 0.0;
 
     // Calculate min/max assignments per reviewer
@@ -590,11 +579,10 @@ public class AssignmentService {
     workloadDistribution.put("NORMAL", 0);
     workloadDistribution.put("HIGH", 0);
     workloadDistribution.put("OVERLOADED", 0);
-    
+
     for (Long reviewerId : reviewerIds) {
       try {
-        com.uth.confms.pc.dto.WorkloadDTO workload = 
-            workloadService.getReviewerWorkload(reviewerId, conferenceId);
+        com.uth.confms.pc.dto.WorkloadDTO workload = workloadService.getReviewerWorkload(reviewerId, conferenceId);
         String status = workload.getWorkloadStatus();
         workloadDistribution.merge(status, 1, Integer::sum);
       } catch (Exception e) {
@@ -608,14 +596,14 @@ public class AssignmentService {
     int declinedCount = statusDistribution.get("DECLINED");
     int respondedCount = acceptedCount + declinedCount; // Assignments that got response
 
-    double acceptanceRate = respondedCount > 0 
-        ? (double) acceptedCount / respondedCount * 100.0 
+    double acceptanceRate = respondedCount > 0
+        ? (double) acceptedCount / respondedCount * 100.0
         : 0.0;
-    double completionRate = acceptedCount > 0 
-        ? (double) completedCount / acceptedCount * 100.0 
+    double completionRate = acceptedCount > 0
+        ? (double) completedCount / acceptedCount * 100.0
         : 0.0;
-    double declineRate = respondedCount > 0 
-        ? (double) declinedCount / respondedCount * 100.0 
+    double declineRate = respondedCount > 0
+        ? (double) declinedCount / respondedCount * 100.0
         : 0.0;
 
     return new AssignmentStatisticsDTO(
@@ -635,14 +623,13 @@ public class AssignmentService {
    * Lấy assignment quality metrics cho một conference
    *
    * @param conferenceId ID của conference
-   * @param chairId ID của chair
+   * @param chairId      ID của chair
    * @return AssignmentQualityMetricsDTO chứa các quality metrics
    */
   public AssignmentQualityMetricsDTO getAssignmentQualityMetrics(Long conferenceId, Long chairId) {
-    Conference conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -689,7 +676,7 @@ public class AssignmentService {
     reviewScoreDistribution.put("WEAK_REJECT", 0);
     reviewScoreDistribution.put("REJECT", 0);
     reviewScoreDistribution.put("STRONG_REJECT", 0);
-    
+
     for (Review review : submittedReviews) {
       if (review.getScore() != null) {
         reviewScoreDistribution.merge(review.getScore().name(), 1, Integer::sum);
@@ -730,14 +717,14 @@ public class AssignmentService {
     Set<Long> reviewerIds = allAssignments.stream()
         .map(Assignment::getReviewerId)
         .collect(Collectors.toSet());
-    
+
     double totalReviewerRating = 0.0;
     int reviewersWithReviews = 0;
     for (Long reviewerId : reviewerIds) {
       List<Review> reviewerReviews = reviewRepository.findByReviewerId(reviewerId).stream()
           .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED && r.getScore() != null)
           .collect(Collectors.toList());
-      
+
       if (!reviewerReviews.isEmpty()) {
         double reviewerAvgScore = reviewerReviews.stream()
             .mapToDouble(r -> getReviewScoreValue(r.getScore()))
@@ -747,7 +734,7 @@ public class AssignmentService {
         reviewersWithReviews++;
       }
     }
-    
+
     double averageReviewerRating = reviewersWithReviews > 0
         ? totalReviewerRating / reviewersWithReviews
         : 0.0;
@@ -791,8 +778,7 @@ public class AssignmentService {
   }
 
   private AssignmentResponseDTO mapToDTO(Assignment assignment) {
-    Submission submission =
-        submissionRepository.findById(assignment.getSubmissionId()).orElse(null);
+    Submission submission = submissionRepository.findById(assignment.getSubmissionId()).orElse(null);
     User reviewer = userRepository.findById(assignment.getReviewerId()).orElse(null);
 
     return AssignmentResponseDTO.builder()
@@ -804,6 +790,7 @@ public class AssignmentService {
         .reviewerName(reviewer != null ? reviewer.getFullName() : null)
         .status(assignment.getStatus().name())
         .isPrimary(assignment.getIsPrimary())
+        .submissionAbstract(submission != null ? submission.getAbstractText() : null)
         .assignedAt(assignment.getAssignedAt())
         .updatedAt(assignment.getUpdatedAt())
         .build();

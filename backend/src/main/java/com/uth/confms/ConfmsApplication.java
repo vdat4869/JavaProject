@@ -16,21 +16,28 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableRetry
 public class ConfmsApplication {
+
+  @jakarta.annotation.PostConstruct
+  public void init() {
+    // Set TimeZone to Asia/Ho_Chi_Minh (UTC+7)
+    java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+  }
+
   public static void main(String[] args) {
     // Load .env file if it exists
     try {
       Dotenv dotenv = null;
       String userDir = System.getProperty("user.dir");
-      
+
       // Try multiple locations for .env file
       String[] searchPaths = {
-          ".",  // Current directory
-          userDir,  // User directory (usually backend/ when running from Maven)
-          userDir + "/backend",  // Explicit backend subdirectory
-          "../",  // Parent directory
-          "../backend"  // Backend in parent
+          ".", // Current directory
+          userDir, // User directory (usually backend/ when running from Maven)
+          userDir + "/backend", // Explicit backend subdirectory
+          "../", // Parent directory
+          "../backend" // Backend in parent
       };
-      
+
       for (String path : searchPaths) {
         try {
           java.io.File envFile = new java.io.File(path, ".env");
@@ -46,7 +53,7 @@ public class ConfmsApplication {
           // Continue to next path
         }
       }
-      
+
       if (dotenv == null) {
         // Last try: use default behavior (current directory)
         try {
@@ -57,7 +64,7 @@ public class ConfmsApplication {
           // Ignore
         }
       }
-      
+
       if (dotenv != null) {
         // Set system properties from .env file
         int loadedCount = 0;
@@ -79,7 +86,7 @@ public class ConfmsApplication {
       System.out.println("⚠️ Note: .env file not found or could not be loaded: " + e.getMessage());
       System.out.println("   Using environment variables and defaults.");
     }
-    
+
     SpringApplication.run(ConfmsApplication.class, args);
   }
 }

@@ -275,7 +275,7 @@ const SubmissionForm: React.FC<SubmissionFormProps> = ({
         />
       </div>
 
-      {cfp && cfp.tracks.length > 0 && (
+      {cfp && cfp.tracks && cfp.tracks.length > 0 && (
         <div className="mb-3">
           <CFormLabel>Lĩnh vực</CFormLabel>
           <select

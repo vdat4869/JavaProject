@@ -22,23 +22,28 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Controller quản lý Program Committee (PC) members và COI declarations
  *
- * <p>Các endpoints:
+ * <p>
+ * Các endpoints:
  *
  * <ul>
- *   <li>POST /api/pc/invite - Mời PC member (CHAIR/ADMIN)
- *   <li>POST /api/pc/invitation/accept - Chấp nhận invitation (authenticated)
- *   <li>POST /api/pc/invitation/decline - Từ chối invitation (authenticated)
- *   <li>GET /api/pc/conference/{id}/members - Lấy danh sách PC members (CHAIR/ADMIN)
- *   <li>GET /api/pc/conference/{id}/invitations - Lấy danh sách invitations (CHAIR/ADMIN)
- *   <li>POST /api/pc/coi/declare - Khai báo COI (PC/REVIEWER)
- *   <li>DELETE /api/pc/coi/{id} - Xóa COI (PC/REVIEWER)
- *   <li>GET /api/pc/coi/my - Lấy COIs của reviewer (PC/REVIEWER)
- *   <li>GET /api/pc/coi/submission/{id} - Lấy COIs của submission (CHAIR/ADMIN)
- *   <li>GET /api/pc/coi/check - Kiểm tra COI (PC/REVIEWER)
+ * <li>POST /api/pc/invite - Mời PC member (CHAIR/ADMIN)
+ * <li>POST /api/pc/invitation/accept - Chấp nhận invitation (authenticated)
+ * <li>POST /api/pc/invitation/decline - Từ chối invitation (authenticated)
+ * <li>GET /api/pc/conference/{id}/members - Lấy danh sách PC members
+ * (CHAIR/ADMIN)
+ * <li>GET /api/pc/conference/{id}/invitations - Lấy danh sách invitations
+ * (CHAIR/ADMIN)
+ * <li>POST /api/pc/coi/declare - Khai báo COI (PC/REVIEWER)
+ * <li>DELETE /api/pc/coi/{id} - Xóa COI (PC/REVIEWER)
+ * <li>GET /api/pc/coi/my - Lấy COIs của reviewer (PC/REVIEWER)
+ * <li>GET /api/pc/coi/submission/{id} - Lấy COIs của submission (CHAIR/ADMIN)
+ * <li>GET /api/pc/coi/check - Kiểm tra COI (PC/REVIEWER)
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -47,6 +52,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/pc")
 public class PCController {
+  private static final Logger logger = LoggerFactory.getLogger(PCController.class);
+
   private final PCService pcService;
   private final COIService coiService;
   private final UserService userService;
@@ -135,10 +142,27 @@ public class PCController {
   }
 
   @GetMapping("/coi/submission/{submissionId}")
-  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN') or hasRole('PC') or hasRole('REVIEWER')")
   public ResponseEntity<ApiResponse<List<ConflictOfInterest>>> getCOIsBySubmission(
-      @PathVariable Long submissionId) {
-    return ResponseEntity.ok(ApiResponse.success(coiService.getCOIsBySubmission(submissionId)));
+      @PathVariable Long submissionId, Authentication authentication) {
+    logger.debug("DEBUG: getCOIsBySubmission called for submissionId: {}", submissionId);
+    logger.debug("DEBUG: User authorities: {}", authentication.getAuthorities());
+    List<ConflictOfInterest> cois = coiService.getCOIsBySubmission(submissionId);
+    Long userId = getUserIdFromAuthentication(authentication);
+    logger.debug("DEBUG: userId: {}", userId);
+
+    // If user is not CHAIR or ADMIN, filter to show only their own COIs
+    boolean isChairOrAdmin = authentication.getAuthorities().stream()
+        .anyMatch(a -> a.getAuthority().equals("CHAIR") || a.getAuthority().equals("ADMIN"));
+    logger.debug("DEBUG: isChairOrAdmin: {}", isChairOrAdmin);
+
+    if (!isChairOrAdmin) {
+      cois = cois.stream()
+          .filter(c -> c.getReviewerId().equals(userId))
+          .toList();
+    }
+
+    return ResponseEntity.ok(ApiResponse.success(cois));
   }
 
   @GetMapping("/coi/check")
@@ -159,7 +183,8 @@ public class PCController {
     // Reviewer can only view their own workload, chair/admin can view any
     // Simplified check - in production, use proper authorization service
     if (!userId.equals(reviewerId)) {
-      // Allow if user is chair of the conference (check would be done in service if needed)
+      // Allow if user is chair of the conference (check would be done in service if
+      // needed)
       // For now, allow all authenticated users with PC/REVIEWER role
     }
     return ResponseEntity.ok(

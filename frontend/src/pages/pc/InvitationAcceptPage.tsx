@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   CCard,
   CCardBody,
@@ -12,6 +12,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { pcService, PCMember } from '../../services/pc.service'
 import { conferenceService } from '../../services/conference.service'
+import { useAuth } from '../../context/AuthContext'
 
 /**
  * InvitationAcceptPage - Trang chấp nhận/từ chối PC invitation
@@ -23,23 +24,27 @@ import { conferenceService } from '../../services/conference.service'
  */
 const InvitationAcceptPage: React.FC = () => {
   const { t } = useTranslation()
+  const { logout } = useAuth()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const token = searchParams.get('token')
+  const location = useLocation()
+  const isDeclinePage = location.pathname.includes('/decline')
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
   const [conferenceName, setConferenceName] = useState<string>('')
+  const [showConfirmDecline, setShowConfirmDecline] = useState(false)
 
   useEffect(() => {
     // Token is required
     if (!token) {
       setError('Invalid invitation link. Missing token.')
-      setLoading(false)
-      return
+    } else if (isDeclinePage) {
+      setShowConfirmDecline(true)
     }
-    // Conference info will be loaded after accepting
-  }, [token])
+    setLoading(false)
+  }, [token, isDeclinePage])
 
   const handleAccept = async () => {
     if (!token) return
@@ -59,12 +64,13 @@ const InvitationAcceptPage: React.FC = () => {
       } catch {
         // Conference name not critical
       }
-      alert('Bạn đã chấp nhận lời mời thành công!')
-      navigate('/pc/assignments')
+      alert('Bạn đã chấp nhận lời mời thành công! Hệ thống sẽ đăng xuất để cập nhật quyền hạn mới. Vui lòng đăng nhập lại và tiến hành khai báo COI.')
+      await logout()
+      navigate('/login')
     } catch (error: any) {
       setError(
         error.response?.data?.message ||
-          'Không thể chấp nhận lời mời. Có thể invitation đã hết hạn hoặc đã được xử lý.'
+        'Không thể chấp nhận lời mời. Có thể invitation đã hết hạn hoặc đã được xử lý.'
       )
     } finally {
       setProcessing(false)
@@ -87,7 +93,7 @@ const InvitationAcceptPage: React.FC = () => {
     } catch (error: any) {
       setError(
         error.response?.data?.message ||
-          'Không thể từ chối lời mời. Có thể invitation đã hết hạn hoặc đã được xử lý.'
+        'Không thể từ chối lời mời. Có thể invitation đã hết hạn hoặc đã được xử lý.'
       )
     } finally {
       setProcessing(false)
@@ -129,33 +135,52 @@ const InvitationAcceptPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="d-flex justify-content-end gap-2">
-              <CButton
-                color="danger"
-                onClick={handleDecline}
-                disabled={processing}
-                className="me-2"
-              >
-                {processing ? (
-                  <>
-                    <CSpinner size="sm" className="me-2" />
-                    Đang xử lý...
-                  </>
-                ) : (
-                  'Từ chối'
-                )}
-              </CButton>
-              <CButton color="success" onClick={handleAccept} disabled={processing}>
-                {processing ? (
-                  <>
-                    <CSpinner size="sm" className="me-2" />
-                    Đang xử lý...
-                  </>
-                ) : (
-                  'Chấp nhận'
-                )}
-              </CButton>
-            </div>
+            {showConfirmDecline ? (
+              <div className="text-center">
+                <CAlert color="warning">
+                  Bạn có chắc chắn muốn từ chối lời mời này không?
+                  <br />
+                  Hành động này không thể hoàn tác.
+                </CAlert>
+                <div className="d-flex justify-content-center gap-3 mt-3">
+                  <CButton
+                    color="secondary"
+                    onClick={() => {
+                      setShowConfirmDecline(false)
+                      navigate('/app/pc/invitation/accept?token=' + token)
+                    }}>
+                    Quay lại
+                  </CButton>
+                  <CButton
+                    color="danger"
+                    onClick={handleDecline}
+                    disabled={processing}>
+                    {processing ? <CSpinner size="sm" /> : 'Xác nhận Từ chối'}
+                  </CButton>
+                </div>
+              </div>
+            ) : (
+              <div className="d-flex justify-content-end gap-2">
+                <CButton
+                  color="danger"
+                  onClick={() => setShowConfirmDecline(true)}
+                  disabled={processing}
+                  className="me-2"
+                >
+                  Từ chối
+                </CButton>
+                <CButton color="success" onClick={handleAccept} disabled={processing}>
+                  {processing ? (
+                    <>
+                      <CSpinner size="sm" className="me-2" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    'Chấp nhận'
+                  )}
+                </CButton>
+              </div>
+            )}
           </>
         )}
 

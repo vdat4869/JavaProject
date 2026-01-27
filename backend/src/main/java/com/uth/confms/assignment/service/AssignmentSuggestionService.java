@@ -27,24 +27,29 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
+
 /**
  * Service cung cấp AI suggestions cho reviewer assignments
  *
- * <p>Service này xử lý các nghiệp vụ liên quan đến:
+ * <p>
+ * Service này xử lý các nghiệp vụ liên quan đến:
  *
  * <ul>
- *   <li>Generate AI suggestions cho reviewers (không auto-assign)
- *   <li>Tính toán suggestion scores dựa trên workload và fit
- *   <li>Loại trừ reviewers có COI hoặc là authors
- *   <li>Sort suggestions theo score
+ * <li>Generate AI suggestions cho reviewers (không auto-assign)
+ * <li>Tính toán suggestion scores dựa trên workload và fit
+ * <li>Loại trừ reviewers có COI hoặc là authors
+ * <li>Sort suggestions theo score
  * </ul>
  *
- * <p><b>Lưu ý:</b> Service này chỉ suggest, không tự động assign reviewers.
+ * <p>
+ * <b>Lưu ý:</b> Service này chỉ suggest, không tự động assign reviewers.
  *
  * @author UTH-ConfMS Team
  * @version 1.0
  */
 @Service
+@Transactional(readOnly = true)
 @SuppressWarnings("null")
 public class AssignmentSuggestionService {
   private final PCMemberRepository pcMemberRepository;
@@ -82,30 +87,31 @@ public class AssignmentSuggestionService {
   /**
    * Lấy AI suggestions cho reviewers cho một submission
    *
-   * <p>Service này chỉ suggest, không tự động assign reviewers. Suggestions được tính toán dựa
+   * <p>
+   * Service này chỉ suggest, không tự động assign reviewers. Suggestions được
+   * tính toán dựa
    * trên:
    *
    * <ul>
-   *   <li>Workload của reviewer (số assignments hiện tại)
-   *   <li>COI status
-   *   <li>Author exclusion
-   *   <li>Target: 3 reviewers per submission
+   * <li>Workload của reviewer (số assignments hiện tại)
+   * <li>COI status
+   * <li>Author exclusion
+   * <li>Target: 3 reviewers per submission
    * </ul>
    *
    * @param submissionId ID của submission cần suggest reviewers
-   * @return Danh sách suggested reviewers với scores và reasons, sorted by score descending
+   * @return Danh sách suggested reviewers với scores và reasons, sorted by score
+   *         descending
    */
   public List<AssignmentSuggestionDTO> getSuggestions(Long submissionId) {
-    Submission submission =
-        submissionRepository
-            .findById(submissionId)
-            .orElseThrow(
-                () -> new NotFoundException("Submission with id " + submissionId + " not found"));
+    Submission submission = submissionRepository
+        .findById(submissionId)
+        .orElseThrow(
+            () -> new NotFoundException("Submission with id " + submissionId + " not found"));
 
     // Get all PC members for this conference (with expertiseTopics loaded)
-    List<PCMember> pcMembers =
-        pcMemberRepository.findByConferenceIdAndStatusWithExpertise(
-            submission.getConferenceId(), PCMember.PCMemberStatus.ACCEPTED);
+    List<PCMember> pcMembers = pcMemberRepository.findByConferenceIdAndStatusWithExpertise(
+        submission.getConferenceId(), PCMember.PCMemberStatus.ACCEPTED);
 
     // Get submission authors
     List<SubmissionAuthor> authors = submissionAuthorRepository.findBySubmissionId(submissionId);
@@ -113,8 +119,7 @@ public class AssignmentSuggestionService {
 
     // Get existing assignments
     List<Assignment> existingAssignments = assignmentRepository.findBySubmissionId(submissionId);
-    List<Long> assignedReviewerIds =
-        existingAssignments.stream().map(Assignment::getReviewerId).toList();
+    List<Long> assignedReviewerIds = existingAssignments.stream().map(Assignment::getReviewerId).toList();
 
     List<AssignmentSuggestionDTO> suggestions = new ArrayList<>();
 
@@ -129,9 +134,8 @@ public class AssignmentSuggestionService {
       }
 
       // Calculate suggestion score (includes workload, keyword/topic matching)
-      double score =
-          calculateSuggestionScore(
-              pcMember, submission, existingAssignments.size());
+      double score = calculateSuggestionScore(
+          pcMember, submission, existingAssignments.size());
 
       // Only suggest if score > 0
       if (score > 0) {
@@ -161,18 +165,20 @@ public class AssignmentSuggestionService {
   /**
    * Tính toán suggestion score cho một reviewer
    *
-   * <p>Algorithm bao gồm:
+   * <p>
+   * Algorithm bao gồm:
    *
    * <ul>
-   *   <li>Base score: 0.5
-   *   <li>Workload adjustment: reviewers với ít assignments hơn có score cao hơn
-   *   <li>Keyword matching: match submission keywords với reviewer expertise keywords
-   *   <li>Topic matching: match submission topics với reviewer expertise topics
-   *   <li>Target adjustment: nếu submission chưa đủ 3 reviewers, tăng score
+   * <li>Base score: 0.5
+   * <li>Workload adjustment: reviewers với ít assignments hơn có score cao hơn
+   * <li>Keyword matching: match submission keywords với reviewer expertise
+   * keywords
+   * <li>Topic matching: match submission topics với reviewer expertise topics
+   * <li>Target adjustment: nếu submission chưa đủ 3 reviewers, tăng score
    * </ul>
    *
-   * @param pcMember PC member (reviewer)
-   * @param submission Submission cần assign reviewer
+   * @param pcMember               PC member (reviewer)
+   * @param submission             Submission cần assign reviewer
    * @param currentAssignmentCount Số assignments hiện tại của submission này
    * @return Suggestion score từ 0.0 đến 1.0
    */
@@ -184,9 +190,8 @@ public class AssignmentSuggestionService {
     double score = 0.5;
 
     // Adjust based on current workload (prefer reviewers with fewer assignments)
-    long reviewerAssignmentCount =
-        assignmentRepository.countByReviewerIdAndStatus(
-            reviewerId, Assignment.AssignmentStatus.ACCEPTED);
+    long reviewerAssignmentCount = assignmentRepository.countByReviewerIdAndStatus(
+        reviewerId, Assignment.AssignmentStatus.ACCEPTED);
 
     // Lower workload = higher score
     if (reviewerAssignmentCount == 0) {
@@ -207,7 +212,8 @@ public class AssignmentSuggestionService {
     double topicMatchScore = calculateTopicMatchScore(pcMember, submission);
     score += topicMatchScore * 0.15; // Weight: 15%
 
-    // Track-based matching: match submission track với reviewer's historical track experience
+    // Track-based matching: match submission track với reviewer's historical track
+    // experience
     double trackMatchScore = calculateTrackMatchScore(reviewerId, submission);
     score += trackMatchScore * 0.1; // Weight: 10%
 
@@ -227,7 +233,7 @@ public class AssignmentSuggestionService {
   /**
    * Tính toán keyword match score giữa reviewer expertise và submission keywords
    *
-   * @param pcMember PC member (reviewer)
+   * @param pcMember   PC member (reviewer)
    * @param submission Submission
    * @return Keyword match score từ 0.0 đến 1.0
    */
@@ -242,19 +248,17 @@ public class AssignmentSuggestionService {
     }
 
     // Parse keywords (comma-separated, case-insensitive)
-    Set<String> submissionKeywords =
-        Arrays.stream(submission.getKeywords().split(","))
-            .map(String::trim)
-            .map(String::toLowerCase)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.toSet());
+    Set<String> submissionKeywords = Arrays.stream(submission.getKeywords().split(","))
+        .map(String::trim)
+        .map(String::toLowerCase)
+        .filter(s -> !s.isEmpty())
+        .collect(Collectors.toSet());
 
-    Set<String> reviewerKeywords =
-        Arrays.stream(pcMember.getExpertiseKeywords().split(","))
-            .map(String::trim)
-            .map(String::toLowerCase)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.toSet());
+    Set<String> reviewerKeywords = Arrays.stream(pcMember.getExpertiseKeywords().split(","))
+        .map(String::trim)
+        .map(String::toLowerCase)
+        .filter(s -> !s.isEmpty())
+        .collect(Collectors.toSet());
 
     if (submissionKeywords.isEmpty() || reviewerKeywords.isEmpty()) {
       return 0.0;
@@ -273,18 +277,18 @@ public class AssignmentSuggestionService {
   }
 
   /**
-   * Tính toán topic match score giữa reviewer expertise topics và submission topics
+   * Tính toán topic match score giữa reviewer expertise topics và submission
+   * topics
    *
-   * @param pcMember PC member (reviewer)
+   * @param pcMember   PC member (reviewer)
    * @param submission Submission
    * @return Topic match score từ 0.0 đến 1.0
    */
   private double calculateTopicMatchScore(PCMember pcMember, Submission submission) {
     // Get conference topics
-    Conference conference =
-        conferenceRepository
-            .findById(submission.getConferenceId())
-            .orElse(null);
+    Conference conference = conferenceRepository
+        .findById(submission.getConferenceId())
+        .orElse(null);
 
     if (conference == null || conference.getTopics().isEmpty()) {
       return 0.0; // No topics to match
@@ -295,13 +299,11 @@ public class AssignmentSuggestionService {
     }
 
     // Get topic IDs
-    Set<Long> conferenceTopicIds =
-        conference.getTopics().stream().map(Topic::getId).collect(Collectors.toSet());
+    Set<Long> conferenceTopicIds = conference.getTopics().stream().map(Topic::getId).collect(Collectors.toSet());
 
-    Set<Long> reviewerTopicIds =
-        pcMember.getExpertiseTopics().stream()
-            .map(Topic::getId)
-            .collect(Collectors.toSet());
+    Set<Long> reviewerTopicIds = pcMember.getExpertiseTopics().stream()
+        .map(Topic::getId)
+        .collect(Collectors.toSet());
 
     if (conferenceTopicIds.isEmpty() || reviewerTopicIds.isEmpty()) {
       return 0.0;
@@ -333,25 +335,22 @@ public class AssignmentSuggestionService {
     }
 
     // Get all submissions that reviewer has reviewed (completed assignments)
-    List<Assignment> completedAssignments =
-        assignmentRepository.findByReviewerIdAndStatus(
-            reviewerId, Assignment.AssignmentStatus.COMPLETED);
+    List<Assignment> completedAssignments = assignmentRepository.findByReviewerIdAndStatus(
+        reviewerId, Assignment.AssignmentStatus.COMPLETED);
 
     if (completedAssignments.isEmpty()) {
       return 0.0; // No historical track experience
     }
 
     // Get track IDs of submissions reviewer has reviewed
-    List<Long> reviewedSubmissionIds =
-        completedAssignments.stream().map(Assignment::getSubmissionId).collect(Collectors.toList());
-    List<Submission> reviewedSubmissions =
-        submissionRepository.findAllById(reviewedSubmissionIds);
+    List<Long> reviewedSubmissionIds = completedAssignments.stream().map(Assignment::getSubmissionId)
+        .collect(Collectors.toList());
+    List<Submission> reviewedSubmissions = submissionRepository.findAllById(reviewedSubmissionIds);
 
     // Count how many reviews were for the same track
-    long sameTrackCount =
-        reviewedSubmissions.stream()
-            .filter(s -> submission.getTrackId().equals(s.getTrackId()))
-            .count();
+    long sameTrackCount = reviewedSubmissions.stream()
+        .filter(s -> submission.getTrackId().equals(s.getTrackId()))
+        .count();
 
     if (sameTrackCount == 0) {
       return 0.0;
@@ -370,10 +369,9 @@ public class AssignmentSuggestionService {
    */
   private double calculateReviewQualityScore(Long reviewerId) {
     // Get all submitted reviews by this reviewer
-    List<Review> reviews =
-        reviewRepository.findByReviewerId(reviewerId).stream()
-            .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED)
-            .collect(Collectors.toList());
+    List<Review> reviews = reviewRepository.findByReviewerId(reviewerId).stream()
+        .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED)
+        .collect(Collectors.toList());
 
     if (reviews.isEmpty()) {
       return 0.5; // Neutral score if no review history
@@ -425,9 +423,9 @@ public class AssignmentSuggestionService {
   /**
    * Tạo lý do suggestion dễ hiểu cho người dùng với explanation chi tiết
    *
-   * @param score Suggestion score (0.0 - 1.0)
-   * @param hasCOI Reviewer có COI không
-   * @param pcMember PC member (reviewer)
+   * @param score      Suggestion score (0.0 - 1.0)
+   * @param hasCOI     Reviewer có COI không
+   * @param pcMember   PC member (reviewer)
    * @param submission Submission
    * @return Lý do suggestion với keyword/topic/track/review quality info
    */
@@ -472,9 +470,8 @@ public class AssignmentSuggestionService {
     }
 
     // Add workload info
-    long reviewerAssignmentCount =
-        assignmentRepository.countByReviewerIdAndStatus(
-            pcMember.getUserId(), Assignment.AssignmentStatus.ACCEPTED);
+    long reviewerAssignmentCount = assignmentRepository.countByReviewerIdAndStatus(
+        pcMember.getUserId(), Assignment.AssignmentStatus.ACCEPTED);
     if (reviewerAssignmentCount == 0) {
       reasons.add("no current assignments");
     } else if (reviewerAssignmentCount < 3) {

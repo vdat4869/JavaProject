@@ -63,8 +63,8 @@ export const userService = {
    * GET /api/users/{id}
    */
   getUserById: async (id: number): Promise<UserDTO> => {
-    const response = await apiClient.get<UserDTO>(`/users/${id}`)
-    return response.data
+    const response = await apiClient.get<any>(`/users/${id}`)
+    return response.data?.data || response.data
   },
 
   /**
@@ -72,10 +72,10 @@ export const userService = {
    * GET /api/users?page={page}&size={size}
    */
   getAllUsers: async (page: number = 0, size: number = 20): Promise<PageResponse<UserDTO>> => {
-    const response = await apiClient.get<PageResponse<UserDTO>>('/users', {
+    const response = await apiClient.get<any>('/users', {
       params: { page, size },
     })
-    return response.data
+    return response.data?.data || response.data
   },
 
   /**
@@ -83,10 +83,10 @@ export const userService = {
    * GET /api/users/active/list?page={page}&size={size}
    */
   getActiveUsers: async (page: number = 0, size: number = 20): Promise<PageResponse<UserDTO>> => {
-    const response = await apiClient.get<PageResponse<UserDTO>>('/users/active/list', {
+    const response = await apiClient.get<any>('/users/active/list', {
       params: { page, size },
     })
-    return response.data
+    return response.data?.data || response.data
   },
 
   /**
@@ -98,10 +98,10 @@ export const userService = {
     page: number = 0,
     size: number = 20,
   ): Promise<PageResponse<UserDTO>> => {
-    const response = await apiClient.get<PageResponse<UserDTO>>('/users/search', {
+    const response = await apiClient.get<any>('/users/search', {
       params: { keyword, page, size },
     })
-    return response.data
+    return response.data?.data || response.data
   },
 
   /**
@@ -125,7 +125,7 @@ export const userService = {
    * GET /api/users/stats/summary
    */
   getUserStats: async (): Promise<UserStats> => {
-    const response = await apiClient.get<UserStats>('/users/stats/summary')
-    return response.data
+    const response = await apiClient.get<any>('/users/stats/summary')
+    return response.data?.data || response.data
   },
 }

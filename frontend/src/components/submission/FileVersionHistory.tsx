@@ -14,7 +14,7 @@ import {
   CBadge,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilDownload, cilCheckCircle } from '@coreui/icons'
+import { cilCloudDownload, cilCheckCircle } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { submissionService, SubmissionFile } from '../../services/submission.service'
 
@@ -151,7 +151,7 @@ const FileVersionHistory: React.FC<FileVersionHistoryProps> = ({ submissionId })
                       </>
                     ) : (
                       <>
-                        <CIcon icon={cilDownload} className="me-1" />
+                        <CIcon icon={cilCloudDownload} className="me-1" />
                         {t('common.download') || 'Tải'}
                       </>
                     )}

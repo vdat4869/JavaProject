@@ -114,52 +114,47 @@ const BackupManagement: React.FC = () => {
             <CCard>
                 <CCardHeader>Lịch sử Sao lưu</CCardHeader>
                 <CCardBody>
-                    <CTable hover responsive align="middle">
-                        <CTableHead>
-                            <CTableRow>
-                                <CTableHeaderCell>ID</CTableHeaderCell>
-                                <CTableHeaderCell>Loại</CTableHeaderCell>
-                                <CTableHeaderCell>Hội nghị</CTableHeaderCell>
-                                <CTableHeaderCell>Dung lượng</CTableHeaderCell>
-                                <CTableHeaderCell>Thời gian</CTableHeaderCell>
-                                <CTableHeaderCell>Trạng thái</CTableHeaderCell>
-                                <CTableHeaderCell>Thao tác</CTableHeaderCell>
-                            </CTableRow>
-                        </CTableHead>
-                        <CTableBody>
-                            {backups.map((b) => (
-                                <CTableRow key={b.id}>
-                                    <CTableDataCell>#{b.id}</CTableDataCell>
-                                    <CTableDataCell>
-                                        <CBadge color={b.backupType === 'FULL' ? 'danger' : 'primary'}>{b.backupType}</CBadge>
-                                    </CTableDataCell>
-                                    <CTableDataCell>{b.conferenceId || 'ALL'}</CTableDataCell>
-                                    <CTableDataCell>{(b.fileSize / 1024 / 1024).toFixed(2)} MB</CTableDataCell>
-                                    <CTableDataCell>{new Date(b.createdAt).toLocaleString('vi-VN')}</CTableDataCell>
-                                    <CTableDataCell>
-                                        <CBadge color={b.status === 'COMPLETED' ? 'success' : 'warning'}>{b.status}</CBadge>
-                                    </CTableDataCell>
-                                    <CTableDataCell>
-                                        <CButton
-                                            color="warning"
-                                            size="sm"
-                                            onClick={() => handleRestore(b.id)}
-                                            disabled={actionLoading || b.status !== 'COMPLETED'}
-                                        >
-                                            <CIcon icon={cilCloudUpload} className="me-1" /> Khôi phục
-                                        </CButton>
-                                    </CTableDataCell>
-                                </CTableRow>
-                            ))}
-                            {backups.length === 0 && (
+                    {!Array.isArray(backups) || backups.length === 0 ? (
+                        <p className="text-muted">Chưa có bản sao lưu nào.</p>
+                    ) : (
+                        <CTable hover responsive align="middle">
+                            <CTableHead>
                                 <CTableRow>
-                                    <CTableDataCell colSpan={7} className="text-center text-muted p-4">
-                                        Chưa có hồ sơ sao lưu nào.
-                                    </CTableDataCell>
+                                    <CTableHeaderCell>ID</CTableHeaderCell>
+                                    <CTableHeaderCell>Loại</CTableHeaderCell>
+                                    <CTableHeaderCell>Kích thước</CTableHeaderCell>
+                                    <CTableHeaderCell>Ngày tạo</CTableHeaderCell>
+                                    <CTableHeaderCell>Trạng thái</CTableHeaderCell>
+                                    <CTableHeaderCell>Thao tác</CTableHeaderCell>
                                 </CTableRow>
-                            )}
-                        </CTableBody>
-                    </CTable>
+                            </CTableHead>
+                            <CTableBody>
+                                {backups.map((b) => (
+                                    <CTableRow key={b.id}>
+                                        <CTableDataCell>#{b.id}</CTableDataCell>
+                                        <CTableDataCell>
+                                            <CBadge color={b.backupType === 'FULL' ? 'danger' : 'primary'}>{b.backupType}</CBadge>
+                                        </CTableDataCell>
+                                        <CTableDataCell>{(b.fileSize / 1024 / 1024).toFixed(2)} MB</CTableDataCell>
+                                        <CTableDataCell>{new Date(b.createdAt).toLocaleString('vi-VN')}</CTableDataCell>
+                                        <CTableDataCell>
+                                            <CBadge color={b.status === 'COMPLETED' ? 'success' : 'warning'}>{b.status}</CBadge>
+                                        </CTableDataCell>
+                                        <CTableDataCell>
+                                            <CButton
+                                                color="warning"
+                                                size="sm"
+                                                onClick={() => handleRestore(b.id)}
+                                                disabled={actionLoading || b.status !== 'COMPLETED'}
+                                            >
+                                                <CIcon icon={cilCloudUpload} className="me-1" /> Khôi phục
+                                            </CButton>
+                                        </CTableDataCell>
+                                    </CTableRow>
+                                ))}
+                            </CTableBody>
+                        </CTable>
+                    )}
                 </CCardBody>
             </CCard>
         </div>

@@ -35,7 +35,7 @@ const PaperDiscussionBoard: React.FC = () => {
             setLoading(true)
             const data = await reviewService.getAssignments()
             // Lọc các bài đã submit review (thường thảo luận bắt đầu sau khi submit)
-            setAssignments(data.filter(a => a.status === 'COMPLETED' || a.status === 'IN_PROGRESS'))
+            setAssignments(data.filter(a => a.status === 'COMPLETED' || a.status === 'ACCEPTED'))
         } catch (error) {
             console.error('Error loading assignments for discussion:', error)
         } finally {

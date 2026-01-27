@@ -188,7 +188,7 @@ const AssignedPaperList: React.FC = () => {
                         color="primary"
                         size="sm"
                         onClick={() =>
-                          navigate(`/pc/submissions/${assignment.submissionId}`)
+                          navigate(`/app/pc/submissions/${assignment.submissionId}`)
                         }
                       >
                         Chi tiết & Đánh giá
@@ -196,7 +196,7 @@ const AssignedPaperList: React.FC = () => {
                       <CButton
                         color="link"
                         size="sm"
-                        onClick={() => navigate(`/pc/coi?submissionId=${assignment.submissionId}`)}
+                        onClick={() => navigate(`/app/pc/coi?submissionId=${assignment.submissionId}`)}
                       >
                         Khai báo COI
                       </CButton>

@@ -16,7 +16,7 @@ import {
   CAlert,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilTrash, cilEye } from '@coreui/icons'
+import { cilTrash } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { pcService, COIDeclaration, COIType } from '../../services/pc.service'
 
@@ -114,7 +114,7 @@ const MyCOIsList: React.FC = () => {
         {cois.length === 0 ? (
           <div className="text-center py-5">
             <p className="text-muted">Bạn chưa khai báo COI nào</p>
-            <CButton color="primary" onClick={() => navigate('/pc/assignments')}>
+            <CButton color="primary" onClick={() => navigate('/app/pc/assignments')}>
               Xem bài được giao
             </CButton>
           </div>
@@ -137,7 +137,7 @@ const MyCOIsList: React.FC = () => {
                     <CButton
                       color="link"
                       size="sm"
-                      onClick={() => navigate(`/pc/coi?submissionId=${coi.submissionId}`)}
+                      onClick={() => navigate(`/app/pc/coi?submissionId=${coi.submissionId}`)}
                     >
                       #{coi.submissionId}
                     </CButton>

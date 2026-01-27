@@ -72,7 +72,7 @@ const DiscussionPage: React.FC = () => {
         <CCardHeader>
           <div className="d-flex justify-content-between align-items-center">
             <h4>Thảo luận đánh giá</h4>
-            <CButton color="secondary" onClick={() => navigate('/pc/assignments')}>
+            <CButton color="secondary" onClick={() => navigate('/app/pc/assignments')}>
               Quay lại
             </CButton>
           </div>

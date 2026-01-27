@@ -52,12 +52,15 @@ interface AuthProviderProps {
  * - Convert to uppercase
  * - Filter invalid roles
  */
-const normalizeRoles = (roles: string[] | undefined): UserRole[] => {
+const normalizeRoles = (roles: any[] | undefined): UserRole[] => {
   if (!roles || roles.length === 0) {
     return []
   }
   return roles
-    .map((role: string) => role.toUpperCase() as UserRole)
+    .map((role: any) => {
+      const roleStr = typeof role === 'string' ? role : role.name || ''
+      return roleStr.toUpperCase().replace('ROLE_', '') as UserRole
+    })
     .filter((role: UserRole) =>
       ['GUEST', 'AUTHOR', 'REVIEWER', 'PC', 'CHAIR', 'ADMIN'].includes(role)
     )

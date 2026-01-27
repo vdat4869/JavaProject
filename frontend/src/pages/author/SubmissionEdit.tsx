@@ -73,7 +73,7 @@ const SubmissionEdit: React.FC = () => {
       // Reload submission after update
       const updated = await submissionService.getSubmission(parseInt(id!))
       setSubmission(updated)
-      navigate(`/author/submissions/${id}`)
+      navigate(`/app/author/submissions/${id}`)
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Không thể cập nhật submission')
     } finally {
@@ -102,7 +102,7 @@ const SubmissionEdit: React.FC = () => {
       const updated = await submissionService.submitSubmission(parseInt(id!))
       setSubmission(updated)
       alert('Bài nộp đã được gửi thành công!')
-      navigate(`/author/submissions/${id}`)
+      navigate(`/app/author/submissions/${id}`)
     } catch (error: any) {
       alert(error.response?.data?.message || 'Không thể nộp bài. Vui lòng thử lại.')
     } finally {

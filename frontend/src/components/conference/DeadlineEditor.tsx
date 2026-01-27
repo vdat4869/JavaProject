@@ -59,10 +59,16 @@ const DeadlineEditor: React.FC<DeadlineEditorProps> = ({ deadlines, onChange }) 
   const handleEdit = (index: number) => {
     setEditingIndex(index)
     const deadline = deadlines[index]
-    // Convert dueDate to datetime-local format
-    const dueDate = deadline.dueDate
-      ? new Date(deadline.dueDate).toISOString().slice(0, 16)
-      : ''
+
+    // Convert dueDate to datetime-local format (yyyy-MM-ddThh:mm)
+    // We use local time, not UTC (toISOString) to avoid timezone shifts
+    let dueDate = ''
+    if (deadline.dueDate) {
+      const d = new Date(deadline.dueDate)
+      const pad = (n: number) => n.toString().padStart(2, '0')
+      dueDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    }
+
     setFormData({ ...deadline, dueDate })
     setShowModal(true)
   }
@@ -81,9 +87,13 @@ const DeadlineEditor: React.FC<DeadlineEditorProps> = ({ deadlines, onChange }) 
     }
 
     const newDeadlines = [...deadlines]
+
+    // Ensure seconds are included for backend compatibility
+    const dateStr = formData.dueDate.length === 16 ? `${formData.dueDate}:00` : formData.dueDate
+
     const deadlineToSave: Deadline = {
       ...formData,
-      dueDate: new Date(formData.dueDate).toISOString(),
+      dueDate: dateStr,
     }
     if (editingIndex !== null) {
       newDeadlines[editingIndex] = deadlineToSave

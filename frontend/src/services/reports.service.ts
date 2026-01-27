@@ -48,10 +48,10 @@ export const reportsService = {
    * GET /api/reporting/conference/{id}
    */
   getLatestReport: async (conferenceId: number): Promise<ReportStatistics> => {
-    const response = await apiClient.get<ReportStatistics>(
+    const response = await apiClient.get<any>(
       `/reporting/conference/${conferenceId}`
     )
-    return response.data
+    return response.data?.data || response.data
   },
 
   /**
@@ -59,10 +59,10 @@ export const reportsService = {
    * POST /api/reporting/conference/{id}/snapshot
    */
   createSnapshot: async (conferenceId: number): Promise<ReportStatistics> => {
-    const response = await apiClient.post<ReportStatistics>(
+    const response = await apiClient.post<any>(
       `/reporting/conference/${conferenceId}/snapshot`
     )
-    return response.data
+    return response.data?.data || response.data
   },
 
   /**
@@ -70,10 +70,11 @@ export const reportsService = {
    * GET /api/reporting/conference/{id}/history
    */
   getReportHistory: async (conferenceId: number): Promise<ReportStatistics[]> => {
-    const response = await apiClient.get<ReportStatistics[]>(
+    const response = await apiClient.get<any>(
       `/reporting/conference/${conferenceId}/history`
     )
-    return response.data
+    const data = response.data?.data || response.data
+    return Array.isArray(data) ? data : []
   },
 
   /**
@@ -93,10 +94,10 @@ export const reportsService = {
       format: data.format,
     })
 
-    const response = await apiClient.get<ReportExportResponse>(
+    const response = await apiClient.get<any>(
       `/reports/export?${params.toString()}`,
     )
-    return response.data
+    return response.data?.data || response.data
   },
 
   /**

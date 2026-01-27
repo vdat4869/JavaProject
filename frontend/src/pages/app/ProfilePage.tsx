@@ -131,138 +131,148 @@ const ProfilePage: React.FC = () => {
     <div>
       <h2 className="mb-4">{t('profile.title') || 'Thông tin cá nhân'}</h2>
 
-      <CTabs activeTab={activeTab} onActiveTabChange={setActiveTab}>
-        <CNav variant="tabs">
-          <CNavItem>
-            <CNavLink>{t('profile.profile') || 'Thông tin'}</CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink>{t('profile.changePassword') || 'Đổi mật khẩu'}</CNavLink>
-          </CNavItem>
-        </CNav>
-        <CTabContent>
-          <CTabPane>
-            <CCard className="mt-3">
-              <CCardHeader>
-                <h5>{t('profile.profileInformation') || 'Thông tin cá nhân'}</h5>
-              </CCardHeader>
-              <CCardBody>
-                <CForm onSubmit={handleSubmit}>
-                  {error && (
-                    <CAlert color="danger" className="mb-3">
-                      {error}
-                    </CAlert>
+      <CNav variant="tabs">
+        <CNavItem>
+          <CNavLink
+            active={activeTab === 'profile'}
+            style={{ cursor: 'pointer' }}
+            onClick={() => setActiveTab('profile')}
+          >
+            {t('profile.profile') || 'Thông tin'}
+          </CNavLink>
+        </CNavItem>
+        <CNavItem>
+          <CNavLink
+            active={activeTab === 'password'}
+            style={{ cursor: 'pointer' }}
+            onClick={() => setActiveTab('password')}
+          >
+            {t('profile.changePassword') || 'Đổi mật khẩu'}
+          </CNavLink>
+        </CNavItem>
+      </CNav>
+      <CTabContent>
+        <CTabPane visible={activeTab === 'profile'}>
+          <CCard className="mt-3">
+            <CCardHeader>
+              <h5>{t('profile.profileInformation') || 'Thông tin cá nhân'}</h5>
+            </CCardHeader>
+            <CCardBody>
+              <CForm onSubmit={handleSubmit}>
+                {error && (
+                  <CAlert color="danger" className="mb-3">
+                    {error}
+                  </CAlert>
+                )}
+                {success && (
+                  <CAlert color="success" className="mb-3">
+                    {success}
+                  </CAlert>
+                )}
+
+                <CInputGroup className="mb-3">
+                  <CInputGroupText>
+                    <CIcon icon={cilEnvelopeClosed} />
+                  </CInputGroupText>
+                  <CFormInput
+                    type="email"
+                    name="email"
+                    placeholder={t('common.email') || 'Email'}
+                    value={formData.email}
+                    disabled
+                    readOnly
+                  />
+                </CInputGroup>
+
+                <CInputGroup className="mb-3">
+                  <CInputGroupText>
+                    <CIcon icon={cilUser} />
+                  </CInputGroupText>
+                  <CFormInput
+                    type="text"
+                    name="firstName"
+                    placeholder={t('profile.firstName') || 'Họ'}
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    required
+                  />
+                </CInputGroup>
+
+                <CInputGroup className="mb-3">
+                  <CInputGroupText>
+                    <CIcon icon={cilUser} />
+                  </CInputGroupText>
+                  <CFormInput
+                    type="text"
+                    name="lastName"
+                    placeholder={t('profile.lastName') || 'Tên'}
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    required
+                  />
+                </CInputGroup>
+
+                <CInputGroup className="mb-3">
+                  <CInputGroupText>
+                    <CIcon icon={cilBuilding} />
+                  </CInputGroupText>
+                  <CFormInput
+                    type="text"
+                    name="affiliation"
+                    placeholder={t('profile.affiliation') || 'Tổ chức'}
+                    value={formData.affiliation}
+                    onChange={handleChange}
+                  />
+                </CInputGroup>
+
+                <CInputGroup className="mb-3">
+                  <CInputGroupText>
+                    <CIcon icon={cilPhone} />
+                  </CInputGroupText>
+                  <CFormInput
+                    type="tel"
+                    name="phone"
+                    placeholder={t('profile.phone') || 'Số điện thoại'}
+                    value={formData.phone}
+                    onChange={handleChange}
+                  />
+                </CInputGroup>
+
+                <div className="mb-3">
+                  <strong>{t('profile.status') || 'Trạng thái'}:</strong>{' '}
+                  {user.emailVerified ? (
+                    <span className="text-success">
+                      <CIcon icon={cilCheckCircle} /> {t('profile.emailVerified') || 'Đã xác thực email'}
+                    </span>
+                  ) : (
+                    <span className="text-danger">
+                      <CIcon icon={cilXCircle} /> {t('profile.emailNotVerified') || 'Chưa xác thực email'}
+                    </span>
                   )}
-                  {success && (
-                    <CAlert color="success" className="mb-3">
-                      {success}
-                    </CAlert>
-                  )}
+                </div>
 
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>
-                      <CIcon icon={cilEnvelopeClosed} />
-                    </CInputGroupText>
-                    <CFormInput
-                      type="email"
-                      name="email"
-                      placeholder={t('common.email') || 'Email'}
-                      value={formData.email}
-                      disabled
-                      readOnly
-                    />
-                  </CInputGroup>
+                <div className="mb-3">
+                  <strong>{t('profile.roles') || 'Vai trò'}:</strong>{' '}
+                  {user.roles?.join(', ') || t('profile.noRoles') || 'Không có vai trò'}
+                </div>
 
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>
-                      <CIcon icon={cilUser} />
-                    </CInputGroupText>
-                    <CFormInput
-                      type="text"
-                      name="firstName"
-                      placeholder={t('profile.firstName') || 'Họ'}
-                      value={formData.firstName}
-                      onChange={handleChange}
-                      required
-                    />
-                  </CInputGroup>
-
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>
-                      <CIcon icon={cilUser} />
-                    </CInputGroupText>
-                    <CFormInput
-                      type="text"
-                      name="lastName"
-                      placeholder={t('profile.lastName') || 'Tên'}
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      required
-                    />
-                  </CInputGroup>
-
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>
-                      <CIcon icon={cilBuilding} />
-                    </CInputGroupText>
-                    <CFormInput
-                      type="text"
-                      name="affiliation"
-                      placeholder={t('profile.affiliation') || 'Tổ chức'}
-                      value={formData.affiliation}
-                      onChange={handleChange}
-                    />
-                  </CInputGroup>
-
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>
-                      <CIcon icon={cilPhone} />
-                    </CInputGroupText>
-                    <CFormInput
-                      type="tel"
-                      name="phone"
-                      placeholder={t('profile.phone') || 'Số điện thoại'}
-                      value={formData.phone}
-                      onChange={handleChange}
-                    />
-                  </CInputGroup>
-
-                  <div className="mb-3">
-                    <strong>{t('profile.status') || 'Trạng thái'}:</strong>{' '}
-                    {user.emailVerified ? (
-                      <span className="text-success">
-                        <CIcon icon={cilCheckCircle} /> {t('profile.emailVerified') || 'Đã xác thực email'}
-                      </span>
-                    ) : (
-                      <span className="text-danger">
-                        <CIcon icon={cilXCircle} /> {t('profile.emailNotVerified') || 'Chưa xác thực email'}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="mb-3">
-                    <strong>{t('profile.roles') || 'Vai trò'}:</strong>{' '}
-                    {user.roles?.join(', ') || t('profile.noRoles') || 'Không có vai trò'}
-                  </div>
-
-                  <div className="d-grid">
-                    <CButton color="primary" type="submit" disabled={saving}>
-                      {saving
-                        ? t('common.saving') || 'Đang lưu...'
-                        : t('common.save') || 'Lưu thay đổi'}
-                    </CButton>
-                  </div>
-                </CForm>
-              </CCardBody>
-            </CCard>
-          </CTabPane>
-          <CTabPane>
-            <div className="mt-3">
-              <ChangePasswordForm />
-            </div>
-          </CTabPane>
-        </CTabContent>
-      </CTabs>
+                <div className="d-grid">
+                  <CButton color="primary" type="submit" disabled={saving}>
+                    {saving
+                      ? t('common.saving') || 'Đang lưu...'
+                      : t('common.save') || 'Lưu thay đổi'}
+                  </CButton>
+                </div>
+              </CForm>
+            </CCardBody>
+          </CCard>
+        </CTabPane>
+        <CTabPane visible={activeTab === 'password'}>
+          <div className="mt-3">
+            <ChangePasswordForm />
+          </div>
+        </CTabPane>
+      </CTabContent>
     </div>
   )
 }

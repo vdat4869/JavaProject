@@ -35,13 +35,14 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Service quản lý reviews (đánh giá bài nộp)
  *
- * <p>Service này xử lý các nghiệp vụ liên quan đến:
+ * <p>
+ * Service này xử lý các nghiệp vụ liên quan đến:
  *
  * <ul>
- *   <li>Tạo và cập nhật draft reviews
- *   <li>Submit reviews
- *   <li>Double-blind review (ẩn reviewer identity)
- *   <li>Quản lý review status và scores
+ * <li>Tạo và cập nhật draft reviews
+ * <li>Submit reviews
+ * <li>Double-blind review (ẩn reviewer identity)
+ * <li>Quản lý review status và scores
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -77,10 +78,9 @@ public class ReviewService {
 
   @Transactional
   public ReviewResponseDTO createOrUpdateDraft(ReviewSubmitDTO dto, Long reviewerId) {
-    Assignment assignment =
-        assignmentRepository
-            .findById(dto.getAssignmentId())
-            .orElseThrow(() -> new NotFoundException("Assignment not found"));
+    Assignment assignment = assignmentRepository
+        .findById(dto.getAssignmentId())
+        .orElseThrow(() -> new NotFoundException("Assignment not found"));
 
     // Check authorization
     if (!assignment.getReviewerId().equals(reviewerId)) {
@@ -97,10 +97,9 @@ public class ReviewService {
 
     // Apply template if provided (only for new reviews)
     ReviewSubmitDTO dtoToUse = dto;
-    Review review =
-        reviewRepository
-            .findByAssignmentIdAndReviewerId(dto.getAssignmentId(), reviewerId)
-            .orElse(null);
+    Review review = reviewRepository
+        .findByAssignmentIdAndReviewerId(dto.getAssignmentId(), reviewerId)
+        .orElse(null);
 
     if (review == null && dto.getTemplateId() != null) {
       // Apply template for new review
@@ -109,22 +108,21 @@ public class ReviewService {
 
     if (review == null) {
       // Create new draft
-      review =
-          Review.builder()
-              .assignmentId(dto.getAssignmentId())
-              .submissionId(assignment.getSubmissionId())
-              .reviewerId(reviewerId)
-              .summary(dtoToUse.getSummary())
-              .strengths(dtoToUse.getStrengths())
-              .weaknesses(dtoToUse.getWeaknesses())
-              .comments(dtoToUse.getComments())
-              .score(Review.ReviewScore.valueOf(dtoToUse.getScore()))
-              .status(Review.ReviewStatus.DRAFT)
-              .isConfidential(dtoToUse.getIsConfidential())
-              .overallRating(dtoToUse.getOverallRating())
-              .confidence(dtoToUse.getConfidence())
-              .numericScore(Review.ReviewScore.valueOf(dtoToUse.getScore()).toNumericScore())
-              .build();
+      review = Review.builder()
+          .assignmentId(dto.getAssignmentId())
+          .submissionId(assignment.getSubmissionId())
+          .reviewerId(reviewerId)
+          .summary(dtoToUse.getSummary())
+          .strengths(dtoToUse.getStrengths())
+          .weaknesses(dtoToUse.getWeaknesses())
+          .comments(dtoToUse.getComments())
+          .score(Review.ReviewScore.valueOf(dtoToUse.getScore()))
+          .status(Review.ReviewStatus.DRAFT)
+          .isConfidential(dtoToUse.getIsConfidential())
+          .overallRating(dtoToUse.getOverallRating())
+          .confidence(dtoToUse.getConfidence())
+          .numericScore(Review.ReviewScore.valueOf(dtoToUse.getScore()).toNumericScore())
+          .build();
     } else {
       // Update existing draft (only if still in DRAFT status)
       if (review.getStatus() != Review.ReviewStatus.DRAFT) {
@@ -151,10 +149,9 @@ public class ReviewService {
 
   @Transactional
   public ReviewResponseDTO submitReview(Long reviewId, Long reviewerId) {
-    Review review =
-        reviewRepository
-            .findById(reviewId)
-            .orElseThrow(() -> new NotFoundException("Review not found"));
+    Review review = reviewRepository
+        .findById(reviewId)
+        .orElseThrow(() -> new NotFoundException("Review not found"));
 
     // Check authorization
     if (!review.getReviewerId().equals(reviewerId)) {
@@ -186,6 +183,21 @@ public class ReviewService {
     if (assignment != null) {
       assignment.setStatus(Assignment.AssignmentStatus.COMPLETED);
       assignmentRepository.save(assignment);
+
+      // Transition submission to REVIEWED if all current assignments are completed
+      List<Assignment> allAssignments = assignmentRepository.findBySubmissionId(review.getSubmissionId());
+      boolean allCompleted = !allAssignments.isEmpty() && allAssignments.stream()
+          .allMatch(a -> a.getStatus() == Assignment.AssignmentStatus.COMPLETED
+              || a.getStatus() == Assignment.AssignmentStatus.DECLINED);
+
+      if (allCompleted) {
+        Submission submission = submissionRepository.findById(review.getSubmissionId()).orElse(null);
+        if (submission != null && (submission.getStatus() == Submission.SubmissionStatus.UNDER_REVIEW
+            || submission.getStatus() == Submission.SubmissionStatus.SUBMITTED)) {
+          submission.setStatus(Submission.SubmissionStatus.REVIEWED);
+          submissionRepository.save(submission);
+        }
+      }
     }
 
     // Get review mode from conference
@@ -194,10 +206,9 @@ public class ReviewService {
   }
 
   public ReviewResponseDTO getMyReview(Long assignmentId, Long reviewerId) {
-    Review review =
-        reviewRepository
-            .findByAssignmentIdAndReviewerId(assignmentId, reviewerId)
-            .orElseThrow(() -> new NotFoundException("Review not found"));
+    Review review = reviewRepository
+        .findByAssignmentIdAndReviewerId(assignmentId, reviewerId)
+        .orElseThrow(() -> new NotFoundException("Review not found"));
 
     // Check authorization
     if (!review.getReviewerId().equals(reviewerId)) {
@@ -229,10 +240,9 @@ public class ReviewService {
   }
 
   public ReviewResponseDTO getReview(Long reviewId, Long userId, boolean isChairOrAdmin) {
-    Review review =
-        reviewRepository
-            .findById(reviewId)
-            .orElseThrow(() -> new NotFoundException("Review not found"));
+    Review review = reviewRepository
+        .findById(reviewId)
+        .orElseThrow(() -> new NotFoundException("Review not found"));
 
     // Check authorization: reviewer can see own review, chair/admin can see all
     boolean canView = review.getReviewerId().equals(userId) || isChairOrAdmin;
@@ -253,8 +263,8 @@ public class ReviewService {
   /**
    * Determine if reviewer name should be shown based on conference review mode
    *
-   * @param submissionId Submission ID
-   * @param userId Current user ID (null if not authenticated)
+   * @param submissionId   Submission ID
+   * @param userId         Current user ID (null if not authenticated)
    * @param isChairOrAdmin Whether user is chair or admin
    * @return true if reviewer name should be shown
    */
@@ -300,17 +310,15 @@ public class ReviewService {
    * @throws BusinessException If deadline has passed and is hard deadline
    */
   private void checkReviewDeadline(Long submissionId) {
-    Submission submission =
-        submissionRepository
-            .findById(submissionId)
-            .orElseThrow(() -> new NotFoundException("Submission not found"));
+    Submission submission = submissionRepository
+        .findById(submissionId)
+        .orElseThrow(() -> new NotFoundException("Submission not found"));
 
     List<Deadline> deadlines = deadlineRepository.findByConferenceId(submission.getConferenceId());
-    Deadline reviewDeadline =
-        deadlines.stream()
-            .filter(d -> d.getType() == Deadline.DeadlineType.REVIEW)
-            .findFirst()
-            .orElse(null);
+    Deadline reviewDeadline = deadlines.stream()
+        .filter(d -> d.getType() == Deadline.DeadlineType.REVIEW)
+        .findFirst()
+        .orElse(null);
 
     if (reviewDeadline != null && reviewDeadline.getDueDate().isBefore(LocalDateTime.now())) {
       if (reviewDeadline.getHardDeadline()) {
@@ -320,8 +328,7 @@ public class ReviewService {
   }
 
   private ReviewResponseDTO mapToDTO(Review review, boolean showReviewerName) {
-    User reviewer =
-        showReviewerName ? userRepository.findById(review.getReviewerId()).orElse(null) : null;
+    User reviewer = showReviewerName ? userRepository.findById(review.getReviewerId()).orElse(null) : null;
 
     return ReviewResponseDTO.builder()
         .id(review.getId())
@@ -356,9 +363,8 @@ public class ReviewService {
         .findById(submissionId)
         .orElseThrow(() -> new NotFoundException("Submission not found"));
 
-    List<Review> reviews =
-        reviewRepository.findBySubmissionIdAndStatus(
-            submissionId, Review.ReviewStatus.SUBMITTED);
+    List<Review> reviews = reviewRepository.findBySubmissionIdAndStatus(
+        submissionId, Review.ReviewStatus.SUBMITTED);
 
     if (reviews.isEmpty()) {
       return new AverageScoreDTO(submissionId, null, 0);
@@ -381,15 +387,14 @@ public class ReviewService {
    * Tính review statistics cho conference
    *
    * @param conferenceId Conference ID
-   * @param chairId Chair ID để check authorization
+   * @param chairId      Chair ID để check authorization
    * @return ReviewStatisticsDTO với các metrics
    */
   public ReviewStatisticsDTO getReviewStatistics(Long conferenceId, Long chairId) {
     // Check authorization
-    Conference conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     if (!conference.getChairId().equals(chairId)) {
       throw new UnauthorizedException("Only conference chair can view review statistics");
@@ -397,8 +402,7 @@ public class ReviewService {
 
     // Get all submissions for this conference
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
-    List<Long> submissionIds =
-        submissions.stream().map(Submission::getId).collect(Collectors.toList());
+    List<Long> submissionIds = submissions.stream().map(Submission::getId).collect(Collectors.toList());
 
     // Get all reviews for these submissions
     List<Review> allReviews = new ArrayList<>();
@@ -408,26 +412,20 @@ public class ReviewService {
 
     // Calculate total reviews
     int totalReviews = allReviews.size();
-    int completedReviews =
-        (int)
-            allReviews.stream()
-                .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED)
-                .count();
-    int pendingReviews =
-        (int)
-            allReviews.stream()
-                .filter(r -> r.getStatus() == Review.ReviewStatus.DRAFT)
-                .count();
+    int completedReviews = (int) allReviews.stream()
+        .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED)
+        .count();
+    int pendingReviews = (int) allReviews.stream()
+        .filter(r -> r.getStatus() == Review.ReviewStatus.DRAFT)
+        .count();
 
     // Calculate completion rate
-    double completionRate =
-        totalReviews > 0 ? (double) completedReviews / totalReviews * 100.0 : 0.0;
+    double completionRate = totalReviews > 0 ? (double) completedReviews / totalReviews * 100.0 : 0.0;
 
     // Calculate average score
-    List<Review> submittedReviews =
-        allReviews.stream()
-            .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED)
-            .collect(Collectors.toList());
+    List<Review> submittedReviews = allReviews.stream()
+        .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED)
+        .collect(Collectors.toList());
 
     double averageScore = 0.0;
     if (!submittedReviews.isEmpty()) {
@@ -468,8 +466,7 @@ public class ReviewService {
       }
     }
     if (!completionTimes.isEmpty()) {
-      averageCompletionTime =
-          completionTimes.stream().mapToLong(Long::longValue).average().orElse(0.0);
+      averageCompletionTime = completionTimes.stream().mapToLong(Long::longValue).average().orElse(0.0);
     }
 
     // Submission timeline (reviews submitted per day)
@@ -483,30 +480,26 @@ public class ReviewService {
 
     // Reviewer performance metrics
     Map<Long, ReviewerPerformanceDTO> reviewerMetrics = new HashMap<>();
-    Map<Long, List<Review>> reviewsByReviewer =
-        allReviews.stream().collect(Collectors.groupingBy(Review::getReviewerId));
+    Map<Long, List<Review>> reviewsByReviewer = allReviews.stream()
+        .collect(Collectors.groupingBy(Review::getReviewerId));
 
     for (Map.Entry<Long, List<Review>> entry : reviewsByReviewer.entrySet()) {
       Long reviewerId = entry.getKey();
       List<Review> reviewerReviews = entry.getValue();
 
       int reviewerTotalReviews = reviewerReviews.size();
-      int reviewerCompletedReviews =
-          (int)
-              reviewerReviews.stream()
-                  .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED)
-                  .count();
+      int reviewerCompletedReviews = (int) reviewerReviews.stream()
+          .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED)
+          .count();
 
-      double reviewerCompletionRate =
-          reviewerTotalReviews > 0
-              ? (double) reviewerCompletedReviews / reviewerTotalReviews * 100.0
-              : 0.0;
+      double reviewerCompletionRate = reviewerTotalReviews > 0
+          ? (double) reviewerCompletedReviews / reviewerTotalReviews * 100.0
+          : 0.0;
 
       // Average score for this reviewer
-      List<Review> reviewerSubmittedReviews =
-          reviewerReviews.stream()
-              .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED)
-              .collect(Collectors.toList());
+      List<Review> reviewerSubmittedReviews = reviewerReviews.stream()
+          .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED)
+          .collect(Collectors.toList());
 
       double reviewerAverageScore = 0.0;
       if (!reviewerSubmittedReviews.isEmpty()) {
@@ -531,8 +524,8 @@ public class ReviewService {
         }
       }
       if (!reviewerCompletionTimes.isEmpty()) {
-        reviewerAverageCompletionTime =
-            reviewerCompletionTimes.stream().mapToLong(Long::longValue).average().orElse(0.0);
+        reviewerAverageCompletionTime = reviewerCompletionTimes.stream().mapToLong(Long::longValue).average()
+            .orElse(0.0);
       }
 
       User reviewer = userRepository.findById(reviewerId).orElse(null);
@@ -566,7 +559,7 @@ public class ReviewService {
   /**
    * Apply review template to DTO
    *
-   * @param dto Original DTO
+   * @param dto          Original DTO
    * @param submissionId Submission ID to get conference
    * @return DTO with template fields applied (if template exists)
    */
@@ -575,18 +568,16 @@ public class ReviewService {
       return dto; // No template to apply
     }
 
-    Submission submission =
-        submissionRepository
-            .findById(submissionId)
-            .orElseThrow(() -> new NotFoundException("Submission not found"));
+    Submission submission = submissionRepository
+        .findById(submissionId)
+        .orElseThrow(() -> new NotFoundException("Submission not found"));
 
     Long conferenceId = submission.getConferenceId();
 
     // Try to find template (conference-specific first, then global)
-    ReviewTemplate template =
-        templateRepository
-            .findById(dto.getTemplateId())
-            .orElseThrow(() -> new NotFoundException("Review template not found"));
+    ReviewTemplate template = templateRepository
+        .findById(dto.getTemplateId())
+        .orElseThrow(() -> new NotFoundException("Review template not found"));
 
     // Check if template is for this conference or is global
     if (template.getConferenceId() != null && !template.getConferenceId().equals(conferenceId)) {

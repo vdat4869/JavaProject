@@ -18,7 +18,7 @@ import {
     CBadge,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilUserPlus, cilMagicWand, cilList } from '@coreui/icons'
+import { cilUserPlus, cilStar, cilList } from '@coreui/icons'
 import { submissionService, Submission } from '../../services/submission.service'
 import { assignmentService, Assignment, AutoAssignResponse } from '../../services/assignment.service'
 import ManualAssignmentForm from '../../components/assignment/ManualAssignmentForm'
@@ -197,7 +197,7 @@ const SubmissionBoard: React.FC = () => {
                                                         <CIcon icon={cilUserPlus} />
                                                     </CButton>
                                                     <CButton color="primary" size="sm" variant="outline" title="Auto Assign" onClick={() => handleAutoAssign(sub.id)}>
-                                                        <CIcon icon={cilMagicWand} />
+                                                        <CIcon icon={cilStar} />
                                                     </CButton>
                                                     <CButton color="secondary" size="sm" variant="outline" title="Chi tiết" onClick={() => navigate(`/app/author/submissions/${sub.id}`)}>
                                                         <CIcon icon={cilList} />

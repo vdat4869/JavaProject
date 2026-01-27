@@ -79,7 +79,7 @@ public class UserController {
    * @return ApiResponse chứa Page của UserDTO
    */
   @GetMapping
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'CHAIR')")
   public ResponseEntity<ApiResponse<Page<UserDTO>>> getAllUsers(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "20") int size) {
@@ -114,7 +114,7 @@ public class UserController {
    * @return ApiResponse chứa Page của UserDTO matching criteria
    */
   @GetMapping("/search")
-  @PreAuthorize("hasRole('ADMIN')")
+  @PreAuthorize("hasAnyRole('ADMIN', 'CHAIR')")
   public ResponseEntity<ApiResponse<Page<UserDTO>>> searchUsers(
       @RequestParam(required = false) String keyword,
       @RequestParam(defaultValue = "0") int page,

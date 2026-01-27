@@ -8,10 +8,13 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 /**
  * Configuration class cho AI Module.
- * Load API keys và cấu hình HTTP client cho OpenAI.
+ * Hỗ trợ cả OpenAI và Google Gemini.
  */
 @Configuration
 public class AIConfig {
+
+    @Value("${ai.provider:gemini}")
+    private String provider;
 
     @Value("${ai.openai.api-key:}")
     private String openaiApiKey;
@@ -22,11 +25,23 @@ public class AIConfig {
     @Value("${ai.openai.base-url:https://api.openai.com/v1}")
     private String openaiBaseUrl;
 
+    @Value("${ai.gemini.api-key:}")
+    private String geminiApiKey;
+
+    @Value("${ai.gemini.model:gemini-2.5-flash}")
+    private String geminiModel;
+
+    @Value("${ai.gemini.base-url:https://generativelanguage.googleapis.com/v1}")
+    private String geminiBaseUrl;
+
     @Value("${ai.enabled:false}")
     private boolean aiEnabled;
 
     @Value("${ai.timeout-seconds:30}")
     private int timeoutSeconds;
+
+    @Value("${ai.mock-mode:false}")
+    private boolean mockMode;
 
     @Bean(name = "aiRestTemplate")
     public RestTemplate aiRestTemplate() {
@@ -34,6 +49,10 @@ public class AIConfig {
         factory.setConnectTimeout(timeoutSeconds * 1000);
         factory.setReadTimeout(timeoutSeconds * 1000);
         return new RestTemplate(factory);
+    }
+
+    public String getProvider() {
+        return provider;
     }
 
     public String getOpenaiApiKey() {
@@ -48,11 +67,36 @@ public class AIConfig {
         return openaiBaseUrl;
     }
 
+    public String getGeminiApiKey() {
+        return geminiApiKey;
+    }
+
+    public String getGeminiModel() {
+        return geminiModel;
+    }
+
+    public String getGeminiBaseUrl() {
+        return geminiBaseUrl;
+    }
+
     public boolean isAiEnabled() {
         return aiEnabled;
     }
 
+    public boolean isMockMode() {
+        return mockMode;
+    }
+
     public boolean isConfigured() {
-        return aiEnabled && openaiApiKey != null && !openaiApiKey.isBlank();
+        if (mockMode)
+            return true;
+        if (!aiEnabled)
+            return false;
+
+        if ("gemini".equalsIgnoreCase(provider)) {
+            return geminiApiKey != null && !geminiApiKey.isBlank();
+        } else {
+            return openaiApiKey != null && !openaiApiKey.isBlank();
+        }
     }
 }

@@ -16,7 +16,7 @@ import {
   CBadge,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilPlus, cilPencil, cilTrash, cilCheckCircle, cilXCircle } from '@coreui/icons'
+import { cilPlus, cilPencil, cilTrash, cilCheckCircle, cilXCircle, cilSpeedometer, cilPeople, cilFile, cilCloudUpload } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { conferenceService, ConferenceResponse } from '../../services/conference.service'
 import { useAuth } from '../../context/AuthContext'
@@ -157,30 +157,78 @@ const ConferenceListPage: React.FC = () => {
                     </CTableDataCell>
                     <CTableDataCell>{formatDate(conference.createdAt)}</CTableDataCell>
                     <CTableDataCell>
-                      <CButton
-                        color="primary"
-                        size="sm"
-                        className="me-2"
-                        onClick={() => navigate(`/app/chair/conference/${conference.id}/config`)}
-                      >
-                        <CIcon icon={cilPencil} /> {t('common.edit') || 'Sửa'}
-                      </CButton>
-                      {isAdmin && (
+                      <div className="d-flex gap-2">
                         <CButton
-                          color="danger"
+                          color="info"
                           size="sm"
-                          onClick={() => handleDelete(conference.id)}
-                          disabled={deletingId === conference.id}
+                          variant="outline"
+                          title="Assignment Dashboard"
+                          onClick={() => navigate(`/app/chair/assignments?conferenceId=${conference.id}`)}
                         >
-                          {deletingId === conference.id ? (
-                            <CSpinner size="sm" />
-                          ) : (
-                            <>
-                              <CIcon icon={cilTrash} /> {t('common.delete') || 'Xóa'}
-                            </>
-                          )}
+                          <CIcon icon={cilSpeedometer} />
                         </CButton>
-                      )}
+                        <CButton
+                          color="info"
+                          size="sm"
+                          variant="outline"
+                          title="Manage PC"
+                          onClick={() => navigate(`/app/chair/pc?conferenceId=${conference.id}`)}
+                        >
+                          <CIcon icon={cilPeople} />
+                        </CButton>
+                        <CButton
+                          color="info"
+                          size="sm"
+                          variant="outline"
+                          title="Manage Submissions"
+                          onClick={() => navigate(`/app/chair/submissions?conferenceId=${conference.id}`)}
+                        >
+                          <CIcon icon={cilFile} />
+                        </CButton>
+                        <CButton
+                          color="success"
+                          size="sm"
+                          variant="outline"
+                          title="Decision Board"
+                          onClick={() => navigate(`/app/chair/decisions?conferenceId=${conference.id}`)}
+                        >
+                          <CIcon icon={cilCheckCircle} />
+                        </CButton>
+                        <CButton
+                          color="primary"
+                          size="sm"
+                          variant="outline"
+                          title="Camera-ready"
+                          onClick={() => navigate(`/app/chair/camera-ready?conferenceId=${conference.id}`)}
+                        >
+                          <CIcon icon={cilCloudUpload} />
+                        </CButton>
+
+                        <CButton
+                          color="primary"
+                          size="sm"
+                          className="me-2"
+                          onClick={() => navigate(`/app/chair/conference/${conference.id}/config`)}
+                        >
+                          <CIcon icon={cilPencil} /> {t('common.edit') || 'Sửa'}
+                        </CButton>
+                        {isAdmin && (
+                          <CButton
+                            color="danger"
+                            size="sm"
+                            onClick={() => handleDelete(conference.id)}
+                            disabled={deletingId === conference.id}
+                          >
+                            {deletingId === conference.id ? (
+                              <CSpinner size="sm" />
+                            ) : (
+                              <>
+                                <CIcon icon={cilTrash} /> {t('common.delete') || 'Xóa'}
+                              </>
+                            )}
+                          </CButton>
+                        )}
+                      </div>
                     </CTableDataCell>
                   </CTableRow>
                 ))}

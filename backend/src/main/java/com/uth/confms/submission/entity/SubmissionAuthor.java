@@ -13,7 +13,7 @@ public class SubmissionAuthor {
   @JoinColumn(name = "submission_id", nullable = false)
   private Submission submission;
 
-  @Column(nullable = false)
+  @Column(nullable = true)
   private Long userId;
 
   @Column(nullable = false)
