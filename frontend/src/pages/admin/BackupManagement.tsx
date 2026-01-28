@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
     CCard,
     CCardBody,
@@ -24,6 +25,7 @@ import { backupService, BackupRecord } from '../../services/backup.service'
  * BackupManagement - Trang quản lý sao lưu và phục hồi cho ADMIN
  */
 const BackupManagement: React.FC = () => {
+    const { t } = useTranslation()
     const [backups, setBackups] = useState<BackupRecord[]>([])
     const [loading, setLoading] = useState(true)
     const [actionLoading, setActionLoading] = useState(false)
@@ -40,7 +42,7 @@ const BackupManagement: React.FC = () => {
             const data = await backupService.getAllBackups()
             setBackups(data)
         } catch (err: any) {
-            setError('Không thể tải danh sách sao lưu.')
+            setError(t('admin.loadBackupsError'))
         } finally {
             setLoading(false)
         }
@@ -52,17 +54,17 @@ const BackupManagement: React.FC = () => {
             setError('')
             setSuccess('')
             await backupService.backupAll()
-            setSuccess('Quá trình sao lưu toàn hệ thống đã được bắt đầu.')
+            setSuccess(t('admin.backupStarted'))
             loadBackups()
         } catch (err: any) {
-            setError('Lỗi khi tạo bản sao lưu toàn hệ thống.')
+            setError(t('admin.backupFailed'))
         } finally {
             setActionLoading(false)
         }
     }
 
     const handleRestore = async (id: number) => {
-        if (!window.confirm('CẢNH BÁO: Quá trình khôi phục sẽ ghi đè lên dữ liệu hiện tại. Bạn có chắc chắn muốn tiếp tục?')) {
+        if (!window.confirm(t('admin.restoreConfirm'))) {
             return
         }
 
@@ -72,12 +74,12 @@ const BackupManagement: React.FC = () => {
             setSuccess('')
             const result = await backupService.restore(id)
             if (result) {
-                setSuccess('Khôi phục dữ liệu thành công!')
+                setSuccess(t('admin.restoreSuccess'))
             } else {
-                setError('Khôi phục thất bại.')
+                setError(t('admin.restoreFailed'))
             }
         } catch (err: any) {
-            setError('Lỗi hệ thống trong quá trình khôi phục.')
+            setError(t('admin.systemError'))
         } finally {
             setActionLoading(false)
         }
@@ -88,9 +90,9 @@ const BackupManagement: React.FC = () => {
     return (
         <div className="container-fluid">
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h3>Quản lý Sao lưu & Phục hồi</h3>
+                <h3>{t('admin.backupManagement')}</h3>
                 <CButton color="danger" onClick={handleBackupAll} disabled={actionLoading}>
-                    <CIcon icon={cilShieldAlt} className="me-2" /> Sao lưu toàn bộ (Full Backup)
+                    <CIcon icon={cilShieldAlt} className="me-2" /> {t('admin.fullBackup')}
                 </CButton>
             </div>
 
@@ -101,10 +103,10 @@ const BackupManagement: React.FC = () => {
                 <CCol md={4}>
                     <CCard className="h-100 border-start border-start-4 border-start-info">
                         <CCardBody>
-                            <h5>Sẵn sàng bảo vệ dữ liệu</h5>
-                            <p className="text-muted small">Các bản sao lưu bao gồm cơ sở dữ liệu và toàn bộ tệp tin PDF của các bài báo đã nộp.</p>
+                            <h5>{t('admin.backupIntro')}</h5>
+                            <p className="text-muted small">{t('admin.backupDesc')}</p>
                             <CButton color="info" variant="outline" size="sm" onClick={loadBackups}>
-                                <CIcon icon={cilHistory} className="me-1" /> Làm mới lịch sử
+                                <CIcon icon={cilHistory} className="me-1" /> {t('admin.refreshHistory')}
                             </CButton>
                         </CCardBody>
                     </CCard>
@@ -112,10 +114,10 @@ const BackupManagement: React.FC = () => {
             </CRow>
 
             <CCard>
-                <CCardHeader>Lịch sử Sao lưu</CCardHeader>
+                <CCardHeader>{t('admin.backupHistory')}</CCardHeader>
                 <CCardBody>
                     {!Array.isArray(backups) || backups.length === 0 ? (
-                        <p className="text-muted">Chưa có bản sao lưu nào.</p>
+                        <p className="text-muted">{t('admin.noBackups')}</p>
                     ) : (
                         <CTable hover responsive align="middle">
                             <CTableHead>
@@ -147,7 +149,7 @@ const BackupManagement: React.FC = () => {
                                                 onClick={() => handleRestore(b.id)}
                                                 disabled={actionLoading || b.status !== 'COMPLETED'}
                                             >
-                                                <CIcon icon={cilCloudUpload} className="me-1" /> Khôi phục
+                                                <CIcon icon={cilCloudUpload} className="me-1" /> {t('admin.restore')}
                                             </CButton>
                                         </CTableDataCell>
                                     </CTableRow>

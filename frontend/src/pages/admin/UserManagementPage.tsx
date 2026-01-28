@@ -73,7 +73,7 @@ const UserManagementPage: React.FC = () => {
       setTotalPages(response.totalPages || 0)
       setTotalElements(response.totalElements || 0)
     } catch (err: any) {
-      setError(err.response?.data?.message || t('common.error') || 'Lỗi khi tải danh sách users')
+      setError(err.response?.data?.message || t('admin.loadUsersError'))
     } finally {
       setLoading(false)
     }
@@ -127,7 +127,7 @@ const UserManagementPage: React.FC = () => {
       await loadUsers()
       await loadStats()
     } catch (err: any) {
-      setError(err.response?.data?.message || t('common.error') || 'Lỗi khi thực hiện thao tác')
+      setError(err.response?.data?.message || t('common.error'))
     } finally {
       setActionLoading(null)
     }
@@ -135,14 +135,14 @@ const UserManagementPage: React.FC = () => {
 
   return (
     <div>
-      <h2 className="mb-4">{t('admin.userManagement') || 'Quản lý người dùng'}</h2>
+      <h2 className="mb-4">{t('admin.userManagement')}</h2>
 
       {stats && (
         <div className="row mb-4">
           <div className="col-md-6">
             <CCard>
               <CCardBody>
-                <h5>{t('admin.activeUsers') || 'Người dùng đang hoạt động'}</h5>
+                <h5>{t('admin.activeUsers')}</h5>
                 <h3>{stats.activeUsers}</h3>
               </CCardBody>
             </CCard>
@@ -150,7 +150,7 @@ const UserManagementPage: React.FC = () => {
           <div className="col-md-6">
             <CCard>
               <CCardBody>
-                <h5>{t('admin.verifiedUsers') || 'Người dùng đã xác thực'}</h5>
+                <h5>{t('admin.verifiedUsers')}</h5>
                 <h3>{stats.verifiedUsers}</h3>
               </CCardBody>
             </CCard>
@@ -161,9 +161,9 @@ const UserManagementPage: React.FC = () => {
       <CCard>
         <CCardHeader>
           <div className="d-flex justify-content-between align-items-center">
-            <h5>{t('admin.userList') || 'Danh sách người dùng'}</h5>
+            <h5>{t('admin.userList')}</h5>
             <CButton color="secondary" size="sm" onClick={loadUsers}>
-              <CIcon icon={cilReload} /> {t('common.refresh') || 'Làm mới'}
+              <CIcon icon={cilReload} /> {t('common.refresh')}
             </CButton>
           </div>
         </CCardHeader>
@@ -171,13 +171,13 @@ const UserManagementPage: React.FC = () => {
           <div className="mb-3">
             <CInputGroup>
               <CFormInput
-                placeholder={t('admin.searchUsers') || 'Tìm kiếm theo tên hoặc email...'}
+                placeholder={t('admin.searchUsers')}
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
                 onKeyPress={handleKeyPress}
               />
               <CButton color="primary" onClick={handleSearch}>
-                <CIcon icon={cilSearch} /> {t('common.search') || 'Tìm kiếm'}
+                <CIcon icon={cilSearch} /> {t('common.search')}
               </CButton>
             </CInputGroup>
           </div>
@@ -197,20 +197,20 @@ const UserManagementPage: React.FC = () => {
               <CTable hover responsive>
                 <CTableHead>
                   <CTableRow>
-                    <CTableHeaderCell>{t('common.id') || 'ID'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('common.email') || 'Email'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('common.name') || 'Tên'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('common.affiliation') || 'Tổ chức'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('common.status') || 'Trạng thái'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('common.roles') || 'Vai trò'}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('common.actions') || 'Thao tác'}</CTableHeaderCell>
+                    <CTableHeaderCell>{t('common.id')}</CTableHeaderCell>
+                    <CTableHeaderCell>{t('common.email')}</CTableHeaderCell>
+                    <CTableHeaderCell>{t('common.name')}</CTableHeaderCell>
+                    <CTableHeaderCell>{t('common.affiliation')}</CTableHeaderCell>
+                    <CTableHeaderCell>{t('common.status')}</CTableHeaderCell>
+                    <CTableHeaderCell>{t('common.roles')}</CTableHeaderCell>
+                    <CTableHeaderCell>{t('common.actions')}</CTableHeaderCell>
                   </CTableRow>
                 </CTableHead>
                 <CTableBody>
                   {users.length === 0 ? (
                     <CTableRow>
                       <CTableDataCell colSpan={7} className="text-center">
-                        {t('admin.noUsers') || 'Không có người dùng nào'}
+                        {t('admin.noUsers')}
                       </CTableDataCell>
                     </CTableRow>
                   ) : (
@@ -225,23 +225,23 @@ const UserManagementPage: React.FC = () => {
                         <CTableDataCell>
                           {user.active ? (
                             <CBadge color="success">
-                              <CIcon icon={cilCheckCircle} /> {t('common.active') || 'Hoạt động'}
+                              <CIcon icon={cilCheckCircle} /> {t('common.active')}
                             </CBadge>
                           ) : (
                             <CBadge color="danger">
-                              <CIcon icon={cilXCircle} /> {t('common.inactive') || 'Không hoạt động'}
+                              <CIcon icon={cilXCircle} /> {t('common.inactive')}
                             </CBadge>
                           )}
                           {user.emailVerified && (
                             <CBadge color="info" className="ms-2">
-                              {t('common.verified') || 'Đã xác thực'}
+                              {t('common.verified')}
                             </CBadge>
                           )}
                         </CTableDataCell>
                         <CTableDataCell>
                           {user.roles
                             ? user.roles.map((r) => t(`common.roleNames.${r}`) || r).join(', ')
-                            : t('common.noRoles') || 'Không có vai trò'}
+                            : t('common.noRoles')}
                         </CTableDataCell>
                         <CTableDataCell>
                           {user.active ? (
@@ -251,7 +251,7 @@ const UserManagementPage: React.FC = () => {
                               onClick={() => handleDeactivate(user)}
                               disabled={actionLoading === user.id}
                             >
-                              {t('admin.deactivate') || 'Vô hiệu hóa'}
+                              {t('admin.deactivate')}
                             </CButton>
                           ) : (
                             <CButton
@@ -260,7 +260,7 @@ const UserManagementPage: React.FC = () => {
                               onClick={() => handleActivate(user)}
                               disabled={actionLoading === user.id}
                             >
-                              {t('admin.activate') || 'Kích hoạt'}
+                              {t('admin.activate')}
                             </CButton>
                           )}
                         </CTableDataCell>
@@ -276,7 +276,7 @@ const UserManagementPage: React.FC = () => {
                     disabled={currentPage === 0}
                     onClick={() => setCurrentPage(currentPage - 1)}
                   >
-                    {t('common.previous') || 'Trước'}
+                    {t('common.previous')}
                   </CPaginationItem>
                   {Array.from({ length: totalPages }, (_, i) => i).map((page) => (
                     <CPaginationItem
@@ -291,14 +291,14 @@ const UserManagementPage: React.FC = () => {
                     disabled={currentPage >= totalPages - 1}
                     onClick={() => setCurrentPage(currentPage + 1)}
                   >
-                    {t('common.next') || 'Sau'}
+                    {t('common.next')}
                   </CPaginationItem>
                 </CPagination>
               )}
 
               <div className="mt-3 text-muted">
-                {t('common.showing') || 'Hiển thị'} {users.length} / {totalElements}{' '}
-                {t('common.users') || 'người dùng'}
+                {t('common.showing')} {users.length} / {totalElements}{' '}
+                {t('common.users')}
               </div>
             </>
           )}
@@ -309,20 +309,20 @@ const UserManagementPage: React.FC = () => {
         <CModalHeader>
           <CModalTitle>
             {actionType === 'activate'
-              ? t('admin.confirmActivate') || 'Xác nhận kích hoạt'
-              : t('admin.confirmDeactivate') || 'Xác nhận vô hiệu hóa'}
+              ? t('admin.confirmActivate')
+              : t('admin.confirmDeactivate')}
           </CModalTitle>
         </CModalHeader>
         <CModalBody>
           {actionType === 'activate'
-            ? t('admin.confirmActivateMessage') || 'Bạn có chắc chắn muốn kích hoạt người dùng này?'
-            : t('admin.confirmDeactivateMessage') || 'Bạn có chắc chắn muốn vô hiệu hóa người dùng này?'}
+            ? t('admin.confirmActivateMessage')
+            : t('admin.confirmDeactivateMessage')}
           <br />
           <strong>{selectedUser?.email}</strong>
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setShowConfirmModal(false)}>
-            {t('common.cancel') || 'Hủy'}
+            {t('common.cancel')}
           </CButton>
           <CButton
             color={actionType === 'activate' ? 'success' : 'warning'}
@@ -332,9 +332,9 @@ const UserManagementPage: React.FC = () => {
             {actionLoading !== null ? (
               <CSpinner size="sm" />
             ) : actionType === 'activate' ? (
-              t('admin.activate') || 'Kích hoạt'
+              t('admin.activate')
             ) : (
-              t('admin.deactivate') || 'Vô hiệu hóa'
+              t('admin.deactivate')
             )}
           </CButton>
         </CModalFooter>
