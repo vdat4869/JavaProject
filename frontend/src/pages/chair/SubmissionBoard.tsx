@@ -16,11 +16,14 @@ import {
     CTableHeaderCell,
     CTableRow,
     CBadge,
+    CListGroup,
+    CListGroupItem,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilUserPlus, cilStar, cilList } from '@coreui/icons'
+import { cilUserPlus, cilStar, cilList, cilCommentSquare } from '@coreui/icons'
 import { submissionService, Submission } from '../../services/submission.service'
 import { assignmentService, Assignment, AutoAssignResponse } from '../../services/assignment.service'
+import { conferenceService, ConferenceResponse } from '../../services/conference.service'
 import ManualAssignmentForm from '../../components/assignment/ManualAssignmentForm'
 import AutoAssignWithSuggestions from '../../components/assignment/AutoAssignWithSuggestions'
 
@@ -46,11 +49,36 @@ const SubmissionBoard: React.FC = () => {
     const [showAutoModal, setShowAutoModal] = useState(false)
     const [selectedSubId, setSelectedSubId] = useState<number | null>(null)
 
+    // Conference selection states
+    const [myConferences, setMyConferences] = useState<ConferenceResponse[]>([])
+    const [isSelectingConference, setIsSelectingConference] = useState(false)
+
     useEffect(() => {
         if (conferenceId) {
             loadData()
+        } else {
+            loadMyConferences()
         }
     }, [conferenceId])
+
+    const loadMyConferences = async () => {
+        try {
+            setLoading(true)
+            const data = await conferenceService.getMyConferences()
+            if (data.length === 1) {
+                // Auto select if only one
+                navigate(`?conferenceId=${data[0].id}`, { replace: true })
+            } else {
+                setMyConferences(data)
+                setIsSelectingConference(true)
+                setLoading(false)
+            }
+        } catch (error) {
+            console.error('Error loading conferences:', error)
+            setError('Không thể tải danh sách hội nghị')
+            setLoading(false)
+        }
+    }
 
     const loadData = async () => {
         try {
@@ -118,8 +146,49 @@ const SubmissionBoard: React.FC = () => {
     }
 
     if (!conferenceId) {
+        if (loading) {
+            return (
+                <div className="d-flex justify-content-center p-5">
+                    <CSpinner color="primary" />
+                </div>
+            )
+        }
+
+        if (isSelectingConference) {
+            return (
+                <CCard className="mx-auto" style={{ maxWidth: '800px' }}>
+                    <CCardHeader>
+                        <h4>Chọn hội nghị để quản lý bài nộp</h4>
+                    </CCardHeader>
+                    <CCardBody>
+                        {myConferences.length === 0 ? (
+                            <CAlert color="warning">Bạn chưa được gán vào hội nghị nào.</CAlert>
+                        ) : (
+                            <CListGroup>
+                                {myConferences.map(conf => (
+                                    <CListGroupItem
+                                        key={conf.id}
+                                        onClick={() => navigate(`?conferenceId=${conf.id}`)}
+                                        className="d-flex justify-content-between align-items-center list-group-item-action"
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <span>{conf.name}</span>
+                                        <CBadge color="primary" shape="rounded-pill">ID: {conf.id}</CBadge>
+                                    </CListGroupItem>
+                                ))}
+                            </CListGroup>
+                        )}
+                    </CCardBody>
+                </CCard>
+            )
+        }
+
         return (
-            <CAlert color="danger">Thiếu conferenceId trên URL</CAlert>
+            <CCard>
+                <CCardBody>
+                    <CAlert color="danger">Thiếu conferenceId và không thể tải danh sách hội nghị.</CAlert>
+                </CCardBody>
+            </CCard>
         )
     }
 
@@ -140,7 +209,12 @@ const SubmissionBoard: React.FC = () => {
                         <h4 className="mb-0">Submission Board</h4>
                         <small className="text-muted">Quản lý và phân công reviewer tập trung</small>
                     </div>
-                    <CButton color="secondary" onClick={() => navigate(-1)}>Quay lại</CButton>
+                    <div>
+                        <CButton color="secondary" variant="outline" className="me-2" onClick={() => navigate('/app/chair/conferences')}>
+                            Đổi hội nghị
+                        </CButton>
+                        <CButton color="secondary" onClick={() => navigate(-1)}>Quay lại</CButton>
+                    </div>
                 </CCardHeader>
                 <CCardBody>
                     {error && <CAlert color="danger" dismissible onClose={() => setError('')}>{error}</CAlert>}
@@ -198,6 +272,9 @@ const SubmissionBoard: React.FC = () => {
                                                     </CButton>
                                                     <CButton color="primary" size="sm" variant="outline" title="Auto Assign" onClick={() => handleAutoAssign(sub.id)}>
                                                         <CIcon icon={cilStar} />
+                                                    </CButton>
+                                                    <CButton color="warning" size="sm" variant="outline" title="Thảo luận" onClick={() => navigate(`/app/chair/submissions/${sub.id}/discussion`)}>
+                                                        <CIcon icon={cilCommentSquare} />
                                                     </CButton>
                                                     <CButton color="secondary" size="sm" variant="outline" title="Chi tiết" onClick={() => navigate(`/app/author/submissions/${sub.id}`)}>
                                                         <CIcon icon={cilList} />

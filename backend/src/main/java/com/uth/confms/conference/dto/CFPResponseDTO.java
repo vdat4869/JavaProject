@@ -9,18 +9,21 @@ public class CFPResponseDTO {
   @Deprecated
   private String topics; // Deprecated: Use topicsList instead
   private List<TopicDTO> topicsList; // Structured topics from Conference
+  private List<TrackDTO> tracks; // Tracks from Conference
   private String submissionGuidelines;
   private Boolean open;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
-  public CFPResponseDTO() {}
+  public CFPResponseDTO() {
+  }
 
   public CFPResponseDTO(
       Long id,
       String callForPapers,
       String topics,
       List<TopicDTO> topicsList,
+      List<TrackDTO> tracks,
       String submissionGuidelines,
       Boolean open,
       LocalDateTime createdAt,
@@ -29,6 +32,7 @@ public class CFPResponseDTO {
     this.callForPapers = callForPapers;
     this.topics = topics;
     this.topicsList = topicsList;
+    this.tracks = tracks;
     this.submissionGuidelines = submissionGuidelines;
     this.open = open;
     this.createdAt = createdAt;
@@ -73,6 +77,14 @@ public class CFPResponseDTO {
     this.topicsList = topicsList;
   }
 
+  public List<TrackDTO> getTracks() {
+    return tracks;
+  }
+
+  public void setTracks(List<TrackDTO> tracks) {
+    this.tracks = tracks;
+  }
+
   public String getSubmissionGuidelines() {
     return submissionGuidelines;
   }
@@ -111,6 +123,7 @@ public class CFPResponseDTO {
     @Deprecated
     private String topics;
     private List<TopicDTO> topicsList;
+    private List<TrackDTO> tracks;
     private String submissionGuidelines;
     private Boolean open;
     private LocalDateTime createdAt;
@@ -137,6 +150,11 @@ public class CFPResponseDTO {
       return this;
     }
 
+    public Builder tracks(List<TrackDTO> tracks) {
+      this.tracks = tracks;
+      return this;
+    }
+
     public Builder submissionGuidelines(String submissionGuidelines) {
       this.submissionGuidelines = submissionGuidelines;
       return this;
@@ -158,7 +176,8 @@ public class CFPResponseDTO {
     }
 
     public CFPResponseDTO build() {
-      return new CFPResponseDTO(id, callForPapers, topics, topicsList, submissionGuidelines, open, createdAt, updatedAt);
+      return new CFPResponseDTO(id, callForPapers, topics, topicsList, tracks, submissionGuidelines, open, createdAt,
+          updatedAt);
     }
   }
 }

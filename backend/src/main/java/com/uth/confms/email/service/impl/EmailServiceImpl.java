@@ -25,6 +25,7 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
@@ -33,15 +34,16 @@ import org.thymeleaf.context.Context;
  * Implementation của EmailService sử dụng Thymeleaf templates
  * với retry mechanism và quota management
  *
- * <p>Service này:
+ * <p>
+ * Service này:
  *
  * <ul>
- *   <li>Sử dụng Thymeleaf để render email templates
- *   <li>Hỗ trợ HTML emails
- *   <li>Gửi emails qua SMTP
- *   <li>Retry mechanism với exponential backoff
- *   <li>SMTP quota tracking và management
- *   <li>Email queue cho failed emails
+ * <li>Sử dụng Thymeleaf để render email templates
+ * <li>Hỗ trợ HTML emails
+ * <li>Gửi emails qua SMTP
+ * <li>Retry mechanism với exponential backoff
+ * <li>SMTP quota tracking và management
+ * <li>Email queue cho failed emails
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -68,10 +70,10 @@ public class EmailServiceImpl implements EmailService {
 
   @Value("${app.email.retry.max-attempts:3}")
   private int maxRetryAttempts;
-  
+
   @Value("${app.email.async.batch-size:10}")
   private int batchSize;
-  
+
   @Value("${app.email.async.batch-delay-ms:1000}")
   private long batchDelayMs;
 
@@ -90,18 +92,15 @@ public class EmailServiceImpl implements EmailService {
     this.queueRepository = queueRepository;
     this.emailTaskExecutor = emailTaskExecutor;
   }
-  
+
   @jakarta.annotation.PostConstruct
   public void init() {
     this.rateLimiter = new EmailRateLimiter(maxEmailsPerMinute, 60000); // 60 seconds window
   }
 
   @Override
-  @Retryable(
-      retryFor = {MessagingException.class, RuntimeException.class},
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000, multiplier = 2.0))
-  @Transactional
+  @Retryable(retryFor = { MessagingException.class,
+      RuntimeException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2.0))
   public void sendEmail(String to, String subject, String templateName, Map<String, Object> model) {
     // Check quota before sending
     if (!quotaService.isQuotaAvailable(EmailQuota.QuotaType.DAILY)) {
@@ -145,11 +144,11 @@ public class EmailServiceImpl implements EmailService {
 
       // Send
       mailSender.send(message);
-      
+
       // Record email sent
       quotaService.recordEmailSent(EmailQuota.QuotaType.DAILY);
       quotaService.recordEmailSent(EmailQuota.QuotaType.HOURLY);
-      
+
       log.info("Email sent successfully to: {}", to);
     } catch (MessagingException e) {
       log.error("Error sending email to: {}", to, e);
@@ -161,7 +160,6 @@ public class EmailServiceImpl implements EmailService {
 
   @Override
   @Async("emailTaskExecutor")
-  @Transactional
   public CompletableFuture<Integer> sendBulkEmailAsync(
       List<String> recipients, String subject, String templateName, Map<String, Object> model) {
     return CompletableFuture.supplyAsync(() -> {
@@ -170,22 +168,21 @@ public class EmailServiceImpl implements EmailService {
   }
 
   @Override
-  @Transactional
   public int sendBulkEmail(
       List<String> recipients, String subject, String templateName, Map<String, Object> model) {
     log.info("Starting bulk email sending to {} recipients", recipients.size());
-    
+
     int successCount = 0;
     int queuedCount = 0;
     int rateLimitedCount = 0;
-    
+
     // Process in batches
     List<List<String>> batches = partitionList(recipients, batchSize);
-    
+
     for (int i = 0; i < batches.size(); i++) {
       List<String> batch = batches.get(i);
       log.debug("Processing batch {}/{} ({} recipients)", i + 1, batches.size(), batch.size());
-      
+
       // Check rate limit before processing batch
       if (!rateLimiter.canSend()) {
         long waitTime = rateLimiter.getTimeUntilReset();
@@ -197,7 +194,7 @@ public class EmailServiceImpl implements EmailService {
           log.error("Interrupted while waiting for rate limit", e);
         }
       }
-      
+
       // Process batch
       for (String recipient : batch) {
         try {
@@ -208,7 +205,7 @@ public class EmailServiceImpl implements EmailService {
             queueEmail(recipient, subject, templateName, null, model);
             continue;
           }
-          
+
           sendEmail(recipient, subject, templateName, model);
           rateLimiter.recordSent();
           successCount++;
@@ -218,7 +215,7 @@ public class EmailServiceImpl implements EmailService {
           // Email is already queued in sendEmail method
         }
       }
-      
+
       // Add delay between batches (except for last batch)
       if (i < batches.size() - 1 && batchDelayMs > 0) {
         try {
@@ -229,12 +226,12 @@ public class EmailServiceImpl implements EmailService {
         }
       }
     }
-    
-    log.info("Bulk email completed: {}/{} successful, {} queued, {} rate-limited", 
-            successCount, recipients.size(), queuedCount, rateLimitedCount);
+
+    log.info("Bulk email completed: {}/{} successful, {} queued, {} rate-limited",
+        successCount, recipients.size(), queuedCount, rateLimitedCount);
     return successCount;
   }
-  
+
   /**
    * Partition list into batches
    */
@@ -247,11 +244,8 @@ public class EmailServiceImpl implements EmailService {
   }
 
   @Override
-  @Retryable(
-      retryFor = {MessagingException.class, RuntimeException.class},
-      maxAttempts = 3,
-      backoff = @Backoff(delay = 1000, multiplier = 2.0))
-  @Transactional
+  @Retryable(retryFor = { MessagingException.class,
+      RuntimeException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2.0))
   public void sendSimpleEmail(String to, String subject, String content) {
     // Check quota before sending
     if (!quotaService.isQuotaAvailable(EmailQuota.QuotaType.DAILY)) {
@@ -286,11 +280,11 @@ public class EmailServiceImpl implements EmailService {
 
       // Send
       mailSender.send(message);
-      
+
       // Record email sent
       quotaService.recordEmailSent(EmailQuota.QuotaType.DAILY);
       quotaService.recordEmailSent(EmailQuota.QuotaType.HOURLY);
-      
+
       log.info("Simple email sent successfully to: {}", to);
     } catch (MessagingException e) {
       log.error("Error sending simple email to: {}", to, e);
@@ -303,7 +297,8 @@ public class EmailServiceImpl implements EmailService {
   /**
    * Queue email for retry
    */
-  private void queueEmail(String to, String subject, String templateName, String content, Map<String, Object> model) {
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void queueEmail(String to, String subject, String templateName, String content, Map<String, Object> model) {
     try {
       // Render template if needed
       String renderedContent = content;

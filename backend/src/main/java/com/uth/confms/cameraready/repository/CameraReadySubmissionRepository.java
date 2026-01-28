@@ -22,34 +22,35 @@ import java.util.UUID;
 @Repository
 public interface CameraReadySubmissionRepository extends JpaRepository<CameraReadySubmission, UUID> {
 
-    Optional<CameraReadySubmission> findByPaperId(UUID paperId);
+        Optional<CameraReadySubmission> findByPaperId(Long paperId);
 
-    boolean existsByPaperId(UUID paperId);
+        boolean existsByPaperId(Long paperId);
 
-    List<CameraReadySubmission> findByConferenceId(UUID conferenceId);
+        List<CameraReadySubmission> findByConferenceId(Long conferenceId);
 
-    Page<CameraReadySubmission> findByConferenceId(UUID conferenceId, Pageable pageable);
+        Page<CameraReadySubmission> findByConferenceId(Long conferenceId, Pageable pageable);
 
-    Page<CameraReadySubmission> findByConferenceIdAndStatus(UUID conferenceId, CameraReadyStatus status, Pageable pageable);
+        Page<CameraReadySubmission> findByConferenceIdAndStatus(Long conferenceId, CameraReadyStatus status,
+                        Pageable pageable);
 
-    List<CameraReadySubmission> findByConferenceIdAndStatus(UUID conferenceId, CameraReadyStatus status);
+        List<CameraReadySubmission> findByConferenceIdAndStatus(Long conferenceId, CameraReadyStatus status);
 
-    Page<CameraReadySubmission> findByConferenceIdAndTrackId(UUID conferenceId, UUID trackId, Pageable pageable);
+        Page<CameraReadySubmission> findByConferenceIdAndTrackId(Long conferenceId, Long trackId, Pageable pageable);
 
-    @Query("SELECT s FROM CameraReadySubmission s WHERE s.conferenceId = :conferenceId " +
-            "AND (:trackId IS NULL OR s.trackId = :trackId) " +
-            "AND (:status IS NULL OR s.status = :status) " +
-            "AND (:copyrightConfirmed IS NULL OR s.copyrightConfirmed = :copyrightConfirmed)")
-    Page<CameraReadySubmission> findWithFilters(
-            @Param("conferenceId") UUID conferenceId,
-            @Param("trackId") UUID trackId,
-            @Param("status") CameraReadyStatus status,
-            @Param("copyrightConfirmed") Boolean copyrightConfirmed,
-            Pageable pageable);
+        @Query("SELECT s FROM CameraReadySubmission s WHERE s.conferenceId = :conferenceId " +
+                        "AND (:trackId IS NULL OR s.trackId = :trackId) " +
+                        "AND (:status IS NULL OR s.status = :status) " +
+                        "AND (:copyrightConfirmed IS NULL OR s.copyrightConfirmed = :copyrightConfirmed)")
+        Page<CameraReadySubmission> findWithFilters(
+                        @Param("conferenceId") Long conferenceId,
+                        @Param("trackId") Long trackId,
+                        @Param("status") CameraReadyStatus status,
+                        @Param("copyrightConfirmed") Boolean copyrightConfirmed,
+                        Pageable pageable);
 
-    long countByConferenceIdAndStatus(UUID conferenceId, CameraReadyStatus status);
+        long countByConferenceIdAndStatus(Long conferenceId, CameraReadyStatus status);
 
-    long countByConferenceIdAndCopyrightConfirmedTrue(UUID conferenceId);
+        long countByConferenceIdAndCopyrightConfirmedTrue(Long conferenceId);
 
-    long countByConferenceId(UUID conferenceId);
+        long countByConferenceId(Long conferenceId);
 }

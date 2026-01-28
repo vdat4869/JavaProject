@@ -12,6 +12,8 @@ const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'))
 const VerifyEmailPage = lazy(() => import('../pages/auth/EmailVerificationPage'))
 const SsoRedirectPage = lazy(() => import('../pages/auth/SsoRedirectPage'))
 const AuthCallbackPage = lazy(() => import('../pages/auth/AuthCallbackPage'))
+const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage'))
+const ResetPasswordPage = lazy(() => import('../pages/auth/ResetPasswordPage'))
 
 // Preload layouts ngay sau khi app load
 const AppLayout = lazy(() => {
@@ -69,6 +71,7 @@ const AssignmentQualityMetrics = lazy(() => import('../pages/chair/AssignmentQua
 const BulkAssignmentPage = lazy(() => import('../pages/chair/BulkAssignmentPage'))
 const SubmissionBoard = lazy(() => import('../pages/chair/SubmissionBoard'))
 const CameraReadyManagement = lazy(() => import('../pages/chair/CameraReadyManagement'))
+const CameraReadyDetail = lazy(() => import('../pages/chair/CameraReadyDetail'))
 const NotificationManagement = lazy(() => import('../pages/chair/NotificationManagement'))
 
 /**
@@ -177,6 +180,44 @@ export const routes: RouteObject[] = [
       >
         <AuthLayout>
           <VerifyEmailPage />
+        </AuthLayout>
+      </Suspense>
+    ),
+  },
+  {
+    path: '/forgot-password',
+    element: (
+      <Suspense
+        fallback={
+          <div
+            className="d-flex justify-content-center align-items-center"
+            style={{ minHeight: '100vh' }}
+          >
+            <CSpinner color="primary" />
+          </div>
+        }
+      >
+        <AuthLayout>
+          <ForgotPasswordPage />
+        </AuthLayout>
+      </Suspense>
+    ),
+  },
+  {
+    path: '/reset-password',
+    element: (
+      <Suspense
+        fallback={
+          <div
+            className="d-flex justify-content-center align-items-center"
+            style={{ minHeight: '100vh' }}
+          >
+            <CSpinner color="primary" />
+          </div>
+        }
+      >
+        <AuthLayout>
+          <ResetPasswordPage />
         </AuthLayout>
       </Suspense>
     ),
@@ -329,6 +370,7 @@ export const routes: RouteObject[] = [
             <ReviewerSubmissionDetail />
           </Suspense>
         ),
+        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
       },
       {
         path: 'pc/assignments',
@@ -343,6 +385,7 @@ export const routes: RouteObject[] = [
             <AssignedPaperList />
           </Suspense>
         ),
+        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
       },
       {
         path: 'pc/reviews/new',
@@ -357,6 +400,7 @@ export const routes: RouteObject[] = [
             <ReviewFormPage />
           </Suspense>
         ),
+        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
       },
       {
         path: 'pc/reviews/:id/edit',
@@ -371,6 +415,7 @@ export const routes: RouteObject[] = [
             <ReviewFormPage />
           </Suspense>
         ),
+        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
       },
       {
         path: 'pc/reviews/:id/discussion',
@@ -385,6 +430,22 @@ export const routes: RouteObject[] = [
             <DiscussionPage />
           </Suspense>
         ),
+        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
+      },
+      {
+        path: 'pc/submissions/:submissionId/discussion',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <DiscussionPage />
+          </Suspense>
+        ),
+        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
       },
       {
         path: 'pc/discussions',
@@ -399,6 +460,7 @@ export const routes: RouteObject[] = [
             <PaperDiscussionBoard />
           </Suspense>
         ),
+        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
       },
       {
         path: 'pc/coi',
@@ -413,6 +475,7 @@ export const routes: RouteObject[] = [
             <COIDeclaration />
           </Suspense>
         ),
+        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
       },
       {
         path: 'pc/cois',
@@ -427,6 +490,7 @@ export const routes: RouteObject[] = [
             <MyCOIsList />
           </Suspense>
         ),
+        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
       },
       {
         path: 'pc/invitation/accept',
@@ -469,6 +533,7 @@ export const routes: RouteObject[] = [
             <ReviewerWorkload />
           </Suspense>
         ),
+        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
       },
       // Chair routes
       {
@@ -607,6 +672,21 @@ export const routes: RouteObject[] = [
         handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       {
+        path: 'chair/submissions/:submissionId/discussion',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <DiscussionPage />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
+      },
+      {
         path: 'chair/camera-ready',
         element: (
           <Suspense
@@ -617,6 +697,21 @@ export const routes: RouteObject[] = [
             }
           >
             <CameraReadyManagement />
+          </Suspense>
+        ),
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
+      },
+      {
+        path: 'chair/camera-ready/:paperId',
+        element: (
+          <Suspense
+            fallback={
+              <div className="d-flex justify-content-center p-5">
+                <CSpinner color="primary" />
+              </div>
+            }
+          >
+            <CameraReadyDetail />
           </Suspense>
         ),
         handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
@@ -769,6 +864,7 @@ export const routes: RouteObject[] = [
             <SubmissionReviewsView />
           </Suspense>
         ),
+        handle: { roles: ['CHAIR', 'ADMIN'] as UserRole[] },
       },
       // User profile route
       {

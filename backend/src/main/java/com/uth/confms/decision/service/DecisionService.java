@@ -72,7 +72,7 @@ public class DecisionService {
   }
 
   @Transactional
-  public List<DecisionResultDTO> makeBulkDecisions(BulkDecisionRequestDTO dto, Long chairId) {
+  public List<DecisionResultDTO> makeBulkDecisions(BulkDecisionRequestDTO dto, Long chairId, boolean isAdmin) {
     return dto.getSubmissionIds().stream()
         .map(subId -> {
           DecisionRequestDTO request = new DecisionRequestDTO();
@@ -80,7 +80,7 @@ public class DecisionService {
           request.setType(dto.getType());
           request.setComments(dto.getComments());
           request.setSendNotification(dto.getSendNotification());
-          return makeDecision(request, chairId);
+          return makeDecision(request, chairId, isAdmin);
         })
         .collect(Collectors.toList());
   }
@@ -105,7 +105,7 @@ public class DecisionService {
   }
 
   @Transactional
-  public DecisionResultDTO makeDecision(DecisionRequestDTO dto, Long chairId) {
+  public DecisionResultDTO makeDecision(DecisionRequestDTO dto, Long chairId, boolean isAdmin) {
     Submission submission = submissionRepository
         .findById(dto.getSubmissionId())
         .orElseThrow(
@@ -117,14 +117,16 @@ public class DecisionService {
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization - only chair can make decisions
-    if (!conference.getChairId().equals(chairId)) {
-      throw new UnauthorizedException("Only conference chair can make decisions");
+    // Check authorization - only chair (or admin) can make decisions
+    if (!isAdmin && !conference.getChairId().equals(chairId)) {
+      throw new UnauthorizedException("Only conference chair or admin can make decisions");
     }
 
-    // Check if submission is in review or submitted
+    // Check if submission is in review, submitted or reviewed
     if (submission.getStatus() != Submission.SubmissionStatus.UNDER_REVIEW
-        && submission.getStatus() != Submission.SubmissionStatus.SUBMITTED) {
-      throw new BusinessException("Submission must be under review or submitted before making decision");
+        && submission.getStatus() != Submission.SubmissionStatus.SUBMITTED
+        && submission.getStatus() != Submission.SubmissionStatus.REVIEWED) {
+      throw new BusinessException("Submission must be under review, submitted or reviewed before making decision");
     }
 
     // Check if decision already exists
@@ -193,14 +195,15 @@ public class DecisionService {
     return mapToDTO(decision);
   }
 
-  public List<DecisionResultDTO> getDecisionsByConference(Long conferenceId, Long chairId) {
+  public List<DecisionResultDTO> getDecisionsByConference(Long conferenceId, Long chairId, boolean isAdmin) {
     Conference conference = conferenceRepository
         .findById(conferenceId)
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
-    if (!conference.getChairId().equals(chairId)) {
-      throw new UnauthorizedException("Only conference chair can view decisions");
+    // Check authorization
+    if (!isAdmin && !conference.getChairId().equals(chairId)) {
+      throw new UnauthorizedException("Only conference chair or admin can view decisions");
     }
 
     // Get all submissions for this conference
@@ -249,7 +252,7 @@ public class DecisionService {
    */
   @Transactional
   public DecisionResultDTO updateDecision(
-      Long decisionId, com.uth.confms.decision.dto.UpdateDecisionRequestDTO dto, Long chairId) {
+      Long decisionId, com.uth.confms.decision.dto.UpdateDecisionRequestDTO dto, Long chairId, boolean isAdmin) {
     Decision decision = decisionRepository
         .findById(decisionId)
         .orElseThrow(() -> new NotFoundException("Decision not found"));
@@ -276,8 +279,9 @@ public class DecisionService {
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization - only chair can update decisions
-    if (!conference.getChairId().equals(chairId)) {
-      throw new UnauthorizedException("Only conference chair can update decisions");
+    // Check authorization - only chair (or admin) can update decisions
+    if (!isAdmin && !conference.getChairId().equals(chairId)) {
+      throw new UnauthorizedException("Only conference chair or admin can update decisions");
     }
 
     // Track changes for history

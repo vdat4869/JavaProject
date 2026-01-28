@@ -31,17 +31,20 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Controller quản lý assignments (phân công reviewer)
  *
- * <p>Các endpoints:
+ * <p>
+ * Các endpoints:
  *
  * <ul>
- *   <li>POST /api/assignments - Tạo assignment (CHAIR/ADMIN)
- *   <li>POST /api/assignments/{id}/accept - Chấp nhận assignment (PC/REVIEWER)
- *   <li>POST /api/assignments/{id}/decline - Từ chối assignment (PC/REVIEWER)
- *   <li>DELETE /api/assignments/{id} - Xóa assignment (CHAIR/ADMIN)
- *   <li>GET /api/assignments/submission/{id} - Lấy assignments của submission (CHAIR/ADMIN)
- *   <li>GET /api/assignments/my - Lấy assignments của reviewer (PC/REVIEWER)
- *   <li>GET /api/assignments/{id} - Lấy assignment by ID (authenticated)
- *   <li>GET /api/assignments/submission/{id}/suggestions - Lấy AI suggestions (CHAIR/ADMIN)
+ * <li>POST /api/assignments - Tạo assignment (CHAIR/ADMIN)
+ * <li>POST /api/assignments/{id}/accept - Chấp nhận assignment (PC/REVIEWER)
+ * <li>POST /api/assignments/{id}/decline - Từ chối assignment (PC/REVIEWER)
+ * <li>DELETE /api/assignments/{id} - Xóa assignment (CHAIR/ADMIN)
+ * <li>GET /api/assignments/submission/{id} - Lấy assignments của submission
+ * (CHAIR/ADMIN)
+ * <li>GET /api/assignments/my - Lấy assignments của reviewer (PC/REVIEWER)
+ * <li>GET /api/assignments/{id} - Lấy assignment by ID (authenticated)
+ * <li>GET /api/assignments/submission/{id}/suggestions - Lấy AI suggestions
+ * (CHAIR/ADMIN)
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -68,7 +71,8 @@ public class AssignmentController {
   public ResponseEntity<ApiResponse<AssignmentResponseDTO>> createAssignment(
       @Valid @RequestBody AssignmentCreateDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
-    return ResponseEntity.ok(ApiResponse.success(assignmentService.createAssignment(dto, chairId)));
+    boolean isAdmin = isAdmin(authentication);
+    return ResponseEntity.ok(ApiResponse.success(assignmentService.createAssignment(dto, chairId, isAdmin)));
   }
 
   @PostMapping("/{id}/accept")
@@ -94,7 +98,8 @@ public class AssignmentController {
   public ResponseEntity<ApiResponse<Void>> deleteAssignment(
       @PathVariable Long id, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
-    assignmentService.deleteAssignment(id, chairId);
+    boolean isAdmin = isAdmin(authentication);
+    assignmentService.deleteAssignment(id, chairId, isAdmin);
     return ResponseEntity.ok(ApiResponse.success("Assignment deleted", null));
   }
 
@@ -103,8 +108,9 @@ public class AssignmentController {
   public ResponseEntity<ApiResponse<List<AssignmentResponseDTO>>> getAssignmentsBySubmission(
       @PathVariable Long submissionId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
+    boolean isAdmin = isAdmin(authentication);
     return ResponseEntity.ok(
-        ApiResponse.success(assignmentService.getAssignmentsBySubmission(submissionId, chairId)));
+        ApiResponse.success(assignmentService.getAssignmentsBySubmission(submissionId, chairId, isAdmin)));
   }
 
   @GetMapping("/my")
@@ -135,7 +141,8 @@ public class AssignmentController {
   public ResponseEntity<ApiResponse<AutoAssignResponseDTO>> autoAssign(
       @Valid @RequestBody AutoAssignRequestDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
-    return ResponseEntity.ok(ApiResponse.success(assignmentService.autoAssign(dto, chairId)));
+    boolean isAdmin = isAdmin(authentication);
+    return ResponseEntity.ok(ApiResponse.success(assignmentService.autoAssign(dto, chairId, isAdmin)));
   }
 
   @PostMapping("/bulk")
@@ -143,7 +150,8 @@ public class AssignmentController {
   public ResponseEntity<ApiResponse<BulkAssignResponseDTO>> bulkAssign(
       @Valid @RequestBody BulkAssignRequestDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
-    return ResponseEntity.ok(ApiResponse.success(assignmentService.bulkAssign(dto, chairId)));
+    boolean isAdmin = isAdmin(authentication);
+    return ResponseEntity.ok(ApiResponse.success(assignmentService.bulkAssign(dto, chairId, isAdmin)));
   }
 
   @PutMapping("/{id}/reassign")
@@ -153,8 +161,9 @@ public class AssignmentController {
       @Valid @RequestBody ReassignRequestDTO dto,
       Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
+    boolean isAdmin = isAdmin(authentication);
     return ResponseEntity.ok(
-        ApiResponse.success(assignmentService.reassignAssignment(id, dto, chairId)));
+        ApiResponse.success(assignmentService.reassignAssignment(id, dto, chairId, isAdmin)));
   }
 
   @GetMapping("/conference/{conferenceId}/statistics")
@@ -162,8 +171,9 @@ public class AssignmentController {
   public ResponseEntity<ApiResponse<AssignmentStatisticsDTO>> getAssignmentStatistics(
       @PathVariable Long conferenceId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
+    boolean isAdmin = isAdmin(authentication);
     return ResponseEntity.ok(
-        ApiResponse.success(assignmentService.getAssignmentStatistics(conferenceId, chairId)));
+        ApiResponse.success(assignmentService.getAssignmentStatistics(conferenceId, chairId, isAdmin)));
   }
 
   @GetMapping("/conference/{conferenceId}/quality-metrics")
@@ -171,12 +181,18 @@ public class AssignmentController {
   public ResponseEntity<ApiResponse<AssignmentQualityMetricsDTO>> getAssignmentQualityMetrics(
       @PathVariable Long conferenceId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
+    boolean isAdmin = isAdmin(authentication);
     return ResponseEntity.ok(
-        ApiResponse.success(assignmentService.getAssignmentQualityMetrics(conferenceId, chairId)));
+        ApiResponse.success(assignmentService.getAssignmentQualityMetrics(conferenceId, chairId, isAdmin)));
   }
 
   private Long getUserIdFromAuthentication(Authentication authentication) {
     String email = authentication.getName();
     return userService.getUserIdByEmail(email);
+  }
+
+  private boolean isAdmin(Authentication authentication) {
+    return authentication.getAuthorities().stream()
+        .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
   }
 }

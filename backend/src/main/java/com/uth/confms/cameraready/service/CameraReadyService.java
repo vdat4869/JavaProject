@@ -18,48 +18,49 @@ import java.util.UUID;
  */
 public interface CameraReadyService {
 
-    // ==================== Author Operations ====================
+        // ==================== Author Operations ====================
 
-    SubmissionDTO getSubmissionByPaperId(UUID conferenceId, UUID paperId);
+        SubmissionDTO getSubmissionByPaperId(Long conferenceId, Long paperId);
 
-    VersionDTO uploadVersion(UUID conferenceId, UUID paperId, MultipartFile file, UUID uploaderId);
+        VersionDTO uploadVersion(Long conferenceId, Long paperId, MultipartFile file, Long uploaderId);
 
-    List<VersionDTO> listVersions(UUID conferenceId, UUID paperId);
+        List<VersionDTO> listVersions(Long conferenceId, Long paperId);
 
-    Resource downloadVersion(UUID conferenceId, UUID paperId, UUID versionId);
+        Resource downloadVersion(Long conferenceId, Long paperId, UUID versionId);
 
-    String getVersionFilename(UUID versionId);
+        String getVersionFilename(UUID versionId);
 
-    SubmissionDTO confirmCopyright(UUID conferenceId, UUID paperId, CopyrightConfirmRequestDTO request, UUID userId);
+        SubmissionDTO confirmCopyright(Long conferenceId, Long paperId, CopyrightConfirmRequestDTO request,
+                        Long userId);
 
-    // ==================== Chair Operations ====================
+        // ==================== Chair Operations ====================
 
-    Page<SubmissionListDTO> listSubmissions(UUID conferenceId, UUID trackId, 
-                                             CameraReadyStatus status, Boolean copyrightConfirmed, 
-                                             Pageable pageable);
+        Page<SubmissionListDTO> listSubmissions(Long conferenceId, Long trackId,
+                        CameraReadyStatus status, Boolean copyrightConfirmed,
+                        Pageable pageable);
 
-    ReviewResponseDTO reviewSubmission(UUID conferenceId, UUID submissionId, 
-                                        ReviewRequestDTO request, UUID reviewerId);
+        ReviewResponseDTO reviewSubmission(Long conferenceId, UUID submissionId,
+                        ReviewRequestDTO request, Long reviewerId);
 
-    SubmissionDTO setCurrentVersion(UUID conferenceId, UUID submissionId, UUID versionId, UUID userId);
+        SubmissionDTO setCurrentVersion(Long conferenceId, UUID submissionId, UUID versionId, Long userId);
 
-    MetadataDTO getMetadata(UUID submissionId);
+        MetadataDTO getMetadata(UUID submissionId);
 
-    MetadataDTO updateMetadata(UUID submissionId, MetadataUpdateRequestDTO request, UUID userId);
+        MetadataDTO updateMetadata(UUID submissionId, MetadataUpdateRequestDTO request, Long userId);
 
-    StatisticsDTO getStatistics(UUID conferenceId);
+        StatisticsDTO getStatistics(Long conferenceId);
 
-    ProceedingsExportDTO exportProceedingsJson(UUID conferenceId, UUID trackId, CameraReadyStatus status);
+        ProceedingsExportDTO exportProceedingsJson(Long conferenceId, Long trackId, CameraReadyStatus status);
 
-    byte[] exportProceedingsCsv(UUID conferenceId, UUID trackId, CameraReadyStatus status);
+        byte[] exportProceedingsCsv(Long conferenceId, Long trackId, CameraReadyStatus status);
 
-    byte[] exportProceedingsZip(UUID conferenceId, UUID trackId, CameraReadyStatus status);
+        byte[] exportProceedingsZip(Long conferenceId, Long trackId, CameraReadyStatus status);
 
-    byte[] exportProceedingsPdf(UUID conferenceId, UUID trackId, CameraReadyStatus status);
+        byte[] exportProceedingsPdf(Long conferenceId, Long trackId, CameraReadyStatus status);
 
-    // ==================== Admin Operations ====================
+        // ==================== Admin Operations ====================
 
-    int openCameraReady(UUID conferenceId, UUID userId);
+        int openCameraReady(Long conferenceId, java.time.LocalDateTime deadline, Long userId);
 
-    void closeCameraReady(UUID conferenceId, String reason, UUID userId);
+        void closeCameraReady(Long conferenceId, String reason, Long userId);
 }

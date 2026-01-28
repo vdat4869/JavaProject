@@ -45,7 +45,7 @@ const AppHeader = () => {
 
   return (
     <CHeader position="sticky" className="mb-4 p-0" ref={headerRef}>
-      <CContainer className="border-bottom px-4" fluid>
+      <CContainer className="border-bottom px-4" fluid style={{ height: '64px', display: 'flex', alignItems: 'center' }}>
         <CHeaderToggler onClick={toggleSidebar} style={{ marginInlineStart: '-14px' }}>
           <CIcon icon={cilMenu} size="lg" />
         </CHeaderToggler>

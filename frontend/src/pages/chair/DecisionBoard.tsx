@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   CCard,
   CCardBody,
@@ -22,7 +22,11 @@ import {
   CFormTextarea,
   CFormLabel,
   CFormCheck,
+  CListGroup,
+  CListGroupItem,
 } from '@coreui/react'
+import CIcon from '@coreui/icons-react'
+import { cilCommentSquare, cilClipboard } from '@coreui/icons'
 import {
   decisionService,
   Decision,
@@ -32,6 +36,7 @@ import {
   BulkDecisionRequest,
   DecisionHistory,
 } from '../../services/decision.service'
+import { conferenceService, ConferenceResponse } from '../../services/conference.service'
 
 /**
  * DecisionBoard - Trang quản lý quyết định
@@ -44,6 +49,7 @@ import {
  */
 const DecisionBoard: React.FC = () => {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const conferenceId = searchParams.get('conferenceId')
     ? parseInt(searchParams.get('conferenceId')!)
     : null
@@ -72,11 +78,36 @@ const DecisionBoard: React.FC = () => {
   const [historyList, setHistoryList] = useState<DecisionHistory[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
 
+  // Conference selection states
+  const [myConferences, setMyConferences] = useState<ConferenceResponse[]>([])
+  const [isSelectingConference, setIsSelectingConference] = useState(false)
+
   useEffect(() => {
     if (conferenceId) {
       loadDecisions()
+    } else {
+      loadMyConferences()
     }
   }, [conferenceId])
+
+  const loadMyConferences = async () => {
+    try {
+      setLoading(true)
+      const data = await conferenceService.getMyConferences()
+      if (data.length === 1) {
+        // Auto select if only one
+        navigate(`?conferenceId=${data[0].id}`, { replace: true })
+      } else {
+        setMyConferences(data)
+        setIsSelectingConference(true)
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Error loading conferences:', error)
+      setError('Không thể tải danh sách hội nghị')
+      setLoading(false)
+    }
+  }
 
   const loadDecisions = async () => {
     try {
@@ -242,10 +273,47 @@ const DecisionBoard: React.FC = () => {
   }
 
   if (!conferenceId) {
+    if (loading) {
+      return (
+        <div className="d-flex justify-content-center p-5">
+          <CSpinner color="primary" />
+        </div>
+      )
+    }
+
+    if (isSelectingConference) {
+      return (
+        <CCard className="mx-auto" style={{ maxWidth: '800px' }}>
+          <CCardHeader>
+            <h4>Chọn hội nghị để quản lý quyết định</h4>
+          </CCardHeader>
+          <CCardBody>
+            {myConferences.length === 0 ? (
+              <CAlert color="warning">Bạn chưa được gán vào hội nghị nào.</CAlert>
+            ) : (
+              <CListGroup>
+                {myConferences.map(conf => (
+                  <CListGroupItem
+                    key={conf.id}
+                    as="button"
+                    onClick={() => navigate(`?conferenceId=${conf.id}`)}
+                    className="d-flex justify-content-between align-items-center list-group-item-action"
+                  >
+                    <span>{conf.name}</span>
+                    <CBadge color="primary" shape="rounded-pill">ID: {conf.id}</CBadge>
+                  </CListGroupItem>
+                ))}
+              </CListGroup>
+            )}
+          </CCardBody>
+        </CCard>
+      )
+    }
+
     return (
       <CCard>
         <CCardBody>
-          <CAlert color="danger">Thiếu conferenceId</CAlert>
+          <CAlert color="danger">Thiếu conferenceId và không thể tải danh sách hội nghị.</CAlert>
         </CCardBody>
       </CCard>
     )
@@ -275,6 +343,9 @@ const DecisionBoard: React.FC = () => {
                 Quyết định hàng loạt ({selectedSubmissionIds.length})
               </CButton>
             )}
+            <CButton color="secondary" variant="outline" size="sm" onClick={() => navigate('/app/chair/conferences')}>
+              Đổi hội nghị
+            </CButton>
           </div>
         </CCardHeader>
         <CCardBody>
@@ -324,13 +395,33 @@ const DecisionBoard: React.FC = () => {
                       {item.reviewSummary?.averageScore?.toFixed(2) || 'N/A'}
                     </CTableDataCell>
                     <CTableDataCell>
-                      <CButton
-                        color="primary"
-                        size="sm"
-                        onClick={() => handleOpenDecisionModal(item.submissionId)}
-                      >
-                        Quyết định
-                      </CButton>
+                      <div className="d-flex gap-2">
+                        <CButton
+                          color="info"
+                          size="sm"
+                          variant="outline"
+                          title="Xem Reviews"
+                          onClick={() => navigate(`/app/submissions/${item.submissionId}/reviews`)}
+                        >
+                          <CIcon icon={cilClipboard} />
+                        </CButton>
+                        <CButton
+                          color="warning"
+                          size="sm"
+                          variant="outline"
+                          title="Thảo luận"
+                          onClick={() => navigate(`/app/chair/submissions/${item.submissionId}/discussion`)}
+                        >
+                          <CIcon icon={cilCommentSquare} />
+                        </CButton>
+                        <CButton
+                          color="primary"
+                          size="sm"
+                          onClick={() => handleOpenDecisionModal(item.submissionId)}
+                        >
+                          Quyết định
+                        </CButton>
+                      </div>
                     </CTableDataCell>
                   </CTableRow>
                 ))}

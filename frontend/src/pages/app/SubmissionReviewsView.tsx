@@ -121,7 +121,7 @@ const SubmissionReviewsView: React.FC = () => {
           <CCardBody>
             <div className="d-flex align-items-center gap-3">
               <div>
-                <h3>{averageScore.averageScore.toFixed(2)}</h3>
+                <h3>{averageScore.averageScore != null ? averageScore.averageScore.toFixed(2) : 'N/A'}</h3>
                 <small className="text-muted">Dựa trên {averageScore.reviewCount} reviews</small>
               </div>
             </div>

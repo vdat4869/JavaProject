@@ -21,7 +21,7 @@ import java.util.UUID;
         @Index(name = "idx_cr_version_submission_id", columnList = "submission_id"),
         @Index(name = "idx_cr_version_uploaded_at", columnList = "uploaded_at")
 }, uniqueConstraints = {
-        @UniqueConstraint(name = "uk_cr_submission_version", columnNames = {"submission_id", "version_number"})
+        @UniqueConstraint(name = "uk_cr_submission_version", columnNames = { "submission_id", "version_number" })
 })
 @Getter
 @Setter
@@ -67,14 +67,14 @@ public class CameraReadyVersion {
     private Boolean validationPassed;
 
     @Column(name = "uploaded_by", nullable = false)
-    private UUID uploadedBy;
+    private Long uploadedBy;
 
     @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
 
     public boolean isCurrent() {
-        return submission != null 
-                && submission.getCurrentVersion() != null 
+        return submission != null
+                && submission.getCurrentVersion() != null
                 && submission.getCurrentVersion().getId().equals(this.id);
     }
 

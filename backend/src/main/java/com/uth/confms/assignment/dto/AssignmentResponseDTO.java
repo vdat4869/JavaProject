@@ -1,6 +1,7 @@
 package com.uth.confms.assignment.dto;
 
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 public class AssignmentResponseDTO {
   private Long id;
@@ -12,8 +13,12 @@ public class AssignmentResponseDTO {
   private String status;
   private Boolean isPrimary;
   private String submissionAbstract;
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
   private LocalDateTime assignedAt;
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
   private LocalDateTime updatedAt;
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+  private LocalDateTime deadline; // Added deadline field
 
   public AssignmentResponseDTO() {
   }
@@ -27,9 +32,10 @@ public class AssignmentResponseDTO {
       String reviewerName,
       String status,
       Boolean isPrimary,
-      String submissionAbstract, // Added submissionAbstract here
+      String submissionAbstract,
       LocalDateTime assignedAt,
-      LocalDateTime updatedAt) {
+      LocalDateTime updatedAt,
+      LocalDateTime deadline) { // Added deadline parameter
     this.id = id;
     this.submissionId = submissionId;
     this.submissionTitle = submissionTitle;
@@ -41,6 +47,7 @@ public class AssignmentResponseDTO {
     this.submissionAbstract = submissionAbstract;
     this.assignedAt = assignedAt;
     this.updatedAt = updatedAt;
+    this.deadline = deadline;
   }
 
   public Long getId() {
@@ -131,6 +138,14 @@ public class AssignmentResponseDTO {
     this.updatedAt = updatedAt;
   }
 
+  public LocalDateTime getDeadline() {
+    return deadline;
+  }
+
+  public void setDeadline(LocalDateTime deadline) {
+    this.deadline = deadline;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -147,6 +162,7 @@ public class AssignmentResponseDTO {
     private String submissionAbstract;
     private LocalDateTime assignedAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime deadline; // Added deadline
 
     public Builder id(Long id) {
       this.id = id;
@@ -203,6 +219,11 @@ public class AssignmentResponseDTO {
       return this;
     }
 
+    public Builder deadline(LocalDateTime deadline) { // Added deadline
+      this.deadline = deadline;
+      return this;
+    }
+
     public AssignmentResponseDTO build() {
       return new AssignmentResponseDTO(
           id,
@@ -215,7 +236,8 @@ public class AssignmentResponseDTO {
           isPrimary,
           submissionAbstract,
           assignedAt,
-          updatedAt);
+          updatedAt,
+          deadline); // Pass deadline to constructor
     }
   }
 }

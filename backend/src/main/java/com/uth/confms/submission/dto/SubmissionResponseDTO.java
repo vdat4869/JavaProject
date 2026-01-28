@@ -14,12 +14,15 @@ public class SubmissionResponseDTO {
   private Long trackId;
   private String keywords;
   private Boolean withdrawn;
+  private Boolean canEdit;
+  private Boolean canWithdraw;
   private List<SubmissionAuthorDTO> authors;
   private List<SubmissionFileDTO> files;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
-  public SubmissionResponseDTO() {}
+  public SubmissionResponseDTO() {
+  }
 
   public SubmissionResponseDTO(
       Long id,
@@ -35,7 +38,9 @@ public class SubmissionResponseDTO {
       List<SubmissionAuthorDTO> authors,
       List<SubmissionFileDTO> files,
       LocalDateTime createdAt,
-      LocalDateTime updatedAt) {
+      LocalDateTime updatedAt,
+      Boolean canEdit,
+      Boolean canWithdraw) {
     this.id = id;
     this.conferenceId = conferenceId;
     this.authorId = authorId;
@@ -50,6 +55,8 @@ public class SubmissionResponseDTO {
     this.files = files;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+    this.canEdit = canEdit;
+    this.canWithdraw = canWithdraw;
   }
 
   public Long getId() {
@@ -164,6 +171,22 @@ public class SubmissionResponseDTO {
     this.updatedAt = updatedAt;
   }
 
+  public Boolean getCanEdit() {
+    return canEdit;
+  }
+
+  public void setCanEdit(Boolean canEdit) {
+    this.canEdit = canEdit;
+  }
+
+  public Boolean getCanWithdraw() {
+    return canWithdraw;
+  }
+
+  public void setCanWithdraw(Boolean canWithdraw) {
+    this.canWithdraw = canWithdraw;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -183,10 +206,44 @@ public class SubmissionResponseDTO {
     private List<SubmissionFileDTO> files;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Boolean canEdit;
+    private Boolean canWithdraw;
 
     public Builder id(Long id) {
       this.id = id;
       return this;
+    }
+
+    // ... existing builder methods ...
+
+    public Builder canEdit(Boolean canEdit) {
+      this.canEdit = canEdit;
+      return this;
+    }
+
+    public Builder canWithdraw(Boolean canWithdraw) {
+      this.canWithdraw = canWithdraw;
+      return this;
+    }
+
+    public SubmissionResponseDTO build() {
+      return new SubmissionResponseDTO(
+          id,
+          conferenceId,
+          authorId,
+          title,
+          abstractText,
+          status,
+          pdfFilePath,
+          trackId,
+          keywords,
+          withdrawn,
+          authors,
+          files,
+          createdAt,
+          updatedAt,
+          canEdit,
+          canWithdraw);
     }
 
     public Builder conferenceId(Long conferenceId) {
@@ -254,22 +311,5 @@ public class SubmissionResponseDTO {
       return this;
     }
 
-    public SubmissionResponseDTO build() {
-      return new SubmissionResponseDTO(
-          id,
-          conferenceId,
-          authorId,
-          title,
-          abstractText,
-          status,
-          pdfFilePath,
-          trackId,
-          keywords,
-          withdrawn,
-          authors,
-          files,
-          createdAt,
-          updatedAt);
-    }
   }
 }

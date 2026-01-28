@@ -21,13 +21,14 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Service tạo và quản lý reports (báo cáo thống kê)
  *
- * <p>Service này xử lý các nghiệp vụ liên quan đến:
+ * <p>
+ * Service này xử lý các nghiệp vụ liên quan đến:
  *
  * <ul>
- *   <li>Generate reports on-the-fly từ data
- *   <li>Tạo và lưu report snapshots
- *   <li>Report history tracking
- *   <li>Statistics: submissions, reviews, assignments
+ * <li>Generate reports on-the-fly từ data
+ * <li>Tạo và lưu report snapshots
+ * <li>Report history tracking
+ * <li>Statistics: submissions, reviews, assignments
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -56,10 +57,9 @@ public class ReportingService {
   }
 
   public ReportResponseDTO generateReport(Long conferenceId, Long chairId) {
-    Conference conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -71,27 +71,23 @@ public class ReportingService {
 
     // Calculate submission statistics
     int totalSubmissions = submissions.size();
-    long accepted =
-        submissions.stream()
-            .filter(s -> s.getStatus() == Submission.SubmissionStatus.ACCEPTED)
-            .count();
-    long rejected =
-        submissions.stream()
-            .filter(s -> s.getStatus() == Submission.SubmissionStatus.REJECTED)
-            .count();
-    long pending =
-        submissions.stream()
-            .filter(
-                s ->
-                    s.getStatus() == Submission.SubmissionStatus.UNDER_REVIEW
-                        || s.getStatus() == Submission.SubmissionStatus.SUBMITTED)
-            .count();
+    long accepted = submissions.stream()
+        .filter(s -> s.getStatus() == Submission.SubmissionStatus.ACCEPTED)
+        .count();
+    long rejected = submissions.stream()
+        .filter(s -> s.getStatus() == Submission.SubmissionStatus.REJECTED)
+        .count();
+    long pending = submissions.stream()
+        .filter(
+            s -> s.getStatus() == Submission.SubmissionStatus.UNDER_REVIEW
+                || s.getStatus() == Submission.SubmissionStatus.SUBMITTED
+                || s.getStatus() == Submission.SubmissionStatus.REVIEWED)
+        .count();
 
     double acceptanceRate = totalSubmissions > 0 ? (double) accepted / totalSubmissions * 100 : 0.0;
 
     // Get all submission IDs
-    List<Long> submissionIds =
-        submissions.stream().map(Submission::getId).collect(Collectors.toList());
+    List<Long> submissionIds = submissions.stream().map(Submission::getId).collect(Collectors.toList());
 
     // Calculate review statistics
     int totalReviews = 0;
@@ -101,11 +97,8 @@ public class ReportingService {
     for (Long submissionId : submissionIds) {
       List<Review> reviews = reviewRepository.findBySubmissionId(submissionId);
       totalReviews += reviews.size();
-      completedReviews +=
-          (int)
-              reviews.stream().filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED).count();
-      pendingReviews +=
-          (int) reviews.stream().filter(r -> r.getStatus() == Review.ReviewStatus.DRAFT).count();
+      completedReviews += (int) reviews.stream().filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED).count();
+      pendingReviews += (int) reviews.stream().filter(r -> r.getStatus() == Review.ReviewStatus.DRAFT).count();
     }
 
     // Calculate assignment statistics
@@ -116,16 +109,12 @@ public class ReportingService {
     for (Long submissionId : submissionIds) {
       List<Assignment> assignments = assignmentRepository.findBySubmissionId(submissionId);
       totalAssignments += assignments.size();
-      acceptedAssignments +=
-          (int)
-              assignments.stream()
-                  .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ACCEPTED)
-                  .count();
-      declinedAssignments +=
-          (int)
-              assignments.stream()
-                  .filter(a -> a.getStatus() == Assignment.AssignmentStatus.DECLINED)
-                  .count();
+      acceptedAssignments += (int) assignments.stream()
+          .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ACCEPTED)
+          .count();
+      declinedAssignments += (int) assignments.stream()
+          .filter(a -> a.getStatus() == Assignment.AssignmentStatus.DECLINED)
+          .count();
     }
 
     return ReportResponseDTO.builder()
@@ -148,21 +137,20 @@ public class ReportingService {
   public ReportResponseDTO createSnapshot(Long conferenceId, Long chairId) {
     ReportResponseDTO report = generateReport(conferenceId, chairId);
 
-    ReportSnapshot snapshot =
-        ReportSnapshot.builder()
-            .conferenceId(report.getConferenceId())
-            .totalSubmissions(report.getTotalSubmissions())
-            .acceptedCount(report.getAcceptedCount())
-            .rejectedCount(report.getRejectedCount())
-            .pendingCount(report.getPendingCount())
-            .acceptanceRate(report.getAcceptanceRate())
-            .totalReviews(report.getTotalReviews())
-            .completedReviews(report.getCompletedReviews())
-            .pendingReviews(report.getPendingReviews())
-            .totalAssignments(report.getTotalAssignments())
-            .acceptedAssignments(report.getAcceptedAssignments())
-            .declinedAssignments(report.getDeclinedAssignments())
-            .build();
+    ReportSnapshot snapshot = ReportSnapshot.builder()
+        .conferenceId(report.getConferenceId())
+        .totalSubmissions(report.getTotalSubmissions())
+        .acceptedCount(report.getAcceptedCount())
+        .rejectedCount(report.getRejectedCount())
+        .pendingCount(report.getPendingCount())
+        .acceptanceRate(report.getAcceptanceRate())
+        .totalReviews(report.getTotalReviews())
+        .completedReviews(report.getCompletedReviews())
+        .pendingReviews(report.getPendingReviews())
+        .totalAssignments(report.getTotalAssignments())
+        .acceptedAssignments(report.getAcceptedAssignments())
+        .declinedAssignments(report.getDeclinedAssignments())
+        .build();
 
     snapshot = reportRepository.save(snapshot);
 
@@ -170,10 +158,9 @@ public class ReportingService {
   }
 
   public ReportResponseDTO getLatestReport(Long conferenceId, Long chairId) {
-    Conference conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -181,8 +168,7 @@ public class ReportingService {
     }
 
     // Try to get latest snapshot
-    ReportSnapshot snapshot =
-        reportRepository.findFirstByConferenceIdOrderBySnapshotAtDesc(conferenceId).orElse(null);
+    ReportSnapshot snapshot = reportRepository.findFirstByConferenceIdOrderBySnapshotAtDesc(conferenceId).orElse(null);
 
     if (snapshot != null) {
       return mapToDTO(snapshot);
@@ -193,10 +179,9 @@ public class ReportingService {
   }
 
   public List<ReportResponseDTO> getReportHistory(Long conferenceId, Long chairId) {
-    Conference conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {

@@ -18,7 +18,7 @@ public interface CameraReadyReviewRepository extends JpaRepository<CameraReadyRe
 
     List<CameraReadyReview> findBySubmissionIdOrderByReviewedAtDesc(UUID submissionId);
 
-    List<CameraReadyReview> findByReviewedBy(UUID reviewerId);
+    List<CameraReadyReview> findByReviewedBy(Long reviewerId);
 
     long countBySubmissionId(UUID submissionId);
 }

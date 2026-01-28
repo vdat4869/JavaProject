@@ -39,7 +39,7 @@ public class VersionDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class UserDTO {
-        private UUID id;
+        private Long id;
         private String fullName;
         private String email;
     }

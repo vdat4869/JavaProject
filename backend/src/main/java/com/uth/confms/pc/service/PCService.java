@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
+
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -260,10 +260,13 @@ public class PCService {
 
   private void sendInvitationEmail(String email, String conferenceName, String token) {
     try {
-      SimpleMailMessage message = new SimpleMailMessage();
-      message.setTo(email);
-      message.setSubject("Invitation to PC Member - " + conferenceName);
-      message.setText(
+      jakarta.mail.internet.MimeMessage message = mailSender.createMimeMessage();
+      org.springframework.mail.javamail.MimeMessageHelper helper = new org.springframework.mail.javamail.MimeMessageHelper(
+          message, false, "UTF-8");
+
+      helper.setTo(email);
+      helper.setSubject("Invitation to PC Member - " + conferenceName);
+      helper.setText(
           String.format(
               "Xin chào,\n\n"
                   + "Bạn đã được mời làm thành viên Program Committee (PC) cho hội nghị:\n"
@@ -277,7 +280,8 @@ public class PCService {
                   + "Sau khi chấp nhận, bạn sẽ được chuyển đến trang khai báo mâu thuẫn lợi ích (COI).\n\n"
                   + "Trân trọng,\n"
                   + "UTH-ConfMS Team",
-              conferenceName, frontendUrl, token, frontendUrl, token, invitationExpirationDays));
+              conferenceName, frontendUrl, token, frontendUrl, token, invitationExpirationDays),
+          false);
       mailSender.send(message);
     } catch (Exception e) {
       System.err.println("Failed to send invitation email: " + e.getMessage());

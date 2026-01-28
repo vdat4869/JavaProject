@@ -25,10 +25,10 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class PdfValidationServiceImpl implements PdfValidationService {
 
-    @Value("${app.camera-ready.pdf.max-file-size:10485760}")
+    @Value("${app.camera-ready.pdf.max-file-size:20971520}")
     private long maxFileSize;
 
-    @Value("${app.camera-ready.pdf.max-pages:12}")
+    @Value("${app.camera-ready.pdf.max-pages:500}")
     private int maxPages;
 
     private static final float A4_WIDTH = 595f;
@@ -40,7 +40,7 @@ public class PdfValidationServiceImpl implements PdfValidationService {
     @Override
     public ValidationResultDTO validate(MultipartFile file) {
         log.debug("Bắt đầu kiểm tra PDF: {}", file.getOriginalFilename());
-        
+
         ValidationResultDTO result = ValidationResultDTO.builder()
                 .passed(true)
                 .fileSizeBytes(file.getSize())
@@ -56,9 +56,9 @@ public class PdfValidationServiceImpl implements PdfValidationService {
         // VR-002: Kiểm tra PDF hợp lệ
         try {
             byte[] content = file.getBytes();
-            
+
             try (PDDocument document = Loader.loadPDF(content)) {
-                
+
                 // VR-003: Kiểm tra mã hóa
                 if (document.isEncrypted()) {
                     result.addError("PDF_ENCRYPTED", "PDF không được bảo vệ bằng mật khẩu");
@@ -67,7 +67,7 @@ public class PdfValidationServiceImpl implements PdfValidationService {
                 // VR-004: Kiểm tra số trang
                 int pageCount = document.getNumberOfPages();
                 result.setPageCount(pageCount);
-                
+
                 if (pageCount > maxPages) {
                     result.addError("PAGE_COUNT_EXCEEDED",
                             String.format("Số trang (%d) vượt quá giới hạn (%d)", pageCount, maxPages));
@@ -81,33 +81,33 @@ public class PdfValidationServiceImpl implements PdfValidationService {
                 if (pageCount > 0) {
                     String pageSize = detectPageSize(document.getPage(0));
                     result.setPageSize(pageSize);
-                    
+
                     if ("UNKNOWN".equals(pageSize)) {
-                        result.addWarning("UNKNOWN_PAGE_SIZE", 
+                        result.addWarning("UNKNOWN_PAGE_SIZE",
                                 "Kích thước trang không phải A4 hoặc Letter");
                     }
                 }
 
                 // VR-006: Kiểm tra JavaScript
                 if (document.getDocumentCatalog().getNames() != null &&
-                    document.getDocumentCatalog().getNames().getJavaScript() != null) {
+                        document.getDocumentCatalog().getNames().getJavaScript() != null) {
                     result.addWarning("CONTAINS_JAVASCRIPT", "PDF chứa JavaScript");
                 }
 
                 // VR-007: Kiểm tra file đính kèm
                 if (document.getDocumentCatalog().getNames() != null &&
-                    document.getDocumentCatalog().getNames().getEmbeddedFiles() != null) {
+                        document.getDocumentCatalog().getNames().getEmbeddedFiles() != null) {
                     result.addWarning("CONTAINS_EMBEDDED_FILES", "PDF có file đính kèm");
                 }
             }
-            
+
         } catch (IOException e) {
             log.error("Lỗi khi kiểm tra PDF: {}", e.getMessage());
             result.addError("INVALID_PDF", "File không phải PDF hợp lệ");
         }
 
         result.setPassed(!result.hasErrors());
-        
+
         log.debug("Kết quả kiểm tra: passed={}", result.isPassed());
         return result;
     }
@@ -135,12 +135,12 @@ public class PdfValidationServiceImpl implements PdfValidationService {
         float height = mediaBox.getHeight();
 
         if ((isWithinTolerance(width, A4_WIDTH) && isWithinTolerance(height, A4_HEIGHT)) ||
-            (isWithinTolerance(width, A4_HEIGHT) && isWithinTolerance(height, A4_WIDTH))) {
+                (isWithinTolerance(width, A4_HEIGHT) && isWithinTolerance(height, A4_WIDTH))) {
             return "A4";
         }
 
         if ((isWithinTolerance(width, LETTER_WIDTH) && isWithinTolerance(height, LETTER_HEIGHT)) ||
-            (isWithinTolerance(width, LETTER_HEIGHT) && isWithinTolerance(height, LETTER_WIDTH))) {
+                (isWithinTolerance(width, LETTER_HEIGHT) && isWithinTolerance(height, LETTER_WIDTH))) {
             return "LETTER";
         }
 
@@ -152,8 +152,10 @@ public class PdfValidationServiceImpl implements PdfValidationService {
     }
 
     private String formatFileSize(long bytes) {
-        if (bytes < 1024) return bytes + " B";
-        if (bytes < 1024 * 1024) return String.format("%.2f KB", bytes / 1024.0);
+        if (bytes < 1024)
+            return bytes + " B";
+        if (bytes < 1024 * 1024)
+            return String.format("%.2f KB", bytes / 1024.0);
         return String.format("%.2f MB", bytes / (1024.0 * 1024));
     }
 }

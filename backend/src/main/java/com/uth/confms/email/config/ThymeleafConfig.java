@@ -11,10 +11,13 @@ import org.thymeleaf.templateresolver.ITemplateResolver;
 /**
  * Configuration cho Thymeleaf template engine cho email templates
  *
- * <p>Configuration này tạo một TemplateEngine riêng cho email templates, tách biệt với web
+ * <p>
+ * Configuration này tạo một TemplateEngine riêng cho email templates, tách biệt
+ * với web
  * templates (nếu có).
  *
- * <p>Email templates được lưu tại: resources/templates/email/
+ * <p>
+ * Email templates được lưu tại: resources/templates/email/
  *
  * @author UTH-ConfMS Team
  * @version 1.0
@@ -41,7 +44,7 @@ public class ThymeleafConfig {
    */
   private ITemplateResolver emailTemplateResolver() {
     ClassLoaderTemplateResolver templateResolver = new ClassLoaderTemplateResolver();
-    templateResolver.setPrefix("templates/email/");
+    templateResolver.setPrefix("templates/");
     templateResolver.setSuffix(".html");
     templateResolver.setTemplateMode(TemplateMode.HTML);
     templateResolver.setCharacterEncoding("UTF-8");

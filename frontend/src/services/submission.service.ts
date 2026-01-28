@@ -303,21 +303,21 @@ export const submissionService = {
 
   /**
    * Lấy danh sách reviews cho submission (anonymized)
-   * GET /api/submissions/{id}/reviews
+   * GET /api/reviews/submission/{id}
    */
   getReviews: async (id: number): Promise<Review[]> => {
-    const response = await apiClient.get<Review[]>(`/submissions/${id}/reviews`)
-    return response.data
+    const response = await apiClient.get<any>(`/reviews/submission/${id}`)
+    return response.data.data || []
   },
 
   /**
    * Lấy decision cho submission
-   * GET /api/submissions/{id}/decision
+   * GET /api/decisions/submission/{id}
    */
   getDecision: async (id: number): Promise<Decision | null> => {
     try {
-      const response = await apiClient.get<Decision>(`/submissions/${id}/decision`)
-      return response.data
+      const response = await apiClient.get<any>(`/decisions/submission/${id}`)
+      return response.data.data
     } catch (error: any) {
       if (error.response?.status === 404) {
         return null // Chưa có decision

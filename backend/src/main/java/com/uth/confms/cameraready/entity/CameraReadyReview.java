@@ -44,7 +44,7 @@ public class CameraReadyReview {
     private String note;
 
     @Column(name = "reviewed_by", nullable = false)
-    private UUID reviewedBy;
+    private Long reviewedBy;
 
     @Column(name = "reviewed_at", nullable = false)
     private LocalDateTime reviewedAt;

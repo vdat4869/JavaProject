@@ -22,7 +22,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class StatisticsDTO {
 
-    private UUID conferenceId;
+    private Long conferenceId;
     private LocalDateTime deadline;
     private Integer daysRemaining;
     private Integer totalAcceptedPapers;
@@ -46,7 +46,7 @@ public class StatisticsDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TrackStatistics {
-        private UUID trackId;
+        private Long trackId;
         private String trackName;
         private Integer total;
         private Integer submitted;

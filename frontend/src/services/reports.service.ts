@@ -87,17 +87,39 @@ export const reportsService = {
   /**
    * Export report (Giữ nguyên path cũ nếu backend chưa refactor endpoint này)
    */
-  export: async (data: ReportExportRequest): Promise<ReportExportResponse> => {
+  export: async (data: ReportExportRequest): Promise<{ fileName: string }> => {
     const params = new URLSearchParams({
       conferenceId: data.conferenceId.toString(),
       reportType: data.reportType,
       format: data.format,
     })
 
-    const response = await apiClient.get<any>(
+    const response = await apiClient.get(
       `/reports/export?${params.toString()}`,
+      { responseType: 'blob' }
     )
-    return response.data?.data || response.data
+
+    // Extract filename from Content-Disposition header
+    const contentDisposition = response.headers['content-disposition']
+    let fileName = `report_${data.conferenceId}_${new Date().toISOString().split('T')[0]}.${data.format.toLowerCase()}`
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+      if (match && match[1]) {
+        fileName = match[1].replace(/['"]/g, '')
+      }
+    }
+
+    // Trigger download
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    return { fileName }
   },
 
   /**

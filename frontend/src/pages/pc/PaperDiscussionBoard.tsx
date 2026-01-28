@@ -94,8 +94,8 @@ const PaperDiscussionBoard: React.FC = () => {
                                             color="info"
                                             size="sm"
                                             variant="outline"
-                                            onClick={() => navigate(`/app/pc/reviews/${item.reviewId || item.id}/discussion`)}
-                                            disabled={!item.reviewId && item.status !== 'COMPLETED'}
+                                            onClick={() => navigate(`/app/pc/submissions/${item.submissionId}/discussion`)}
+                                            disabled={item.status !== 'COMPLETED' && item.status !== 'ACCEPTED'}
                                         >
                                             <CIcon icon={cilCommentSquare} className="me-1" />
                                             Vào thảo luận

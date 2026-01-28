@@ -184,11 +184,17 @@ public class ReviewService {
       assignment.setStatus(Assignment.AssignmentStatus.COMPLETED);
       assignmentRepository.save(assignment);
 
-      // Transition submission to REVIEWED if all current assignments are completed
+      // Transition submission to REVIEWED if all current assignments (not DECLINED)
+      // are completed
       List<Assignment> allAssignments = assignmentRepository.findBySubmissionId(review.getSubmissionId());
-      boolean allCompleted = !allAssignments.isEmpty() && allAssignments.stream()
-          .allMatch(a -> a.getStatus() == Assignment.AssignmentStatus.COMPLETED
-              || a.getStatus() == Assignment.AssignmentStatus.DECLINED);
+
+      // Filter out DECLINED assignments and check if others are COMPLETED
+      List<Assignment> activeAssignments = allAssignments.stream()
+          .filter(a -> a.getStatus() != Assignment.AssignmentStatus.DECLINED)
+          .collect(Collectors.toList());
+
+      boolean allCompleted = !activeAssignments.isEmpty() && activeAssignments.stream()
+          .allMatch(a -> a.getStatus() == Assignment.AssignmentStatus.COMPLETED);
 
       if (allCompleted) {
         Submission submission = submissionRepository.findById(review.getSubmissionId()).orElse(null);

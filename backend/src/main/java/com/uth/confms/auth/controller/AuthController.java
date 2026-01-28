@@ -1,9 +1,6 @@
 package com.uth.confms.auth.controller;
 
-import com.uth.confms.auth.dto.ChangePasswordRequest;
-import com.uth.confms.auth.dto.LoginRequest;
-import com.uth.confms.auth.dto.LoginResponse;
-import com.uth.confms.auth.dto.RegisterRequest;
+import com.uth.confms.auth.dto.*;
 import com.uth.confms.auth.service.AuthService;
 import com.uth.confms.auth.service.TokenService;
 import com.uth.confms.auth.repository.RefreshTokenRepository;
@@ -17,13 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -207,6 +198,30 @@ public class AuthController {
     // TODO: Implement actual OAuth2 token exchange and user creation
     // For now, throw error indicating SSO needs to be configured
     throw new BusinessException("SSO callback not yet implemented. Please use email/password login.");
+  }
+
+  /**
+   * Request password reset link
+   */
+  @PostMapping("/forgot-password")
+  @NoAuth
+  public ResponseEntity<ApiResponse<Void>> forgotPassword(
+      @Valid @RequestBody ForgotPasswordRequest request,
+      HttpServletRequest httpRequest) {
+    authService.forgotPassword(request, httpRequest);
+    return ResponseEntity.ok(ApiResponse.success("Password reset email sent", null));
+  }
+
+  /**
+   * Reset password using token
+   */
+  @PostMapping("/reset-password")
+  @NoAuth
+  public ResponseEntity<ApiResponse<Void>> resetPassword(
+      @Valid @RequestBody ResetPasswordRequest request,
+      HttpServletRequest httpRequest) {
+    authService.resetPassword(request, httpRequest);
+    return ResponseEntity.ok(ApiResponse.success("Password reset successful", null));
   }
 
   /**

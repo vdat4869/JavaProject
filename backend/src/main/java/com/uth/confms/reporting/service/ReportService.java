@@ -9,7 +9,6 @@ import com.uth.confms.review.repository.ReviewRepository;
 import com.uth.confms.submission.entity.Submission;
 import com.uth.confms.submission.repository.SubmissionRepository;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -33,21 +32,18 @@ public class ReportService {
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
 
     int total = submissions.size();
-    long accepted =
-        submissions.stream()
-            .filter(s -> s.getStatus() == Submission.SubmissionStatus.ACCEPTED)
-            .count();
-    long rejected =
-        submissions.stream()
-            .filter(s -> s.getStatus() == Submission.SubmissionStatus.REJECTED)
-            .count();
-    long pending =
-        submissions.stream()
-            .filter(
-                s ->
-                    s.getStatus() == Submission.SubmissionStatus.UNDER_REVIEW
-                        || s.getStatus() == Submission.SubmissionStatus.SUBMITTED)
-            .count();
+    long accepted = submissions.stream()
+        .filter(s -> s.getStatus() == Submission.SubmissionStatus.ACCEPTED)
+        .count();
+    long rejected = submissions.stream()
+        .filter(s -> s.getStatus() == Submission.SubmissionStatus.REJECTED)
+        .count();
+    long pending = submissions.stream()
+        .filter(
+            s -> s.getStatus() == Submission.SubmissionStatus.UNDER_REVIEW
+                || s.getStatus() == Submission.SubmissionStatus.SUBMITTED
+                || s.getStatus() == Submission.SubmissionStatus.REVIEWED)
+        .count();
 
     double acceptanceRate = total > 0 ? (double) accepted / total * 100 : 0.0;
 
@@ -82,11 +78,11 @@ public class ReportService {
 
       // Get reviews for this submission
       List<Review> reviews = reviewRepository.findBySubmissionId(submissionId);
-      
+
       for (Review review : reviews) {
         if (review.getStatus() == Review.ReviewStatus.SUBMITTED) {
           completedReviews++;
-          
+
           // Calculate review time if both timestamps are available
           if (review.getCreatedAt() != null && review.getSubmittedAt() != null) {
             Duration duration = Duration.between(review.getCreatedAt(), review.getSubmittedAt());
@@ -100,12 +96,12 @@ public class ReportService {
     }
 
     // Calculate completion rate
-    double completionRate = totalAssignments > 0 
-        ? (double) completedReviews / totalAssignments * 100.0 
+    double completionRate = totalAssignments > 0
+        ? (double) completedReviews / totalAssignments * 100.0
         : 0.0;
 
     // Calculate average review time
-    Integer averageReviewTime = reviewsWithTime > 0 
+    Integer averageReviewTime = reviewsWithTime > 0
         ? (int) (totalReviewTimeHours / reviewsWithTime)
         : null;
 

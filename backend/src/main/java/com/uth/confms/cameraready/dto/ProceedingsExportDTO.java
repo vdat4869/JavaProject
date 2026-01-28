@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * DTO cho xuất kỷ yếu (proceedings).
@@ -21,7 +20,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class ProceedingsExportDTO {
 
-    private UUID conferenceId;
+    private Long conferenceId;
     private String conferenceName;
     private LocalDateTime exportedAt;
     private Integer totalPapers;
@@ -32,7 +31,7 @@ public class ProceedingsExportDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PaperExportDTO {
-        private UUID paperId;
+        private Long paperId;
         private String title;
         private String abstractText;
         private List<String> keywords;
@@ -61,7 +60,7 @@ public class ProceedingsExportDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class TrackExportDTO {
-        private UUID id;
+        private Long id;
         private String name;
     }
 

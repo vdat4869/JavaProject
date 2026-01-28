@@ -182,7 +182,9 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             <p className="text-muted">{assignment.submissionAbstract}</p>
             <p>
               <strong>Hạn chót: </strong>
-              {new Date(assignment.deadline).toLocaleString('vi-VN')}
+              {assignment.deadline
+                ? new Date(assignment.deadline).toLocaleString('vi-VN')
+                : 'Chưa thiết lập'}
               {isDeadlinePassed && (
                 <CBadge color="danger" className="ms-2">
                   Đã hết hạn
@@ -327,23 +329,47 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
             />
           </div>
 
-          <div className="d-flex justify-content-end gap-2">
+          <div className="d-flex justify-content-between gap-2">
             <CButton color="secondary" onClick={onCancel} disabled={loading}>
               Hủy
             </CButton>
-            <CButton
-              color="primary"
-              type="submit"
-              disabled={loading || isDeadlinePassed || !canEdit}
-            >
-              {loading ? (
-                <CSpinner size="sm" />
-              ) : review?.status === 'DRAFT' ? (
-                'Lưu bản nháp'
-              ) : (
-                'Lưu'
+            <div className="d-flex gap-2">
+              <CButton
+                color="primary"
+                type="submit"
+                disabled={loading || isDeadlinePassed || !canEdit}
+              >
+                {loading ? (
+                  <CSpinner size="sm" />
+                ) : review?.status === 'DRAFT' ? (
+                  'Lưu bản nháp'
+                ) : (
+                  'Lưu'
+                )}
+              </CButton>
+              {review?.id && canEdit && (
+                <CButton
+                  color="success"
+                  onClick={async () => {
+                    if (
+                      window.confirm(
+                        'Bạn có chắc chắn muốn nộp (submit) review này? Sau khi nộp, bạn không thể chỉnh sửa.',
+                      )
+                    ) {
+                      try {
+                        await reviewService.submitReview(review.id)
+                        onCancel() // Điều hướng về trang danh sách
+                      } catch (err: any) {
+                        setError(err.response?.data?.message || 'Không thể nộp review')
+                      }
+                    }
+                  }}
+                  disabled={loading}
+                >
+                  Nộp Review (Finalize)
+                </CButton>
               )}
-            </CButton>
+            </div>
           </div>
         </CForm>
       </CCardBody>

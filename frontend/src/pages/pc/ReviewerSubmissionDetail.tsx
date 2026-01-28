@@ -116,8 +116,8 @@ const ReviewerSubmissionDetail: React.FC = () => {
     }
 
     const handleJoinDiscussion = () => {
-        if (assignment && assignment.reviewId) {
-            navigate(`/app/pc/reviews/${assignment.reviewId}/discussion`)
+        if (submission) {
+            navigate(`/app/pc/submissions/${submission.id}/discussion`)
         } else {
             navigate('/app/pc/discussions')
         }

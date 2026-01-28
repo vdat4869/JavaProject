@@ -152,7 +152,7 @@ export const reviewService = {
    */
   getAssignments: async (): Promise<Assignment[]> => {
     const response = await apiClient.get<{ success: boolean; data: Assignment[] }>('/assignments/my')
-    return response.data.data || (response.data as any)
+    return response.data.data
   },
 
   /**
@@ -160,8 +160,8 @@ export const reviewService = {
    * GET /api/assignments/{id}
    */
   getAssignment: async (id: number): Promise<Assignment> => {
-    const response = await apiClient.get<Assignment>(`/assignments/${id}`)
-    return response.data
+    const response = await apiClient.get<{ success: boolean; data: Assignment }>(`/assignments/${id}`)
+    return response.data.data
   },
 
   /**

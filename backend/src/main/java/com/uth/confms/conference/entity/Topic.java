@@ -16,9 +16,11 @@ public class Topic {
   @Column(nullable = false)
   private String name;
 
+  @Column(columnDefinition = "TEXT")
   private String description;
 
-  public Topic() {}
+  public Topic() {
+  }
 
   public Topic(Long id, Conference conference, String name, String description) {
     this.id = id;

@@ -24,6 +24,8 @@ import {
     CRow,
     CCol,
     CWidgetStatsC,
+    CListGroup,
+    CListGroupItem,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilFile, cilCheckCircle, cilXCircle, cilCloudDownload, cilChartPie } from '@coreui/icons'
@@ -33,6 +35,7 @@ import {
     CameraReadyStatistics,
     ReviewDecision,
 } from '../../services/camera-ready.service'
+import { conferenceService, ConferenceResponse } from '../../services/conference.service'
 
 /**
  * CameraReadyManagement - Dashboard quản lý Camera-ready dành cho Chair
@@ -46,11 +49,16 @@ const CameraReadyManagement: React.FC = () => {
     const [stats, setStats] = useState<CameraReadyStatistics | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const [success, setSuccess] = useState('')
+
+    // Conference selection states
+    const [myConferences, setMyConferences] = useState<ConferenceResponse[]>([])
+    const [isSelectingConference, setIsSelectingConference] = useState(false)
 
     // Modal review state
     const [showReviewModal, setShowReviewModal] = useState(false)
     const [selectedSubmission, setSelectedSubmission] = useState<CameraReadySubmissionListItem | null>(null)
-    const [decision, setDecision] = useState<ReviewDecision>('APPROVE')
+    const [decision, setDecision] = useState<ReviewDecision>('APPROVED')
     const [note, setNote] = useState('')
     const [reviewing, setReviewing] = useState(false)
 
@@ -58,10 +66,28 @@ const CameraReadyManagement: React.FC = () => {
         if (conferenceId) {
             loadData()
         } else {
-            setError('Thiếu tham số conferenceId trong URL.')
-            setLoading(false)
+            loadMyConferences()
         }
     }, [conferenceId])
+
+    const loadMyConferences = async () => {
+        try {
+            setLoading(true)
+            const data = await conferenceService.getMyConferences()
+            if (data.length === 1) {
+                // Auto select if only one
+                navigate(`?conferenceId=${data[0].id}`, { replace: true })
+            } else {
+                setMyConferences(data)
+                setIsSelectingConference(true)
+                setLoading(false)
+            }
+        } catch (error) {
+            console.error('Error loading conferences:', error)
+            // setError('Không thể tải danh sách hội nghị') // Don't show error immediately
+            setLoading(false)
+        }
+    }
 
     const loadData = async () => {
         try {
@@ -79,28 +105,29 @@ const CameraReadyManagement: React.FC = () => {
         }
     }
 
-    const handleOpenReview = (sub: CameraReadySubmissionListItem) => {
-        setSelectedSubmission(sub)
-        setDecision('APPROVE')
-        setNote('')
-        setShowReviewModal(true)
-    }
+    // Open Camera-Ready states
+    const [showOpenModal, setShowOpenModal] = useState(false)
+    const [openDeadline, setOpenDeadline] = useState('')
+    const [opening, setOpening] = useState(false)
 
-    const handleReview = async () => {
-        if (!selectedSubmission || !conferenceId) return
+    // ... existing useEffect ...
 
+    // ... existing loadMyConferences ...
+
+    // ... existing loadData ...
+
+    const handleOpenCameraReady = async () => {
+        if (!conferenceId) return
         try {
-            setReviewing(true)
-            await cameraReadyService.reviewSubmission(conferenceId, selectedSubmission.id, {
-                decision,
-                note
-            })
-            setShowReviewModal(false)
+            setOpening(true)
+            await cameraReadyService.openCameraReady(conferenceId.toString(), openDeadline ? openDeadline : undefined)
+            setSuccess('Đã mở nộp Camera-Ready thành công!')
+            setShowOpenModal(false)
             loadData()
         } catch (err: any) {
-            alert('Lỗi khi lưu kết quả duyệt: ' + (err.response?.data?.message || err.message))
+            alert('Lỗi khi mở Camera-Ready: ' + (err.response?.data?.message || err.message))
         } finally {
-            setReviewing(false)
+            setOpening(false)
         }
     }
 
@@ -108,67 +135,154 @@ const CameraReadyManagement: React.FC = () => {
         navigate(`/app/chair/proceedings?conferenceId=${conferenceId}`)
     }
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'APPROVED': return <CBadge color="success">APPROVED</CBadge>
-            case 'REJECTED': return <CBadge color="danger">REJECTED</CBadge>
-            case 'NEEDS_REVISION': return <CBadge color="warning">REVISION</CBadge>
-            default: return <CBadge color="info">PENDING</CBadge>
+    const handleOpenReview = (submission: CameraReadySubmissionListItem) => {
+        setSelectedSubmission(submission)
+        setDecision('APPROVED')
+        setNote('')
+        setShowReviewModal(true)
+    }
+
+    const handleReview = async () => {
+        if (!selectedSubmission || !conferenceId) return
+        try {
+            setReviewing(true)
+            await cameraReadyService.reviewSubmission(conferenceId.toString(), selectedSubmission.id.toString(), {
+                decision,
+                note
+            })
+            setSuccess('Đã lưu kết quả đánh giá')
+            setShowReviewModal(false)
+            loadData()
+        } catch (err: any) {
+            alert('Lỗi: ' + (err.response?.data?.message || err.message))
+        } finally {
+            setReviewing(false)
         }
     }
 
-    if (loading) return <div className="text-center p-5"><CSpinner color="primary" /></div>
-    if (error) return <CAlert color="danger">{error}</CAlert>
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'APPROVED': return <CBadge color="success">Đã duyệt</CBadge>
+            case 'REQUEST_CHANGES': return <CBadge color="warning">Yêu cầu sửa</CBadge>
+            case 'SUBMITTED': return <CBadge color="info">Đã nộp</CBadge>
+            default: return <CBadge color="secondary">{status}</CBadge>
+        }
+    }
+
+    if (isSelectingConference) {
+        return (
+            <div className="container-fluid">
+                <h3>Chọn hội nghị để quản lý Camera-Ready</h3>
+                <div className="list-group mt-3">
+                    {myConferences.map(conf => (
+                        <button
+                            key={conf.id}
+                            className="list-group-item list-group-item-action"
+                            onClick={() => navigate(`?conferenceId=${conf.id}`)}
+                        >
+                            {conf.name}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        )
+    }
+
+    if (loading) return <CSpinner color="primary" />
 
     return (
         <div className="container-fluid">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h3>Quản lý Camera-Ready</h3>
-                <CButton color="primary" onClick={handleExport}>
-                    <CIcon icon={cilCloudDownload} className="me-2" /> Xuất bản kỷ yếu (Export)
-                </CButton>
+                <div className="d-flex gap-2">
+                    <CButton color="success" onClick={() => setShowOpenModal(true)}>
+                        <CIcon icon={cilCheckCircle} className="me-2" /> Mở nộp Camera-Ready
+                    </CButton>
+                    <CButton color="secondary" variant="outline" onClick={() => navigate('/app/chair/conferences')}>
+                        Đổi hội nghị
+                    </CButton>
+                    <CButton color="primary" onClick={handleExport}>
+                        <CIcon icon={cilCloudDownload} className="me-2" /> Xuất bản kỷ yếu (Export)
+                    </CButton>
+                </div>
             </div>
 
-            {stats && (
-                <CRow className="mb-4">
-                    <CCol sm={6} lg={3}>
-                        <CWidgetStatsC
-                            icon={<CIcon icon={cilFile} height={36} />}
-                            value={stats.totalAcceptedPapers}
-                            title="Tổng bài được chấp nhận"
-                            color="primary"
-                            inverse
+            {/* ... stats ... */}
+
+            {/* ... table ... */}
+
+            {/* Review Modal */}
+            {/* ... */}
+
+            {/* Open Camera-Ready Modal */}
+            <CModal visible={showOpenModal} onClose={() => setShowOpenModal(false)}>
+                <CModalHeader>
+                    <CModalTitle>Mở nộp Camera-Ready</CModalTitle>
+                </CModalHeader>
+                <CModalBody>
+                    <p>Bạn sắp mở chức năng nộp bản Camera-Ready cho các bài báo đã được chấp nhận (Accepted).</p>
+                    <div className="mb-3">
+                        <label className="form-label">Hạn chót (Deadline)</label>
+                        <input
+                            type="datetime-local"
+                            className="form-control"
+                            value={openDeadline}
+                            onChange={(e) => setOpenDeadline(e.target.value)}
                         />
-                    </CCol>
-                    <CCol sm={6} lg={3}>
-                        <CWidgetStatsC
-                            icon={<CIcon icon={cilCheckCircle} height={36} />}
-                            value={stats.statistics.byStatus['APPROVED'] || 0}
-                            title="Đã phê duyệt"
-                            color="success"
-                            inverse
-                        />
-                    </CCol>
-                    <CCol sm={6} lg={3}>
-                        <CWidgetStatsC
-                            icon={<CIcon icon={cilChartPie} height={36} />}
-                            value={stats.statistics.copyrightConfirmed}
-                            title="Đã ký bản quyền"
-                            color="info"
-                            inverse
-                        />
-                    </CCol>
-                    <CCol sm={6} lg={3}>
-                        <CWidgetStatsC
-                            icon={<CIcon icon={cilXCircle} height={36} />}
-                            value={stats.statistics.copyrightPending}
-                            title="Chưa ký bản quyền"
-                            color="warning"
-                            inverse
-                        />
-                    </CCol>
-                </CRow>
-            )}
+                        <div className="form-text">Nếu để trống, sẽ không có hạn chót trên hệ thống (nhưng bạn vẫn nên đặt).</div>
+                    </div>
+                </CModalBody>
+                <CModalFooter>
+                    <CButton color="secondary" onClick={() => setShowOpenModal(false)}>Hủy</CButton>
+                    <CButton color="success" onClick={handleOpenCameraReady} disabled={opening}>
+                        {opening ? <CSpinner size="sm" /> : 'Xác nhận mở'}
+                    </CButton>
+                </CModalFooter>
+            </CModal>
+
+
+            {
+                stats && (
+                    <CRow className="mb-4">
+                        <CCol sm={6} lg={3}>
+                            <CWidgetStatsC
+                                icon={<CIcon icon={cilFile} height={36} />}
+                                value={stats.totalAcceptedPapers}
+                                title="Tổng bài được chấp nhận"
+                                color="primary"
+                                inverse
+                            />
+                        </CCol>
+                        <CCol sm={6} lg={3}>
+                            <CWidgetStatsC
+                                icon={<CIcon icon={cilCheckCircle} height={36} />}
+                                value={stats.statistics.byStatus['APPROVED'] || 0}
+                                title="Đã phê duyệt"
+                                color="success"
+                                inverse
+                            />
+                        </CCol>
+                        <CCol sm={6} lg={3}>
+                            <CWidgetStatsC
+                                icon={<CIcon icon={cilChartPie} height={36} />}
+                                value={stats.statistics.copyrightConfirmed}
+                                title="Đã ký bản quyền"
+                                color="info"
+                                inverse
+                            />
+                        </CCol>
+                        <CCol sm={6} lg={3}>
+                            <CWidgetStatsC
+                                icon={<CIcon icon={cilXCircle} height={36} />}
+                                value={stats.statistics.copyrightPending}
+                                title="Chưa ký bản quyền"
+                                color="warning"
+                                inverse
+                            />
+                        </CCol>
+                    </CRow>
+                )
+            }
 
             <CCard>
                 <CCardHeader>Danh sách bài nộp camera-ready</CCardHeader>
@@ -194,8 +308,8 @@ const CameraReadyManagement: React.FC = () => {
                                     </CTableDataCell>
                                     <CTableDataCell>{sub.trackName}</CTableDataCell>
                                     <CTableDataCell>
-                                        <div>{sub.correspondingAuthor.fullName}</div>
-                                        <div className="small text-muted">{sub.correspondingAuthor.email}</div>
+                                        <div>{sub.correspondingAuthor?.fullName || 'N/A'}</div>
+                                        <div className="small text-muted">{sub.correspondingAuthor?.email}</div>
                                     </CTableDataCell>
                                     <CTableDataCell className="text-center">
                                         {sub.copyrightConfirmed ?
@@ -211,7 +325,7 @@ const CameraReadyManagement: React.FC = () => {
                                                 color="info"
                                                 size="sm"
                                                 title="Xem chi tiết và PDF"
-                                                onClick={() => navigate(`/app/author/submissions/${sub.paperId}/camera-ready`)} // Tận dụng trang author để xem
+                                                onClick={() => navigate(`/app/chair/camera-ready/${sub.paperId}?conferenceId=${conferenceId}`)}
                                             >
                                                 <CIcon icon={cilFile} />
                                             </CButton>
@@ -257,9 +371,8 @@ const CameraReadyManagement: React.FC = () => {
                             value={decision}
                             onChange={(e) => setDecision(e.target.value as ReviewDecision)}
                         >
-                            <option value="APPROVE">Phê duyệt (APPROVE)</option>
-                            <option value="NEEDS_REVISION">Yêu cầu sửa lại (REVISION)</option>
-                            <option value="REJECT">Từ chối (REJECT)</option>
+                            <option value="APPROVED">Phê duyệt (APPROVED)</option>
+                            <option value="NEED_FIX">Yêu cầu sửa lại (NEED_FIX)</option>
                         </CFormSelect>
                     </div>
                     <div className="mb-3">
@@ -279,7 +392,7 @@ const CameraReadyManagement: React.FC = () => {
                     </CButton>
                 </CModalFooter>
             </CModal>
-        </div>
+        </div >
     )
 }
 

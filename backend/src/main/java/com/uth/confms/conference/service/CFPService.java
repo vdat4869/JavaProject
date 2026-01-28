@@ -5,6 +5,7 @@ import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.conference.dto.CFPDTO;
 import com.uth.confms.conference.dto.CFPResponseDTO;
 import com.uth.confms.conference.dto.TopicDTO;
+import com.uth.confms.conference.dto.TrackDTO;
 import com.uth.confms.conference.entity.CFP;
 import com.uth.confms.conference.entity.Conference;
 import com.uth.confms.conference.entity.Topic;
@@ -161,11 +162,21 @@ public class CFPService {
                 .build())
         .collect(Collectors.toList());
 
+    List<TrackDTO> tracks = conference.getTracks().stream()
+        .map(track -> TrackDTO.builder()
+            .id(track.getId())
+            .name(track.getName())
+            .description(track.getDescription())
+            .active(track.getActive())
+            .build())
+        .collect(Collectors.toList());
+
     return CFPResponseDTO.builder()
         .id(cfp.getId())
         .callForPapers(cfp.getCallForPapers())
         .topics(cfp.getTopics()) // Keep for backward compatibility
         .topicsList(topicsList) // Structured topics from Conference
+        .tracks(tracks) // Tracks from Conference
         .submissionGuidelines(cfp.getSubmissionGuidelines())
         .open(cfp.getOpen())
         .createdAt(cfp.getCreatedAt())

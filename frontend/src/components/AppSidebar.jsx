@@ -10,13 +10,13 @@ import {
   CSidebarHeader,
   CSidebarToggler,
 } from '@coreui/react'
-import CIcon from '@coreui/icons-react'
 
 import { AppSidebarNav } from './AppSidebarNav.jsx'
 import { useAuth } from '../context/AuthContext'
 
-import { logo } from '../assets/brand/logo'
-import { sygnet } from '../assets/brand/sygnet'
+// UTH Logos
+
+import uthLogoSmall from '../assets/images/image copy.png'
 
 // sidebar nav config
 import navigation from '../_nav'
@@ -139,7 +139,7 @@ const AppSidebar = () => {
   return (
     <CSidebar
       className="border-end"
-      colorScheme="dark"
+      colorScheme="light"
       position="fixed"
       unfoldable={sidebarUnfoldable}
       visible={sidebarShow}
@@ -147,12 +147,24 @@ const AppSidebar = () => {
         setSidebarShow(visible)
       }}
     >
-      <CSidebarHeader className="border-bottom">
-        <CSidebarBrand to="/">
-          <CIcon customClassName="sidebar-brand-full" icon={logo} height={32} />
-          <CIcon customClassName="sidebar-brand-narrow" icon={sygnet} height={32} />
+      <CSidebarHeader className="border-bottom" style={{ backgroundColor: '#fff', padding: '0 1rem', height: '64px', display: 'flex', alignItems: 'center' }}>
+        <CSidebarBrand to="/" className="d-flex align-items-center text-decoration-none">
+          <img
+            src={uthLogoSmall}
+            alt="UTH"
+            height={36}
+            className="sidebar-brand-full me-2"
+            style={{ objectFit: 'contain' }}
+          />
+          <img
+            src={uthLogoSmall}
+            alt="UTH"
+            height={28}
+            className="sidebar-brand-narrow"
+            style={{ objectFit: 'contain' }}
+          />
         </CSidebarBrand>
-        <CCloseButton className="d-lg-none" dark onClick={() => setSidebarShow(false)} />
+        <CCloseButton className="d-lg-none" onClick={() => setSidebarShow(false)} />
       </CSidebarHeader>
       <AppSidebarNav items={filteredNavigation} />
       <CSidebarFooter className="border-top d-none d-lg-flex">

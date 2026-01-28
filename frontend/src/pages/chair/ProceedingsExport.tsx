@@ -9,10 +9,14 @@ import {
   CSpinner,
   CRow,
   CCol,
+  CListGroup,
+  CListGroupItem,
+  CBadge,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilCloudDownload, cilFile, cilLibrary, cilCode, cilSettings } from '@coreui/icons'
 import { cameraReadyService } from '../../services/camera-ready.service'
+import { conferenceService, ConferenceResponse } from '../../services/conference.service'
 
 /**
  * ProceedingsExport - Trang xuất bản kỷ yếu (Proceedings) cho CHAIR (API v1)
@@ -25,6 +29,35 @@ const ProceedingsExport: React.FC = () => {
   const [exporting, setExporting] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  // Conference selection states
+  const [myConferences, setMyConferences] = useState<ConferenceResponse[]>([])
+  const [isSelectingConference, setIsSelectingConference] = useState(false)
+
+  React.useEffect(() => {
+    if (!conferenceId) {
+      loadMyConferences()
+    }
+  }, [conferenceId])
+
+  const loadMyConferences = async () => {
+    try {
+      setLoading(true)
+      const data = await conferenceService.getMyConferences()
+      if (data.length === 1) {
+        // Auto select if only one
+        navigate(`?conferenceId=${data[0].id}`, { replace: true })
+      } else {
+        setMyConferences(data)
+        setIsSelectingConference(true)
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Error loading conferences:', error)
+      setLoading(false)
+    }
+  }
 
   const handleExport = async (format: 'zip' | 'pdf' | 'json' | 'csv') => {
     if (!conferenceId) {
@@ -59,6 +92,43 @@ const ProceedingsExport: React.FC = () => {
   }
 
   if (!conferenceId) {
+    if (loading) {
+      return (
+        <div className="d-flex justify-content-center p-5">
+          <CSpinner color="primary" />
+        </div>
+      )
+    }
+
+    if (isSelectingConference) {
+      return (
+        <CCard className="mx-auto" style={{ maxWidth: '800px' }}>
+          <CCardHeader>
+            <h4>Chọn hội nghị để xuất bản kỷ yếu</h4>
+          </CCardHeader>
+          <CCardBody>
+            {myConferences.length === 0 ? (
+              <CAlert color="warning">Bạn chưa được gán vào hội nghị nào.</CAlert>
+            ) : (
+              <CListGroup>
+                {myConferences.map(conf => (
+                  <CListGroupItem
+                    key={conf.id}
+                    onClick={() => navigate(`?conferenceId=${conf.id}`)}
+                    className="d-flex justify-content-between align-items-center list-group-item-action"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <span>{conf.name}</span>
+                    <CBadge color="primary" shape="rounded-pill">ID: {conf.id}</CBadge>
+                  </CListGroupItem>
+                ))}
+              </CListGroup>
+            )}
+          </CCardBody>
+        </CCard>
+      )
+    }
+
     return (
       <CAlert color="danger">
         Thiếu tham số conferenceId. Vui lòng quay lại từ trang quản lý hội nghị.
@@ -70,7 +140,12 @@ const ProceedingsExport: React.FC = () => {
     <div className="container-lg">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h3>Xuất bản kỷ yếu (Proceedings)</h3>
-        <CButton color="secondary" onClick={() => navigate(-1)}>Quay lại</CButton>
+        <div>
+          <CButton color="secondary" variant="outline" className="me-2" onClick={() => navigate('/app/chair/conferences')}>
+            Đổi hội nghị
+          </CButton>
+          <CButton color="secondary" onClick={() => navigate(-1)}>Quay lại</CButton>
+        </div>
       </div>
 
       <CCard className="mb-4">

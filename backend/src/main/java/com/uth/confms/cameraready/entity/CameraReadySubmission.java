@@ -27,16 +27,16 @@ public class CameraReadySubmission {
   private UUID id;
 
   @Column(nullable = false)
-  private UUID paperId;
+  private Long paperId;
 
   @Column(nullable = false)
-  private UUID conferenceId;
+  private Long conferenceId;
 
   @Column(nullable = false)
-  private UUID trackId;
+  private Long trackId;
 
   @Column(nullable = false)
-  private UUID authorId;
+  private Long authorId;
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
@@ -62,7 +62,7 @@ public class CameraReadySubmission {
   @Builder.Default
   private Boolean copyrightConfirmed = false;
 
-  private UUID copyrightConfirmedBy;
+  private Long copyrightConfirmedBy;
 
   private LocalDateTime copyrightConfirmedAt;
 
@@ -101,7 +101,7 @@ public class CameraReadySubmission {
     return versions.size() + 1;
   }
 
-  public void confirmCopyright(UUID userId) {
+  public void confirmCopyright(Long userId) {
     this.copyrightConfirmed = true;
     this.copyrightConfirmedBy = userId;
     this.copyrightConfirmedAt = LocalDateTime.now();
@@ -119,7 +119,7 @@ public class CameraReadySubmission {
     this.status = status;
   }
 
-  public UUID getTrackId() {
+  public Long getTrackId() {
     return trackId;
   }
 }

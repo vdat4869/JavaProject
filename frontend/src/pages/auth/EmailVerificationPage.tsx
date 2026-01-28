@@ -1,18 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { CCard, CCardBody, CCardHeader, CAlert, CButton, CSpinner } from '@coreui/react'
+import { CCard, CCardBody, CAlert, CButton, CSpinner, CRow, CCol } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
 import { authService } from '../../services/auth.service'
 import { useAuth } from '../../context/AuthContext'
+import uthLogoFull from '../../assets/images/idrV1VcT-T_logos.jpeg'
 
 /**
  * EmailVerificationPage - Trang xác thực email
- *
- * Features:
- * - Verify email với token từ URL
- * - Hiển thị trạng thái verification
- * - Redirect sau khi verify thành công
- * - Refresh user data sau khi verify
  */
 const EmailVerificationPage: React.FC = () => {
   const { t } = useTranslation()
@@ -27,7 +22,7 @@ const EmailVerificationPage: React.FC = () => {
       try {
         await authService.verifyEmail(token)
         setStatus('success')
-        setMessage(t('auth.emailVerified'))
+        setMessage(t('auth.emailVerified') || 'Xác thực email thành công!')
 
         // Refresh user data để cập nhật emailVerified status
         await refreshUser()
@@ -38,53 +33,104 @@ const EmailVerificationPage: React.FC = () => {
         }, 2000)
       } catch (error: any) {
         setStatus('error')
-        setMessage(error.response?.data?.message || t('auth.verificationFailed'))
+        setMessage(error.response?.data?.message || t('auth.verificationFailed') || 'Xác thực không thành công hoặc liên kết đã hết hạn.')
       }
     },
     [refreshUser, navigate, t],
   )
 
   useEffect(() => {
-    ;(async () => {
-      const token = searchParams.get('token')
-      if (token) {
-        await verifyEmail(token)
-      } else {
-        setStatus('error')
-        setMessage(t('auth.invalidToken'))
-      }
-    })()
-  }, [searchParams])
+    const token = searchParams.get('token')
+    if (token) {
+      verifyEmail(token)
+    } else {
+      setStatus('error')
+      setMessage(t('auth.invalidToken') || 'Token không hợp lệ.')
+    }
+  }, [searchParams, verifyEmail, t])
+
+  const colors = {
+    teal: '#008585',
+    red: '#b31d1d',
+    border: '#abb5be'
+  }
+
+  const styles = {
+    card: {
+      borderRadius: '8px',
+      border: 'none',
+      boxShadow: '0 10px 40px rgba(0,0,0,0.25)',
+      backgroundColor: '#fff',
+      padding: '30px 50px',
+      maxWidth: '550px',
+      width: '100%'
+    },
+    logoHeader: {
+      textAlign: 'center' as const,
+      marginBottom: '5px',
+      marginTop: '-15px',
+      overflow: 'hidden',
+      maxHeight: '120px'
+    },
+    logoImage: {
+      maxWidth: '240px',
+      height: 'auto',
+      display: 'inline-block'
+    },
+    title: {
+      color: colors.red,
+      fontSize: '1.5rem',
+      fontWeight: 700,
+      textAlign: 'center' as const,
+      marginBottom: '20px',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '1px'
+    }
+  }
 
   return (
-    <CCard>
-      <CCardHeader>
-        <h4>{t('auth.emailVerification')}</h4>
-      </CCardHeader>
-      <CCardBody>
-        {status === 'loading' && (
-          <div className="text-center">
-            <CSpinner color="primary" />
-            <p className="mt-3">{t('auth.verifying')}</p>
-          </div>
-        )}
-        {status === 'success' && (
-          <CAlert color="success">
-            {message}
-            <br />
-            <small>{t('auth.redirectingToApp')}</small>
-          </CAlert>
-        )}
-        {status === 'error' && (
-          <>
-            <CAlert color="danger">{message}</CAlert>
-            <CButton color="primary" onClick={() => navigate('/login')}>
-              {t('common.backToLogin')}
-            </CButton>
-          </>
-        )}
-      </CCardBody>
-    </CCard>
+    <CRow className="justify-content-end align-items-center min-vh-100 pe-md-5 me-md-5">
+      <CCol xs={12} sm={10} md={8} lg={6} xl={5} className="d-flex justify-content-end pe-lg-5">
+        <CCard style={styles.card}>
+          <CCardBody className="p-0">
+            {/* Logo */}
+            <div style={styles.logoHeader}>
+              <img src={uthLogoFull} alt="UTH Logo" style={styles.logoImage} />
+            </div>
+
+            {/* Title */}
+            <h2 style={styles.title}>{t('auth.emailVerification') || 'XÁC THỰC EMAIL'}</h2>
+
+            <div className="py-4">
+              {status === 'loading' && (
+                <div className="text-center">
+                  <CSpinner style={{ color: colors.teal }} />
+                  <p className="mt-3 text-muted">{t('auth.verifying') || 'Đang xác thực email của bạn...'}</p>
+                </div>
+              )}
+              {status === 'success' && (
+                <CAlert color="success" className="text-center">
+                  <div className="mb-2">✅ {message}</div>
+                  <small className="text-muted">{t('auth.redirectingToApp') || 'Đang chuyển hướng đến ứng dụng...'}</small>
+                </CAlert>
+              )}
+              {status === 'error' && (
+                <div className="text-center">
+                  <CAlert color="danger" className="text-start">{message}</CAlert>
+                  <CButton
+                    style={{ backgroundColor: colors.teal, borderColor: colors.teal, color: '#fff' }}
+                    onClick={() => navigate('/login')}
+                    className="mt-3"
+                  >
+                    {t('common.backToLogin') || 'Quay lại đăng nhập'}
+                  </CButton>
+                </div>
+              )}
+            </div>
+          </CCardBody>
+        </CCard>
+      </CCol>
+    </CRow>
   )
 }
 

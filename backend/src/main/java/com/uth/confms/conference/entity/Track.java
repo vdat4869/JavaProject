@@ -16,12 +16,14 @@ public class Track {
   @Column(nullable = false)
   private String name;
 
+  @Column(columnDefinition = "TEXT")
   private String description;
 
   @Column(nullable = false)
   private Boolean active = true;
 
-  public Track() {}
+  public Track() {
+  }
 
   public Track(Long id, Conference conference, String name, String description, Boolean active) {
     this.id = id;

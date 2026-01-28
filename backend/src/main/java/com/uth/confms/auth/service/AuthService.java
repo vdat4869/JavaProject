@@ -1,17 +1,16 @@
 package com.uth.confms.auth.service;
 
-import com.uth.confms.auth.dto.ChangePasswordRequest;
-import com.uth.confms.auth.dto.GoogleUserInfo;
-import com.uth.confms.auth.dto.LoginRequest;
-import com.uth.confms.auth.dto.LoginResponse;
-import com.uth.confms.auth.dto.RegisterRequest;
+import com.uth.confms.auth.dto.*;
 import com.uth.confms.auth.entity.Role;
 import com.uth.confms.auth.entity.RefreshToken;
+import com.uth.confms.auth.entity.PasswordResetToken;
 import com.uth.confms.auth.enums.RoleName;
 import com.uth.confms.auth.entity.User;
 import com.uth.confms.auth.repository.RoleRepository;
 import com.uth.confms.auth.repository.RefreshTokenRepository;
 import com.uth.confms.auth.repository.UserRepository;
+import com.uth.confms.auth.repository.PasswordResetTokenRepository;
+import com.uth.confms.email.service.EmailService;
 import com.uth.confms.common.exception.BusinessException;
 import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
@@ -53,8 +52,10 @@ public class AuthService {
   @SuppressWarnings("unused")
   private final UserDetailsService userDetailsService;
   private final RefreshTokenRepository refreshTokenRepository;
+  private final PasswordResetTokenRepository passwordResetTokenRepository;
   private final AuditLogService auditLogService;
   private final GoogleTokenService googleTokenService;
+  private final EmailService emailService;
 
   public AuthService(
       UserRepository userRepository,
@@ -64,8 +65,10 @@ public class AuthService {
       AuthenticationManager authenticationManager,
       UserDetailsService userDetailsService,
       RefreshTokenRepository refreshTokenRepository,
+      PasswordResetTokenRepository passwordResetTokenRepository,
       AuditLogService auditLogService,
-      GoogleTokenService googleTokenService) {
+      GoogleTokenService googleTokenService,
+      EmailService emailService) {
     this.userRepository = userRepository;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
@@ -73,8 +76,10 @@ public class AuthService {
     this.authenticationManager = authenticationManager;
     this.userDetailsService = userDetailsService;
     this.refreshTokenRepository = refreshTokenRepository;
+    this.passwordResetTokenRepository = passwordResetTokenRepository;
     this.auditLogService = auditLogService;
     this.googleTokenService = googleTokenService;
+    this.emailService = emailService;
   }
 
   /**
@@ -635,6 +640,72 @@ public class AuthService {
                 .map(r -> r.getName().name())
                 .collect(Collectors.toSet()))
         .build();
+  }
+
+  /**
+   * Send password reset email
+   */
+  @Transactional
+  public void forgotPassword(ForgotPasswordRequest request, HttpServletRequest httpRequest) {
+    User user = userRepository.findByEmail(request.getEmail())
+        .orElseThrow(() -> new NotFoundException("Email not found"));
+
+    // Delete existing token if any
+    passwordResetTokenRepository.deleteByUser(user);
+
+    // Generate token
+    String token = java.util.UUID.randomUUID().toString();
+    PasswordResetToken resetToken = PasswordResetToken.builder()
+        .token(token)
+        .user(user)
+        .expiryDate(LocalDateTime.now().plusHours(24))
+        .build();
+
+    passwordResetTokenRepository.save(resetToken);
+
+    // Send email
+    String resetUrl = "http://localhost:3000/reset-password?token=" + token;
+    java.util.Map<String, Object> model = new java.util.HashMap<>();
+    model.put("name", user.getFullName());
+    model.put("resetUrl", resetUrl);
+
+    try {
+      emailService.sendEmail(user.getEmail(), "Password Reset Request - UTH-ConfMS", "forgot-password", model);
+    } catch (Exception e) {
+      log.error("Failed to send password reset email", e);
+      // Fallback: send simple email if template fails
+      emailService.sendSimpleEmail(user.getEmail(), "Password Reset Request",
+          "Click the link to reset your password: " + resetUrl);
+    }
+
+    // Audit log
+    auditLogService.logAction(user.getId(), user.getEmail(), "FORGOT_PASSWORD_REQUEST", "AUTH", null,
+        "Forgot password request sent", httpRequest);
+  }
+
+  /**
+   * Reset password using token
+   */
+  @Transactional
+  public void resetPassword(ResetPasswordRequest request, HttpServletRequest httpRequest) {
+    PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.getToken())
+        .orElseThrow(() -> new BusinessException("Invalid or expired token", "INVALID_TOKEN"));
+
+    if (resetToken.isExpired()) {
+      passwordResetTokenRepository.delete(resetToken);
+      throw new BusinessException("Token has expired", "TOKEN_EXPIRED");
+    }
+
+    User user = resetToken.getUser();
+    user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+    userRepository.save(user);
+
+    // Delete token after use
+    passwordResetTokenRepository.delete(resetToken);
+
+    // Audit log
+    auditLogService.logAction(user.getId(), user.getEmail(), "PASSWORD_RESET_SUCCESS", "AUTH", null,
+        "Password reset successful via token", httpRequest);
   }
 
 }

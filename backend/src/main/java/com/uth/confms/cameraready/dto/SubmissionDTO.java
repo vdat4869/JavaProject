@@ -22,10 +22,10 @@ import java.util.UUID;
 public class SubmissionDTO {
 
     private UUID id;
-    private UUID paperId;
+    private Long paperId;
     private String paperTitle;
-    private UUID conferenceId;
-    private UUID trackId;
+    private Long conferenceId;
+    private Long trackId;
     private String trackName;
     private CameraReadyStatus status;
     private VersionDTO currentVersion;

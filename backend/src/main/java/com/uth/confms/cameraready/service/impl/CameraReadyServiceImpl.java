@@ -2,15 +2,28 @@ package com.uth.confms.cameraready.service.impl;
 
 import com.uth.confms.cameraready.dto.*;
 import com.uth.confms.cameraready.entity.*;
-import com.uth.confms.cameraready.repository.*;
+import com.uth.confms.cameraready.repository.CameraReadySubmissionRepository;
+import com.uth.confms.cameraready.repository.CameraReadyVersionRepository;
+import com.uth.confms.cameraready.repository.CameraReadyReviewRepository;
+import com.uth.confms.cameraready.repository.CameraReadyMetadataRepository;
+
 import com.uth.confms.cameraready.service.CameraReadyService;
 import com.uth.confms.cameraready.service.PdfValidationService;
 import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.BusinessException;
 import com.uth.confms.common.util.FileUtil;
+import com.uth.confms.conference.entity.Deadline;
+import com.uth.confms.conference.entity.Deadline.DeadlineType;
+import com.uth.confms.conference.entity.Track;
+import com.uth.confms.conference.repository.DeadlineRepository;
+import com.uth.confms.conference.repository.TrackRepository;
+import com.uth.confms.conference.repository.ConferenceRepository;
+import com.uth.confms.decision.service.NotificationService;
 import com.uth.confms.storage.service.StorageService;
 import com.uth.confms.submission.entity.Submission;
+import com.uth.confms.submission.entity.SubmissionAuthor;
 import com.uth.confms.submission.repository.SubmissionRepository;
+import com.uth.confms.submission.repository.SubmissionAuthorRepository;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -55,23 +68,57 @@ public class CameraReadyServiceImpl implements CameraReadyService {
     private final PdfValidationService pdfValidationService;
     private final SubmissionRepository submissionRepositoryMain;
     private final StorageService storageService;
+    private final TrackRepository trackRepository;
+    private final DeadlineRepository deadlineRepository;
+    private final ConferenceRepository conferenceRepository;
+    private final NotificationService notificationService;
+    private final SubmissionAuthorRepository submissionAuthorRepository;
 
     @Override
-    @Transactional(readOnly = true)
-    public SubmissionDTO getSubmissionByPaperId(UUID conferenceId, UUID paperId) {
+    @Transactional
+    public SubmissionDTO getSubmissionByPaperId(Long conferenceId, Long paperId) {
         log.debug("Lấy thông tin submission cho paper: {}", paperId);
-        
-        CameraReadySubmission submission = submissionRepository.findByPaperId(paperId)
-                .orElseThrow(() -> new NotFoundException("Submission not found"));
-        
-        return mapToSubmissionDTO(submission);
+
+        return submissionRepository.findByPaperId(paperId)
+                .map(this::mapToSubmissionDTO)
+                .orElseGet(() -> {
+                    // Lazy init: Kiểm tra nếu paper exists và accepted thì tạo mới
+                    Submission originalSubmission = submissionRepositoryMain.findById(paperId)
+                            .orElseThrow(() -> new NotFoundException("Paper not found"));
+
+                    if (originalSubmission.getStatus() == Submission.SubmissionStatus.ACCEPTED) {
+                        log.info("Lazy-init CameraReadySubmission cho paper {}", paperId);
+
+                        Long trackId = originalSubmission.getTrackId();
+                        if (trackId == null) {
+                            // Fallback: Lấy track đầu tiên của conference
+                            Track defaultTrack = trackRepository.findByConferenceId(conferenceId).stream()
+                                    .findFirst()
+                                    .orElseThrow(() -> new BusinessException("Conference does not have any tracks"));
+                            trackId = defaultTrack.getId();
+                            log.warn("Submission {} missing trackId, using default track {}", paperId, trackId);
+                        }
+
+                        CameraReadySubmission newSubmission = CameraReadySubmission.builder()
+                                .paperId(originalSubmission.getId())
+                                .conferenceId(conferenceId)
+                                .trackId(trackId)
+                                .authorId(originalSubmission.getAuthorId())
+                                .status(CameraReadyStatus.OPEN)
+                                .copyrightConfirmed(false)
+                                .build();
+                        return mapToSubmissionDTO(submissionRepository.save(newSubmission));
+                    }
+
+                    throw new NotFoundException("Submission not found or not accepted");
+                });
     }
 
     @Override
     @Transactional
-    public VersionDTO uploadVersion(UUID conferenceId, UUID paperId, MultipartFile file, UUID uploaderId) {
+    public VersionDTO uploadVersion(Long conferenceId, Long paperId, MultipartFile file, Long uploaderId) {
         log.info("Upload phiên bản mới cho paper {} bởi user {}", paperId, uploaderId);
-        
+
         CameraReadySubmission submission = submissionRepository.findByPaperId(paperId)
                 .orElseThrow(() -> new NotFoundException("Submission not found"));
 
@@ -79,18 +126,21 @@ public class CameraReadyServiceImpl implements CameraReadyService {
             throw new BusinessException("Không thể tải lên ở trạng thái hiện tại: " + submission.getStatus());
         }
 
+        if (!submission.getAuthorId().equals(uploaderId)) {
+            throw new BusinessException("Chỉ tác giả chính của bài báo mới có quyền nộp Camera-Ready");
+        }
+
+        // Check Deadline
+        checkCameraReadyDeadline(conferenceId);
+
         // Validate PDF
         ValidationResultDTO validationResult = pdfValidationService.validate(file);
 
         // Tạo version mới
         int versionNumber = submission.getNextVersionNumber();
-        
-        // Convert UUID to Long for StorageService
-        Long conferenceIdLong = convertUUIDToLong(conferenceId);
-        Long paperIdLong = convertUUIDToLong(paperId);
-        
+
         // Store file using StorageService
-        String storedPath = storageService.storeCameraReadyPdf(conferenceIdLong, paperIdLong, file);
+        String storedPath = storageService.storeCameraReadyPdf(conferenceId, paperId, file);
 
         CameraReadyVersion version = CameraReadyVersion.builder()
                 .submission(submission)
@@ -108,6 +158,7 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                 .build();
 
         submission.addVersion(version);
+        submission.setStatus(CameraReadyStatus.SUBMITTED); // Chuyển sang SUBMITTED để Chair có thể duyệt
         submissionRepository.save(submission);
 
         log.info("Đã upload version {} cho paper {}", versionNumber, paperId);
@@ -116,7 +167,7 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<VersionDTO> listVersions(UUID conferenceId, UUID paperId) {
+    public List<VersionDTO> listVersions(Long conferenceId, Long paperId) {
         CameraReadySubmission submission = submissionRepository.findByPaperId(paperId)
                 .orElseThrow(() -> new NotFoundException("Submission not found"));
 
@@ -128,7 +179,7 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Resource downloadVersion(UUID conferenceId, UUID paperId, UUID versionId) {
+    public Resource downloadVersion(Long conferenceId, Long paperId, UUID versionId) {
         CameraReadyVersion version = versionRepository.findById(versionId)
                 .orElseThrow(() -> new NotFoundException("Version not found"));
 
@@ -157,10 +208,10 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
     @Override
     @Transactional
-    public SubmissionDTO confirmCopyright(UUID conferenceId, UUID paperId,
-                                           CopyrightConfirmRequestDTO request, UUID userId) {
+    public SubmissionDTO confirmCopyright(Long conferenceId, Long paperId,
+            CopyrightConfirmRequestDTO request, Long userId) {
         log.info("Xác nhận bản quyền cho paper {} bởi user {}", paperId, userId);
-        
+
         CameraReadySubmission submission = submissionRepository.findByPaperId(paperId)
                 .orElseThrow(() -> new NotFoundException("Submission not found"));
 
@@ -177,22 +228,22 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<SubmissionListDTO> listSubmissions(UUID conferenceId, UUID trackId,
-                                                    CameraReadyStatus status, Boolean copyrightConfirmed,
-                                                    Pageable pageable) {
+    public Page<SubmissionListDTO> listSubmissions(Long conferenceId, Long trackId,
+            CameraReadyStatus status, Boolean copyrightConfirmed,
+            Pageable pageable) {
         log.debug("Lấy danh sách submissions cho conference {}", conferenceId);
-        
+
         return submissionRepository.findWithFilters(conferenceId, trackId, status, copyrightConfirmed, pageable)
                 .map(this::mapToSubmissionListDTO);
     }
 
     @Override
     @Transactional
-    public ReviewResponseDTO reviewSubmission(UUID conferenceId, UUID submissionId,
-                                               ReviewRequestDTO request, UUID reviewerId) {
-        log.info("Duyệt submission {} với quyết định {} bởi user {}", 
+    public ReviewResponseDTO reviewSubmission(Long conferenceId, UUID submissionId,
+            ReviewRequestDTO request, Long reviewerId) {
+        log.info("Duyệt submission {} với quyết định {} bởi user {}",
                 submissionId, request.getDecision(), reviewerId);
-        
+
         CameraReadySubmission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new NotFoundException("Submission not found"));
 
@@ -225,11 +276,18 @@ public class CameraReadyServiceImpl implements CameraReadyService {
         CameraReadyStatus newStatus = request.getDecision() == ReviewDecision.APPROVED
                 ? CameraReadyStatus.APPROVED
                 : CameraReadyStatus.NEED_FIX;
-        
+
         submission.transitionTo(newStatus);
         submissionRepository.save(submission);
 
         log.info("Đã duyệt submission {} với kết quả {}", submissionId, newStatus);
+
+        // Gửi thông báo cho tác giả
+        try {
+            notificationService.sendCameraReadyReviewNotification(submission, request.getDecision(), request.getNote());
+        } catch (Exception e) {
+            log.warn("Không thể gửi thông báo camera-ready review: {}", e.getMessage());
+        }
 
         return ReviewResponseDTO.builder()
                 .reviewId(review.getId())
@@ -244,9 +302,9 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
     @Override
     @Transactional
-    public SubmissionDTO setCurrentVersion(UUID conferenceId, UUID submissionId, UUID versionId, UUID userId) {
+    public SubmissionDTO setCurrentVersion(Long conferenceId, UUID submissionId, UUID versionId, Long userId) {
         log.info("Đặt current version {} cho submission {}", versionId, submissionId);
-        
+
         CameraReadySubmission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new NotFoundException("Submission not found"));
 
@@ -273,9 +331,9 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
     @Override
     @Transactional
-    public MetadataDTO updateMetadata(UUID submissionId, MetadataUpdateRequestDTO request, UUID userId) {
+    public MetadataDTO updateMetadata(UUID submissionId, MetadataUpdateRequestDTO request, Long userId) {
         log.info("Cập nhật metadata cho submission {}", submissionId);
-        
+
         CameraReadySubmission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new NotFoundException("Submission not found"));
 
@@ -296,9 +354,9 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
     @Override
     @Transactional(readOnly = true)
-    public StatisticsDTO getStatistics(UUID conferenceId) {
+    public StatisticsDTO getStatistics(Long conferenceId) {
         log.debug("Lấy thống kê cho conference {}", conferenceId);
-        
+
         Map<String, Long> byStatus = new HashMap<>();
         for (CameraReadyStatus status : CameraReadyStatus.values()) {
             byStatus.put(status.name(), submissionRepository.countByConferenceIdAndStatus(conferenceId, status));
@@ -320,9 +378,9 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProceedingsExportDTO exportProceedingsJson(UUID conferenceId, UUID trackId, CameraReadyStatus status) {
+    public ProceedingsExportDTO exportProceedingsJson(Long conferenceId, Long trackId, CameraReadyStatus status) {
         log.info("Xuất kỷ yếu JSON cho conference {}", conferenceId);
-        
+
         List<CameraReadySubmission> submissions = submissionRepository
                 .findByConferenceIdAndStatus(conferenceId, status);
 
@@ -344,14 +402,14 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
     @Override
     @Transactional(readOnly = true)
-    public byte[] exportProceedingsCsv(UUID conferenceId, UUID trackId, CameraReadyStatus status) {
+    public byte[] exportProceedingsCsv(Long conferenceId, Long trackId, CameraReadyStatus status) {
         log.info("Xuất kỷ yếu CSV cho conference {}", conferenceId);
-        
+
         ProceedingsExportDTO export = exportProceedingsJson(conferenceId, trackId, status);
-        
+
         StringBuilder csv = new StringBuilder();
         csv.append("paper_id,title,doi,start_page,end_page,presentation_type\n");
-        
+
         for (ProceedingsExportDTO.PaperExportDTO paper : export.getPapers()) {
             csv.append(String.format("%s,\"%s\",%s,%d,%d,%s\n",
                     paper.getPaperId(),
@@ -359,147 +417,189 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                     paper.getDoi() != null ? paper.getDoi() : "",
                     paper.getStartPage() != null ? paper.getStartPage() : 0,
                     paper.getEndPage() != null ? paper.getEndPage() : 0,
-                    paper.getPresentation() != null ? paper.getPresentation().getType() : ""
-            ));
+                    paper.getPresentation() != null ? paper.getPresentation().getType() : ""));
         }
-        
+
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
     @Override
     @Transactional
-    public int openCameraReady(UUID conferenceId, UUID userId) {
+    public int openCameraReady(Long conferenceId, LocalDateTime deadline, Long userId) {
         log.info("Mở camera-ready cho conference {} bởi user {}", conferenceId, userId);
-        
-        // Convert UUID conferenceId to Long for submission repository
-        // Note: Assuming conferenceId UUID was created from Long ID
-        Long conferenceIdLong = convertUUIDToLong(conferenceId);
-        
+
         // Lấy danh sách accepted submissions từ conference
-        List<Submission> acceptedSubmissions = submissionRepositoryMain.findByConferenceId(conferenceIdLong)
+        List<Submission> acceptedSubmissions = submissionRepositoryMain.findByConferenceId(conferenceId)
                 .stream()
-                .filter(s -> s.getStatus() == Submission.SubmissionStatus.ACCEPTED && !Boolean.TRUE.equals(s.getWithdrawn()))
+                .filter(s -> s.getStatus() == Submission.SubmissionStatus.ACCEPTED
+                        && !Boolean.TRUE.equals(s.getWithdrawn()))
                 .collect(Collectors.toList());
-        
+
         if (acceptedSubmissions.isEmpty()) {
             log.warn("Không có accepted submissions nào cho conference {}", conferenceId);
             return 0;
         }
-        
+
         int createdCount = 0;
         for (Submission submission : acceptedSubmissions) {
-            // Convert submission ID to UUID paperId (deterministic conversion)
-            UUID paperId = convertLongToUUID("submission", submission.getId());
-            
             // Check if CameraReadySubmission already exists
-            if (submissionRepository.existsByPaperId(paperId)) {
-                log.debug("Camera-ready submission đã tồn tại cho paper {} (submission {})", paperId, submission.getId());
+            if (submissionRepository.existsByPaperId(submission.getId())) {
+                log.debug("Camera-ready submission đã tồn tại cho paper (submission {})", submission.getId());
                 continue;
             }
-            
-            // Convert IDs to UUID (deterministic)
-            UUID trackIdUUID = submission.getTrackId() != null 
-                    ? convertLongToUUID("track", submission.getTrackId()) 
-                    : UUID.randomUUID(); // Fallback nếu trackId null
-            UUID authorIdUUID = convertLongToUUID("user", submission.getAuthorId());
-            
+
             // Create CameraReadySubmission
             CameraReadySubmission cameraReadySubmission = CameraReadySubmission.builder()
-                    .paperId(paperId)
+                    .paperId(submission.getId())
                     .conferenceId(conferenceId)
-                    .trackId(trackIdUUID)
-                    .authorId(authorIdUUID)
+                    .trackId(submission.getTrackId())
+                    .authorId(submission.getAuthorId())
                     .status(CameraReadyStatus.OPEN)
                     .copyrightConfirmed(false)
                     .build();
-            
+
             submissionRepository.save(cameraReadySubmission);
             createdCount++;
-            log.debug("Đã tạo camera-ready submission cho paper {} (submission {})", paperId, submission.getId());
+            log.debug("Đã tạo camera-ready submission cho paper (submission {})", submission.getId());
         }
-        
+
         log.info("Đã mở camera-ready cho {} papers trong conference {}", createdCount, conferenceId);
+
+        // Update Deadline if provided
+        if (deadline != null) {
+            updateCameraReadyDeadline(conferenceId, deadline);
+        }
+
         return createdCount;
     }
-    
-    /**
-     * Convert Long ID to UUID using name-based UUID (deterministic)
-     * 
-     * @param prefix Prefix để distinguish different entity types
-     * @param id Long ID to convert
-     * @return UUID representation
-     */
-    private UUID convertLongToUUID(String prefix, Long id) {
-        if (id == null) {
-            return UUID.randomUUID();
+
+    private void updateCameraReadyDeadline(Long conferenceId, LocalDateTime deadlineDate) {
+        com.uth.confms.conference.entity.Conference conference = conferenceRepository.findById(conferenceId)
+                .orElseThrow(() -> new NotFoundException("Conference not found"));
+
+        Deadline deadline = deadlineRepository.findByConferenceId(conferenceId).stream()
+                .filter(d -> d.getType() == DeadlineType.CAMERA_READY)
+                .findFirst()
+                .orElse(null);
+
+        if (deadline == null) {
+            deadline = Deadline.builder()
+                    .conference(conference)
+                    .type(DeadlineType.CAMERA_READY)
+                    .dueDate(deadlineDate)
+                    .description("Camera Ready Submission Deadline")
+                    .hardDeadline(true)
+                    .build();
+        } else {
+            deadline.setDueDate(deadlineDate);
         }
-        // Use name-based UUID (v5) để đảm bảo deterministic conversion
-        // Namespace: fixed namespace UUID
-        UUID namespace = UUID.fromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
-        String name = prefix + ":" + id;
-        byte[] nameBytes = (namespace.toString() + "-" + name).getBytes(StandardCharsets.UTF_8);
-        return UUID.nameUUIDFromBytes(nameBytes);
+        deadlineRepository.save(deadline);
     }
-    
-    /**
-     * Convert UUID to Long (for conference ID lookup)
-     * Note: This is a simplified conversion - may need adjustment based on actual ID scheme
-     * In production, consider using a mapping table or consistent UUID generation strategy
-     */
-    private Long convertUUIDToLong(UUID uuid) {
-        // Simplified conversion: extract numeric value from UUID
-        // This assumes UUID was created deterministically from Long
-        // For production, consider using a proper mapping mechanism
-        long mostSignificantBits = uuid.getMostSignificantBits();
-        // Use absolute value to avoid negative
-        return Math.abs(mostSignificantBits % Long.MAX_VALUE);
+
+    private void checkCameraReadyDeadline(Long conferenceId) {
+        Deadline deadline = deadlineRepository.findByConferenceId(conferenceId).stream()
+                .filter(d -> d.getType() == DeadlineType.CAMERA_READY)
+                .findFirst()
+                .orElse(null);
+
+        if (deadline != null && LocalDateTime.now().isAfter(deadline.getDueDate())) {
+            throw new BusinessException("Đã quá hạn nộp Camera-Ready (" + deadline.getDueDate() + ")");
+        }
     }
 
     @Override
     @Transactional
-    public void closeCameraReady(UUID conferenceId, String reason, UUID userId) {
+    public void closeCameraReady(Long conferenceId, String reason, Long userId) {
         log.info("Đóng camera-ready cho conference {}", conferenceId);
-        
+
         List<CameraReadySubmission> submissions = submissionRepository.findByConferenceId(conferenceId);
-        
+
         for (CameraReadySubmission submission : submissions) {
             if (submission.getStatus() != CameraReadyStatus.CLOSED) {
                 submission.setStatus(CameraReadyStatus.CLOSED);
             }
         }
-        
+
         submissionRepository.saveAll(submissions);
     }
 
     // ==================== Helper Methods ====================
 
     private SubmissionDTO mapToSubmissionDTO(CameraReadySubmission submission) {
+        LocalDateTime formattedDeadline = null;
+        Deadline deadline = deadlineRepository.findByConferenceId(submission.getConferenceId()).stream()
+                .filter(d -> d.getType() == DeadlineType.CAMERA_READY)
+                .findFirst()
+                .orElse(null);
+        if (deadline != null) {
+            formattedDeadline = deadline.getDueDate();
+        }
+
         return SubmissionDTO.builder()
                 .id(submission.getId())
                 .paperId(submission.getPaperId())
                 .conferenceId(submission.getConferenceId())
                 .trackId(submission.getTrackId())
                 .status(submission.getStatus())
-                .currentVersion(submission.getCurrentVersion() != null 
-                        ? mapToVersionDTO(submission.getCurrentVersion()) : null)
+                .currentVersion(submission.getCurrentVersion() != null
+                        ? mapToVersionDTO(submission.getCurrentVersion())
+                        : null)
                 .copyrightConfirmed(submission.getCopyrightConfirmed())
                 .copyrightConfirmedAt(submission.getCopyrightConfirmedAt())
                 .canUpload(submission.canUpload())
                 .canConfirmCopyright(!Boolean.TRUE.equals(submission.getCopyrightConfirmed()))
                 .createdAt(submission.getCreatedAt())
                 .updatedAt(submission.getUpdatedAt())
+                .deadline(formattedDeadline)
                 .build();
     }
 
     private SubmissionListDTO mapToSubmissionListDTO(CameraReadySubmission submission) {
+        String paperTitle = "Unknown";
+        String trackName = "Unknown";
+        VersionDTO.UserDTO authorDTO = null;
+
+        // Get Paper Title
+        Submission originalSubmission = submissionRepositoryMain.findById(submission.getPaperId()).orElse(null);
+        if (originalSubmission != null) {
+            paperTitle = originalSubmission.getTitle();
+        }
+
+        // Get Track Name
+        if (submission.getTrackId() != null) {
+            Track track = trackRepository.findById(submission.getTrackId()).orElse(null);
+            if (track != null) {
+                trackName = track.getName();
+            }
+        }
+
+        // Get Corresponding Author
+        List<SubmissionAuthor> authors = submissionAuthorRepository.findBySubmissionId(submission.getPaperId());
+        SubmissionAuthor correspondingAuthor = authors.stream()
+                .filter(a -> Boolean.TRUE.equals(a.getIsCorresponding()))
+                .findFirst()
+                .orElse(authors.stream().findFirst().orElse(null));
+
+        if (correspondingAuthor != null) {
+            authorDTO = VersionDTO.UserDTO.builder()
+                    .id(correspondingAuthor.getUserId())
+                    .fullName(correspondingAuthor.getFirstName() + " " + correspondingAuthor.getLastName())
+                    .email(correspondingAuthor.getEmail())
+                    .build();
+        }
+
         return SubmissionListDTO.builder()
                 .id(submission.getId())
                 .paperId(submission.getPaperId())
+                .paperTitle(paperTitle)
                 .trackId(submission.getTrackId())
+                .trackName(trackName)
                 .status(submission.getStatus())
-                .currentVersionNumber(submission.getCurrentVersion() != null 
-                        ? submission.getCurrentVersion().getVersionNumber() : null)
+                .currentVersionNumber(submission.getCurrentVersion() != null
+                        ? submission.getCurrentVersion().getVersionNumber()
+                        : null)
                 .copyrightConfirmed(submission.getCopyrightConfirmed())
+                .correspondingAuthor(authorDTO)
                 .updatedAt(submission.getUpdatedAt())
                 .build();
     }
@@ -535,13 +635,21 @@ public class CameraReadyServiceImpl implements CameraReadyService {
     }
 
     private ProceedingsExportDTO.PaperExportDTO mapToPaperExportDTO(CameraReadySubmission submission) {
+        CameraReadyMetadata metadata = metadataRepository.findBySubmissionId(submission.getId()).orElse(null);
+
         return ProceedingsExportDTO.PaperExportDTO.builder()
                 .paperId(submission.getPaperId())
-                .pdfPath(submission.getCurrentVersion() != null 
-                        ? submission.getCurrentVersion().getStoredPath() : null)
+                .doi(metadata != null ? metadata.getDoi() : null)
+                .startPage(metadata != null ? metadata.getStartPage() : null)
+                .endPage(metadata != null ? metadata.getEndPage() : null)
+                .pdfPath(submission.getCurrentVersion() != null
+                        ? submission.getCurrentVersion().getStoredPath()
+                        : null)
+                .track(ProceedingsExportDTO.TrackExportDTO.builder()
+                        .id(submission.getTrackId())
+                        .build())
                 .build();
     }
-
 
     private String calculateChecksum(MultipartFile file) {
         try {
@@ -562,34 +670,35 @@ public class CameraReadyServiceImpl implements CameraReadyService {
     }
 
     private String escapeCSV(String value) {
-        if (value == null) return "";
+        if (value == null)
+            return "";
         return value.replace("\"", "\"\"");
     }
 
     @Override
     @Transactional(readOnly = true)
-    public byte[] exportProceedingsZip(UUID conferenceId, UUID trackId, CameraReadyStatus status) {
+    public byte[] exportProceedingsZip(Long conferenceId, Long trackId, CameraReadyStatus status) {
         log.info("Xuất kỷ yếu ZIP cho conference {}", conferenceId);
-        
+
         ProceedingsExportDTO export = exportProceedingsJson(conferenceId, trackId, status);
-        
+
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ZipOutputStream zos = new ZipOutputStream(baos)) {
-            
+                ZipOutputStream zos = new ZipOutputStream(baos)) {
+
             // Add metadata JSON file
             String jsonContent = convertToJson(export);
             ZipEntry jsonEntry = new ZipEntry("proceedings_metadata.json");
             zos.putNextEntry(jsonEntry);
             zos.write(jsonContent.getBytes(StandardCharsets.UTF_8));
             zos.closeEntry();
-            
+
             // Add CSV file
             byte[] csvContent = exportProceedingsCsv(conferenceId, trackId, status);
             ZipEntry csvEntry = new ZipEntry("proceedings.csv");
             zos.putNextEntry(csvEntry);
             zos.write(csvContent);
             zos.closeEntry();
-            
+
             // Add PDF files
             int paperIndex = 1;
             for (ProceedingsExportDTO.PaperExportDTO paper : export.getPapers()) {
@@ -597,7 +706,7 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                     try {
                         // Get PDF file from storage
                         InputStream pdfStream = storageService.getFileStream(paper.getPdfPath());
-                        
+
                         // Read PDF into byte array
                         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                         byte[] data = new byte[8192];
@@ -607,10 +716,10 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                         }
                         byte[] pdfBytes = buffer.toByteArray();
                         pdfStream.close();
-                        
+
                         // Add to ZIP with organized filename
-                        String filename = String.format("papers/%03d_%s.pdf", 
-                                paperIndex++, 
+                        String filename = String.format("papers/%03d_%s.pdf",
+                                paperIndex++,
                                 sanitizeFilename(paper.getTitle()));
                         ZipEntry pdfEntry = new ZipEntry(filename);
                         zos.putNextEntry(pdfEntry);
@@ -622,7 +731,7 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                     }
                 }
             }
-            
+
             zos.finish();
             return baos.toByteArray();
         } catch (Exception e) {
@@ -633,31 +742,33 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
     @Override
     @Transactional(readOnly = true)
-    public byte[] exportProceedingsPdf(UUID conferenceId, UUID trackId, CameraReadyStatus status) {
+    public byte[] exportProceedingsPdf(Long conferenceId, Long trackId, CameraReadyStatus status) {
         log.info("Xuất kỷ yếu PDF cho conference {}", conferenceId);
-        
+
         ProceedingsExportDTO export = exportProceedingsJson(conferenceId, trackId, status);
-        
+
+        List<PDDocument> sourceDocuments = new ArrayList<>(); // Giữ các document nguồn mở
+
         try (PDDocument mergedDocument = new PDDocument()) {
             int currentPageNumber = 1;
-            
+
             // Add title page
             addTitlePage(mergedDocument, export);
             currentPageNumber++;
-            
+
             // Add table of contents
             int tocPages = addTableOfContents(mergedDocument, export, currentPageNumber);
             currentPageNumber += tocPages;
-            
+
             // Merge all paper PDFs with automatic page numbering
             for (ProceedingsExportDTO.PaperExportDTO paper : export.getPapers()) {
                 int startPage = currentPageNumber;
-                
+
                 if (paper.getPdfPath() != null) {
                     try {
                         // Get PDF file from storage
                         InputStream pdfStream = storageService.getFileStream(paper.getPdfPath());
-                        
+
                         // Read PDF into byte array
                         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
                         byte[] data = new byte[8192];
@@ -667,24 +778,24 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                         }
                         byte[] pdfBytes = buffer.toByteArray();
                         pdfStream.close();
-                        
+
                         PDDocument paperDoc = Loader.loadPDF(pdfBytes);
-                        
-                        // Copy all pages from paper to merged document
+                        sourceDocuments.add(paperDoc); // Thêm vào list để đóng sau
+
+                        // Import pages từ paper vào merged document (tạo bản copy thay vì reference)
                         for (int i = 0; i < paperDoc.getNumberOfPages(); i++) {
-                            PDPage page = paperDoc.getPage(i);
-                            mergedDocument.addPage(page);
+                            PDPage importedPage = mergedDocument.importPage(paperDoc.getPage(i));
                             currentPageNumber++;
                         }
-                        
+
                         int endPage = currentPageNumber - 1;
-                        
+
                         // Update metadata with automatic page numbers if not set
                         if (paper.getStartPage() == null || paper.getEndPage() == null) {
                             updatePaperPageNumbers(paper.getPaperId(), startPage, endPage);
                         }
-                        
-                        paperDoc.close();
+
+                        // KHÔNG đóng paperDoc ở đây - sẽ đóng sau khi save merged document
                     } catch (Exception e) {
                         log.warn("Không thể thêm PDF cho paper {}: {}", paper.getPaperId(), e.getMessage());
                         // Add placeholder page
@@ -697,14 +808,30 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                     currentPageNumber++;
                 }
             }
-            
+
             // Save merged PDF to byte array
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             mergedDocument.save(baos);
-            mergedDocument.close();
-            
+
+            // Đóng tất cả các source documents SAU khi đã save
+            for (PDDocument doc : sourceDocuments) {
+                try {
+                    doc.close();
+                } catch (Exception e) {
+                    log.debug("Error closing source document: {}", e.getMessage());
+                }
+            }
+
             return baos.toByteArray();
         } catch (Exception e) {
+            // Đảm bảo đóng các source documents nếu có lỗi
+            for (PDDocument doc : sourceDocuments) {
+                try {
+                    doc.close();
+                } catch (Exception ex) {
+                    log.debug("Error closing source document: {}", ex.getMessage());
+                }
+            }
             log.error("Error creating PDF export for conference {}", conferenceId, e);
             throw new BusinessException("Không thể tạo file PDF: " + e.getMessage());
         }
@@ -713,20 +840,21 @@ public class CameraReadyServiceImpl implements CameraReadyService {
     private void addTitlePage(PDDocument document, ProceedingsExportDTO export) throws Exception {
         PDPage page = new PDPage(PDRectangle.A4);
         document.addPage(page);
-        
+
         try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
             contentStream.beginText();
             contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 24);
             contentStream.newLineAtOffset(50, 750);
-            contentStream.showText(export.getConferenceName() != null ? export.getConferenceName() : "Conference Proceedings");
+            contentStream.showText(
+                    export.getConferenceName() != null ? export.getConferenceName() : "Conference Proceedings");
             contentStream.endText();
-            
+
             contentStream.beginText();
             contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
             contentStream.newLineAtOffset(50, 700);
             contentStream.showText("Total Papers: " + export.getTotalPapers());
             contentStream.endText();
-            
+
             contentStream.beginText();
             contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
             contentStream.newLineAtOffset(50, 680);
@@ -740,11 +868,11 @@ public class CameraReadyServiceImpl implements CameraReadyService {
         int itemsPerPage = 40;
         int totalItems = export.getPapers().size();
         int totalPages = (totalItems + itemsPerPage - 1) / itemsPerPage;
-        
+
         for (int pageNum = 0; pageNum < totalPages; pageNum++) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
-            
+
             try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
                 // Title
                 contentStream.beginText();
@@ -752,16 +880,17 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                 contentStream.newLineAtOffset(50, 750);
                 contentStream.showText("Table of Contents");
                 contentStream.endText();
-                
+
                 // Table entries
                 int startIdx = pageNum * itemsPerPage;
                 int endIdx = Math.min(startIdx + itemsPerPage, totalItems);
                 int yPos = 720;
-                
+
                 for (int i = startIdx; i < endIdx; i++) {
                     ProceedingsExportDTO.PaperExportDTO paper = export.getPapers().get(i);
-                    int pageNumForPaper = paper.getStartPage() != null ? paper.getStartPage() : (currentPage + i - startIdx + 1);
-                    
+                    int pageNumForPaper = paper.getStartPage() != null ? paper.getStartPage()
+                            : (currentPage + i - startIdx + 1);
+
                     contentStream.beginText();
                     contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
                     contentStream.newLineAtOffset(50, yPos);
@@ -771,33 +900,33 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                     }
                     contentStream.showText(String.format("%d. %s", i + 1, title));
                     contentStream.endText();
-                    
+
                     contentStream.beginText();
                     contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
                     contentStream.newLineAtOffset(500, yPos);
                     contentStream.showText(String.valueOf(pageNumForPaper));
                     contentStream.endText();
-                    
+
                     yPos -= 15;
                 }
             }
             currentPage++;
         }
-        
+
         return totalPages;
     }
 
     private void addPlaceholderPage(PDDocument document, String title) throws Exception {
         PDPage page = new PDPage(PDRectangle.A4);
         document.addPage(page);
-        
+
         try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
             contentStream.beginText();
             contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
             contentStream.newLineAtOffset(50, 750);
             contentStream.showText(title != null ? title : "Paper Not Available");
             contentStream.endText();
-            
+
             contentStream.beginText();
             contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
             contentStream.newLineAtOffset(50, 700);
@@ -811,7 +940,8 @@ public class CameraReadyServiceImpl implements CameraReadyService {
         StringBuilder json = new StringBuilder();
         json.append("{\n");
         json.append("  \"conferenceId\": \"").append(export.getConferenceId()).append("\",\n");
-        json.append("  \"conferenceName\": \"").append(export.getConferenceName() != null ? export.getConferenceName() : "").append("\",\n");
+        json.append("  \"conferenceName\": \"")
+                .append(export.getConferenceName() != null ? export.getConferenceName() : "").append("\",\n");
         json.append("  \"exportedAt\": \"").append(export.getExportedAt()).append("\",\n");
         json.append("  \"totalPapers\": ").append(export.getTotalPapers()).append(",\n");
         json.append("  \"papers\": [\n");
@@ -821,8 +951,10 @@ public class CameraReadyServiceImpl implements CameraReadyService {
             json.append("      \"paperId\": \"").append(paper.getPaperId()).append("\",\n");
             json.append("      \"title\": \"").append(escapeJson(paper.getTitle())).append("\",\n");
             json.append("      \"doi\": \"").append(paper.getDoi() != null ? paper.getDoi() : "").append("\",\n");
-            json.append("      \"startPage\": ").append(paper.getStartPage() != null ? paper.getStartPage() : "null").append(",\n");
-            json.append("      \"endPage\": ").append(paper.getEndPage() != null ? paper.getEndPage() : "null").append("\n");
+            json.append("      \"startPage\": ").append(paper.getStartPage() != null ? paper.getStartPage() : "null")
+                    .append(",\n");
+            json.append("      \"endPage\": ").append(paper.getEndPage() != null ? paper.getEndPage() : "null")
+                    .append("\n");
             json.append("    }");
             if (i < export.getPapers().size() - 1) {
                 json.append(",");
@@ -835,24 +967,26 @@ public class CameraReadyServiceImpl implements CameraReadyService {
     }
 
     private String escapeJson(String value) {
-        if (value == null) return "";
+        if (value == null)
+            return "";
         return value.replace("\\", "\\\\")
-                   .replace("\"", "\\\"")
-                   .replace("\n", "\\n")
-                   .replace("\r", "\\r")
-                   .replace("\t", "\\t");
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 
     private String sanitizeFilename(String filename) {
-        if (filename == null) return "untitled";
+        if (filename == null)
+            return "untitled";
         return filename.replaceAll("[^a-zA-Z0-9._-]", "_")
-                      .substring(0, Math.min(filename.length(), 50));
+                .substring(0, Math.min(filename.length(), 50));
     }
 
     /**
      * Update page numbers for a paper in metadata
      */
-    private void updatePaperPageNumbers(UUID paperId, int startPage, int endPage) {
+    private void updatePaperPageNumbers(Long paperId, int startPage, int endPage) {
         try {
             CameraReadySubmission submission = submissionRepository.findByPaperId(paperId)
                     .orElse(null);

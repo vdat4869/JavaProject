@@ -21,12 +21,14 @@ public class Deadline {
   @Column(nullable = false)
   private LocalDateTime dueDate;
 
+  @Column(columnDefinition = "TEXT")
   private String description;
 
   @Column(nullable = false)
   private Boolean hardDeadline = true;
 
-  public Deadline() {}
+  public Deadline() {
+  }
 
   public Deadline(
       Long id,

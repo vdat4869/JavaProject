@@ -105,7 +105,7 @@ export interface CameraReadyStatistics {
 /**
  * Review Request
  */
-export type ReviewDecision = 'APPROVE' | 'REJECT' | 'NEEDS_REVISION'
+export type ReviewDecision = 'APPROVED' | 'NEED_FIX'
 
 export interface ReviewRequest {
   decision: ReviewDecision
@@ -122,10 +122,10 @@ export const cameraReadyService = {
    * GET /api/v1/conferences/{confId}/camera-ready/papers/{paperId}
    */
   getSubmission: async (conferenceId: string, paperId: string): Promise<CameraReadySubmission> => {
-    const response = await apiClient.get<CameraReadySubmission>(
+    const response = await apiClient.get<any>(
       `/v1/conferences/${conferenceId}/camera-ready/papers/${paperId}`
     )
-    return response.data
+    return response.data.data || response.data
   },
 
   /**
@@ -140,7 +140,7 @@ export const cameraReadyService = {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await apiClient.post<CameraReadyVersion>(
+    const response = await apiClient.post<any>(
       `/v1/conferences/${conferenceId}/camera-ready/papers/${paperId}/upload`,
       formData,
       {
@@ -149,7 +149,7 @@ export const cameraReadyService = {
         },
       }
     )
-    return response.data
+    return response.data.data || response.data
   },
 
   /**
@@ -157,10 +157,10 @@ export const cameraReadyService = {
    * GET /api/v1/conferences/{confId}/camera-ready/papers/{paperId}/versions
    */
   listVersions: async (conferenceId: string, paperId: string): Promise<CameraReadyVersion[]> => {
-    const response = await apiClient.get<CameraReadyVersion[]>(
+    const response = await apiClient.get<any>(
       `/v1/conferences/${conferenceId}/camera-ready/papers/${paperId}/versions`
     )
-    return response.data
+    return response.data.data || response.data || []
   },
 
   /**
@@ -189,11 +189,11 @@ export const cameraReadyService = {
     confirmed: boolean
   ): Promise<CameraReadySubmission> => {
     const request: CopyrightConfirmRequest = { confirmed }
-    const response = await apiClient.post<CameraReadySubmission>(
+    const response = await apiClient.post<any>(
       `/v1/conferences/${conferenceId}/camera-ready/papers/${paperId}/confirm-copyright`,
       request
     )
-    return response.data
+    return response.data.data || response.data
   },
 
   /**
@@ -201,10 +201,12 @@ export const cameraReadyService = {
    * GET /api/v1/conferences/{confId}/camera-ready/submissions
    */
   listSubmissions: async (conferenceId: string): Promise<CameraReadySubmissionListItem[]> => {
-    const response = await apiClient.get<CameraReadySubmissionListItem[]>(
+    const response = await apiClient.get<any>(
       `/v1/conferences/${conferenceId}/camera-ready/submissions`
     )
-    return response.data
+    // Backend trả về Page<T>, item list nằm trong content
+    const data = response.data.data || response.data
+    return data.content || data || []
   },
 
   /**
@@ -227,10 +229,10 @@ export const cameraReadyService = {
    * GET /api/v1/conferences/{confId}/camera-ready/statistics
    */
   getStatistics: async (conferenceId: string): Promise<CameraReadyStatistics> => {
-    const response = await apiClient.get<CameraReadyStatistics>(
+    const response = await apiClient.get<any>(
       `/v1/conferences/${conferenceId}/camera-ready/statistics`
     )
-    return response.data
+    return response.data.data
   },
 
   /**
@@ -243,6 +245,22 @@ export const cameraReadyService = {
       { responseType: 'blob' }
     )
     return response.data
+  },
+
+  /**
+   * [CHAIR] Mở nộp camera-ready
+   * POST /api/v1/conferences/{confId}/camera-ready/open
+   */
+  openCameraReady: async (conferenceId: string, deadline?: string): Promise<void> => {
+    await apiClient.post(`/v1/conferences/${conferenceId}/camera-ready/open`, { deadline })
+  },
+
+  /**
+   * [CHAIR] Đóng nộp camera-ready
+   * POST /api/v1/conferences/{confId}/camera-ready/close
+   */
+  closeCameraReady: async (conferenceId: string, reason?: string): Promise<void> => {
+    await apiClient.post(`/v1/conferences/${conferenceId}/camera-ready/close`, { reason })
   },
 
   // Legacy compatibility / CHAIR helpers

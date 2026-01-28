@@ -36,9 +36,9 @@ public class AuthorCameraReadyController {
     @GetMapping
     @Operation(summary = "Lấy trạng thái bài nộp")
     public ResponseEntity<SubmissionDTO> getSubmission(
-            @PathVariable UUID conferenceId,
-            @PathVariable UUID paperId) {
-        
+            @PathVariable Long conferenceId,
+            @PathVariable Long paperId) {
+
         log.debug("GET /conferences/{}/camera-ready/papers/{}", conferenceId, paperId);
         SubmissionDTO submission = cameraReadyService.getSubmissionByPaperId(conferenceId, paperId);
         return ResponseEntity.ok(submission);
@@ -47,11 +47,11 @@ public class AuthorCameraReadyController {
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Tải lên PDF")
     public ResponseEntity<VersionDTO> uploadVersion(
-            @PathVariable UUID conferenceId,
-            @PathVariable UUID paperId,
+            @PathVariable Long conferenceId,
+            @PathVariable Long paperId,
             @RequestParam("file") MultipartFile file,
-            @RequestHeader("X-User-Id") UUID userId) {
-        
+            @RequestHeader("X-User-Id") Long userId) {
+
         log.info("POST upload for paper {} by user {}", paperId, userId);
         VersionDTO version = cameraReadyService.uploadVersion(conferenceId, paperId, file, userId);
         return ResponseEntity.status(HttpStatus.CREATED).body(version);
@@ -60,9 +60,9 @@ public class AuthorCameraReadyController {
     @GetMapping("/versions")
     @Operation(summary = "Danh sách phiên bản")
     public ResponseEntity<List<VersionDTO>> listVersions(
-            @PathVariable UUID conferenceId,
-            @PathVariable UUID paperId) {
-        
+            @PathVariable Long conferenceId,
+            @PathVariable Long paperId) {
+
         List<VersionDTO> versions = cameraReadyService.listVersions(conferenceId, paperId);
         return ResponseEntity.ok(versions);
     }
@@ -70,13 +70,13 @@ public class AuthorCameraReadyController {
     @GetMapping("/versions/{versionId}/download")
     @Operation(summary = "Tải xuống phiên bản")
     public ResponseEntity<Resource> downloadVersion(
-            @PathVariable UUID conferenceId,
-            @PathVariable UUID paperId,
+            @PathVariable Long conferenceId,
+            @PathVariable Long paperId,
             @PathVariable UUID versionId) {
-        
+
         Resource resource = cameraReadyService.downloadVersion(conferenceId, paperId, versionId);
         String filename = cameraReadyService.getVersionFilename(versionId);
-        
+
         return ResponseEntity.ok()
                 .contentType(MediaType.valueOf("application/pdf"))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
@@ -86,11 +86,11 @@ public class AuthorCameraReadyController {
     @PostMapping("/confirm-copyright")
     @Operation(summary = "Xác nhận bản quyền")
     public ResponseEntity<SubmissionDTO> confirmCopyright(
-            @PathVariable UUID conferenceId,
-            @PathVariable UUID paperId,
+            @PathVariable Long conferenceId,
+            @PathVariable Long paperId,
             @Valid @RequestBody CopyrightConfirmRequestDTO request,
-            @RequestHeader("X-User-Id") UUID userId) {
-        
+            @RequestHeader("X-User-Id") Long userId) {
+
         log.info("POST confirm-copyright for paper {} by user {}", paperId, userId);
         SubmissionDTO submission = cameraReadyService.confirmCopyright(conferenceId, paperId, request, userId);
         return ResponseEntity.ok(submission);

@@ -515,6 +515,13 @@ public class SubmissionService {
         .map(this::mapFileToDTO)
         .collect(Collectors.toList());
 
+    boolean canEdit = submission.getStatus() == Submission.SubmissionStatus.DRAFT ||
+        submission.getStatus() == Submission.SubmissionStatus.SUBMITTED;
+
+    boolean canWithdraw = !submission.getWithdrawn() &&
+        submission.getStatus() != Submission.SubmissionStatus.ACCEPTED &&
+        submission.getStatus() != Submission.SubmissionStatus.CAMERA_READY;
+
     return SubmissionResponseDTO.builder()
         .id(submission.getId())
         .conferenceId(submission.getConferenceId())
@@ -530,6 +537,8 @@ public class SubmissionService {
         .files(files)
         .createdAt(submission.getCreatedAt())
         .updatedAt(submission.getUpdatedAt())
+        .canEdit(canEdit)
+        .canWithdraw(canWithdraw)
         .build();
   }
 

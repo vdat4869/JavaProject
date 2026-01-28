@@ -25,6 +25,20 @@ apiClient.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
+
+    // Add X-User-Id header if user is logged in
+    const userStr = localStorage.getItem('user')
+    if (userStr && config.headers) {
+      try {
+        const user = JSON.parse(userStr)
+        if (user && user.id) {
+          config.headers['X-User-Id'] = user.id.toString()
+        }
+      } catch (e) {
+        // Ignore JSON parse error
+      }
+    }
+
     return config
   },
   (error: AxiosError) => {

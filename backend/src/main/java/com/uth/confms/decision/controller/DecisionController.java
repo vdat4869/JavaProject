@@ -61,7 +61,8 @@ public class DecisionController {
   public ResponseEntity<ApiResponse<DecisionResultDTO>> makeDecision(
       @Valid @RequestBody DecisionRequestDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
-    return ResponseEntity.ok(ApiResponse.success(decisionService.makeDecision(dto, chairId)));
+    boolean isAdmin = isAdmin(authentication);
+    return ResponseEntity.ok(ApiResponse.success(decisionService.makeDecision(dto, chairId, isAdmin)));
   }
 
   @PostMapping("/bulk")
@@ -69,7 +70,8 @@ public class DecisionController {
   public ResponseEntity<ApiResponse<List<DecisionResultDTO>>> makeBulkDecisions(
       @Valid @RequestBody BulkDecisionRequestDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
-    return ResponseEntity.ok(ApiResponse.success(decisionService.makeBulkDecisions(dto, chairId)));
+    boolean isAdmin = isAdmin(authentication);
+    return ResponseEntity.ok(ApiResponse.success(decisionService.makeBulkDecisions(dto, chairId, isAdmin)));
   }
 
   @GetMapping("/{id}/history")
@@ -92,8 +94,9 @@ public class DecisionController {
   public ResponseEntity<ApiResponse<List<DecisionResultDTO>>> getDecisionsByConference(
       @PathVariable Long conferenceId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
+    boolean isAdmin = isAdmin(authentication);
     return ResponseEntity.ok(
-        ApiResponse.success(decisionService.getDecisionsByConference(conferenceId, chairId)));
+        ApiResponse.success(decisionService.getDecisionsByConference(conferenceId, chairId, isAdmin)));
   }
 
   @GetMapping("/pending-notifications")
@@ -125,13 +128,19 @@ public class DecisionController {
       @Valid @RequestBody com.uth.confms.decision.dto.UpdateDecisionRequestDTO dto,
       Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
+    boolean isAdmin = isAdmin(authentication);
     return ResponseEntity.ok(
-        ApiResponse.success(decisionService.updateDecision(decisionId, dto, chairId)));
+        ApiResponse.success(decisionService.updateDecision(decisionId, dto, chairId, isAdmin)));
   }
 
   private Long getUserIdFromAuthentication(Authentication authentication) {
     String email = authentication.getName();
     User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
     return user.getId();
+  }
+
+  private boolean isAdmin(Authentication authentication) {
+    return authentication.getAuthorities().stream()
+        .anyMatch(a -> a.getAuthority().equals("ADMIN") || a.getAuthority().equals("ROLE_ADMIN"));
   }
 }

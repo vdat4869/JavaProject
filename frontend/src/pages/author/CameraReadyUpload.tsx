@@ -59,16 +59,23 @@ const CameraReadyUpload: React.FC = () => {
 
       // 2. Lấy thông tin camera-ready submission
       const data = await cameraReadyService.getSubmission(conferenceId, paperId!)
-      setSubmission(data)
-      navigate(`/app/author/submissions/${id}`)
-      setCopyrightAccepted(data.copyrightConfirmed)
+      if (data) {
+        setSubmission(data)
+        setCopyrightAccepted(data.copyrightConfirmed)
+      } else {
+        throw new Error('Không tìm thấy dữ liệu Camera-Ready')
+      }
 
       // 3. Lấy danh sách versions
       const versionsData = await cameraReadyService.listVersions(conferenceId, paperId!)
       setVersions(versionsData)
     } catch (error: any) {
       console.error('Error loading camera-ready data:', error)
-      setError('Không thể tải dữ liệu camera-ready. Vui lòng kiểm tra lại quyền truy cập.')
+      if (error.response?.status === 404) {
+        setError('Chức năng nộp bản thảo cuối (Camera-ready) chưa được mở hoặc bài báo chưa được chấp nhận.')
+      } else {
+        setError('Không thể tải dữ liệu camera-ready. Vui lòng thử lại sau.')
+      }
     } finally {
       setLoading(false)
     }
@@ -162,9 +169,14 @@ const CameraReadyUpload: React.FC = () => {
 
   if (!submission) {
     return (
-      <CAlert color="danger">
-        Không tìm thấy thông tin camera-ready cho bài báo này.
-      </CAlert>
+      <div className="container-lg mt-4">
+        <CAlert color="danger">
+          {error || 'Không tìm thấy thông tin camera-ready cho bài báo này.'}
+        </CAlert>
+        <CButton color="secondary" onClick={() => navigate(-1)}>
+          Quay lại
+        </CButton>
+      </div>
     )
   }
 
@@ -268,7 +280,7 @@ const CameraReadyUpload: React.FC = () => {
               <CButton
                 color="warning"
                 disabled={confirming || !copyrightAccepted || !submission.canConfirmCopyright}
-                onClick={() => navigate(`/app/author/submissions/${id}`)}
+                onClick={handleConfirmCopyright}
               >
                 {confirming ? <CSpinner size="sm" /> : 'Gửi xác nhận bản quyền'}
               </CButton>

@@ -20,6 +20,8 @@ import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.conference.entity.Conference;
 import com.uth.confms.conference.repository.ConferenceRepository;
+import com.uth.confms.conference.repository.DeadlineRepository;
+import com.uth.confms.conference.entity.Deadline;
 import com.uth.confms.pc.entity.PCMember;
 import com.uth.confms.pc.repository.PCMemberRepository;
 import com.uth.confms.pc.service.COIService;
@@ -69,6 +71,7 @@ public class AssignmentService {
   private final AssignmentSuggestionService suggestionService;
   private final AuditLogService auditLogService;
   private final ReviewRepository reviewRepository;
+  private final DeadlineRepository deadlineRepository;
 
   public AssignmentService(
       AssignmentRepository assignmentRepository,
@@ -80,7 +83,8 @@ public class AssignmentService {
       WorkloadService workloadService,
       AssignmentSuggestionService suggestionService,
       AuditLogService auditLogService,
-      ReviewRepository reviewRepository) {
+      ReviewRepository reviewRepository,
+      DeadlineRepository deadlineRepository) { // Added deadlineRepository
     this.assignmentRepository = assignmentRepository;
     this.submissionRepository = submissionRepository;
     this.userRepository = userRepository;
@@ -91,10 +95,11 @@ public class AssignmentService {
     this.suggestionService = suggestionService;
     this.auditLogService = auditLogService;
     this.reviewRepository = reviewRepository;
+    this.deadlineRepository = deadlineRepository;
   }
 
   @Transactional
-  public AssignmentResponseDTO createAssignment(AssignmentCreateDTO dto, Long chairId) {
+  public AssignmentResponseDTO createAssignment(AssignmentCreateDTO dto, Long chairId, boolean isAdmin) {
     Submission submission = submissionRepository
         .findById(dto.getSubmissionId())
         .orElseThrow(
@@ -106,8 +111,9 @@ public class AssignmentService {
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization - only chair can assign
-    if (!conference.getChairId().equals(chairId)) {
-      throw new UnauthorizedException("Only conference chair can assign reviewers");
+    // Check authorization - only chair (or admin) can assign
+    if (!isAdmin && !conference.getChairId().equals(chairId)) {
+      throw new UnauthorizedException("Only conference chair or admin can assign reviewers");
     }
 
     // Check if reviewer is a PC member
@@ -225,11 +231,29 @@ public class AssignmentService {
     assignment.setStatus(Assignment.AssignmentStatus.DECLINED);
     assignment = assignmentRepository.save(assignment);
 
+    // If this was the last person to respond and all others submitted, transition
+    // to
+    // REVIEWED
+    List<Assignment> allAssignments = assignmentRepository.findBySubmissionId(assignment.getSubmissionId());
+    List<Assignment> activeAssignments = allAssignments.stream()
+        .filter(a -> a.getStatus() != Assignment.AssignmentStatus.DECLINED)
+        .collect(Collectors.toList());
+
+    if (!activeAssignments.isEmpty() && activeAssignments.stream()
+        .allMatch(a -> a.getStatus() == Assignment.AssignmentStatus.COMPLETED)) {
+      Submission submission = submissionRepository.findById(assignment.getSubmissionId()).orElse(null);
+      if (submission != null && (submission.getStatus() == Submission.SubmissionStatus.UNDER_REVIEW
+          || submission.getStatus() == Submission.SubmissionStatus.SUBMITTED)) {
+        submission.setStatus(Submission.SubmissionStatus.REVIEWED);
+        submissionRepository.save(submission);
+      }
+    }
+
     return mapToDTO(assignment);
   }
 
   @Transactional
-  public void deleteAssignment(Long assignmentId, Long chairId) {
+  public void deleteAssignment(Long assignmentId, Long chairId, boolean isAdmin) {
     Assignment assignment = assignmentRepository
         .findById(assignmentId)
         .orElseThrow(() -> new NotFoundException("Assignment not found"));
@@ -243,8 +267,9 @@ public class AssignmentService {
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
-    if (!conference.getChairId().equals(chairId)) {
-      throw new UnauthorizedException("Only conference chair can delete assignments");
+    // Check authorization
+    if (!isAdmin && !conference.getChairId().equals(chairId)) {
+      throw new UnauthorizedException("Only conference chair or admin can delete assignments");
     }
 
     assignmentRepository.delete(assignment);
@@ -260,7 +285,7 @@ public class AssignmentService {
    */
   @Transactional
   public AssignmentResponseDTO reassignAssignment(
-      Long assignmentId, ReassignRequestDTO dto, Long chairId) {
+      Long assignmentId, ReassignRequestDTO dto, Long chairId, boolean isAdmin) {
     Assignment oldAssignment = assignmentRepository
         .findById(assignmentId)
         .orElseThrow(() -> new NotFoundException("Assignment not found"));
@@ -274,8 +299,9 @@ public class AssignmentService {
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
-    if (!conference.getChairId().equals(chairId)) {
-      throw new UnauthorizedException("Only conference chair can reassign assignments");
+    // Check authorization
+    if (!isAdmin && !conference.getChairId().equals(chairId)) {
+      throw new UnauthorizedException("Only conference chair or admin can reassign assignments");
     }
 
     Long oldReviewerId = oldAssignment.getReviewerId();
@@ -361,7 +387,7 @@ public class AssignmentService {
     return mapToDTO(newAssignment);
   }
 
-  public List<AssignmentResponseDTO> getAssignmentsBySubmission(Long submissionId, Long chairId) {
+  public List<AssignmentResponseDTO> getAssignmentsBySubmission(Long submissionId, Long chairId, boolean isAdmin) {
     Submission submission = submissionRepository
         .findById(submissionId)
         .orElseThrow(() -> new NotFoundException("Submission not found"));
@@ -371,8 +397,9 @@ public class AssignmentService {
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
-    if (!conference.getChairId().equals(chairId)) {
-      throw new UnauthorizedException("Only conference chair can view assignments");
+    // Check authorization
+    if (!isAdmin && !conference.getChairId().equals(chairId)) {
+      throw new UnauthorizedException("Only conference chair or admin can view assignments");
     }
 
     return assignmentRepository.findBySubmissionId(submissionId).stream()
@@ -416,7 +443,7 @@ public class AssignmentService {
    *         assignments
    */
   @Transactional
-  public AutoAssignResponseDTO autoAssign(AutoAssignRequestDTO dto, Long chairId) {
+  public AutoAssignResponseDTO autoAssign(AutoAssignRequestDTO dto, Long chairId, boolean isAdmin) {
     Submission submission = submissionRepository
         .findById(dto.getSubmissionId())
         .orElseThrow(
@@ -428,8 +455,9 @@ public class AssignmentService {
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
-    if (!conference.getChairId().equals(chairId)) {
-      throw new UnauthorizedException("Only conference chair can auto-assign reviewers");
+    // Check authorization
+    if (!isAdmin && !conference.getChairId().equals(chairId)) {
+      throw new UnauthorizedException("Only conference chair or admin can auto-assign reviewers");
     }
 
     // Get suggestions
@@ -451,7 +479,7 @@ public class AssignmentService {
         createDTO.setReviewerId(suggestion.getReviewerId());
         createDTO.setIsPrimary(false);
 
-        AssignmentResponseDTO assignment = createAssignment(createDTO, chairId);
+        AssignmentResponseDTO assignment = createAssignment(createDTO, chairId, isAdmin);
         createdAssignments.add(assignment);
       } catch (Exception e) {
         User reviewer = userRepository.findById(suggestion.getReviewerId()).orElse(null);
@@ -481,14 +509,14 @@ public class AssignmentService {
    *         assignments
    */
   @Transactional
-  public BulkAssignResponseDTO bulkAssign(BulkAssignRequestDTO dto, Long chairId) {
+  public BulkAssignResponseDTO bulkAssign(BulkAssignRequestDTO dto, Long chairId, boolean isAdmin) {
     List<AssignmentResponseDTO> createdAssignments = new ArrayList<>();
     List<BulkAssignResponseDTO.FailedAssignmentDTO> failedAssignments = new ArrayList<>();
 
     // Try to assign each assignment
     for (AssignmentCreateDTO assignmentDTO : dto.getAssignments()) {
       try {
-        AssignmentResponseDTO assignment = createAssignment(assignmentDTO, chairId);
+        AssignmentResponseDTO assignment = createAssignment(assignmentDTO, chairId, isAdmin);
         createdAssignments.add(assignment);
       } catch (Exception e) {
         failedAssignments.add(
@@ -514,14 +542,15 @@ public class AssignmentService {
    * @param chairId      ID của chair
    * @return AssignmentStatisticsDTO chứa các thống kê
    */
-  public AssignmentStatisticsDTO getAssignmentStatistics(Long conferenceId, Long chairId) {
+  public AssignmentStatisticsDTO getAssignmentStatistics(Long conferenceId, Long chairId, boolean isAdmin) {
     Conference conference = conferenceRepository
         .findById(conferenceId)
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
-    if (!conference.getChairId().equals(chairId)) {
-      throw new UnauthorizedException("Only conference chair can view assignment statistics");
+    // Check authorization
+    if (!isAdmin && !conference.getChairId().equals(chairId)) {
+      throw new UnauthorizedException("Only conference chair or admin can view assignment statistics");
     }
 
     // Get all submissions for this conference
@@ -626,14 +655,15 @@ public class AssignmentService {
    * @param chairId      ID của chair
    * @return AssignmentQualityMetricsDTO chứa các quality metrics
    */
-  public AssignmentQualityMetricsDTO getAssignmentQualityMetrics(Long conferenceId, Long chairId) {
+  public AssignmentQualityMetricsDTO getAssignmentQualityMetrics(Long conferenceId, Long chairId, boolean isAdmin) {
     Conference conference = conferenceRepository
         .findById(conferenceId)
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
-    if (!conference.getChairId().equals(chairId)) {
-      throw new UnauthorizedException("Only conference chair can view assignment quality metrics");
+    // Check authorization
+    if (!isAdmin && !conference.getChairId().equals(chairId)) {
+      throw new UnauthorizedException("Only conference chair or admin can view assignment quality metrics");
     }
 
     // Get all submissions for this conference
@@ -781,6 +811,27 @@ public class AssignmentService {
     Submission submission = submissionRepository.findById(assignment.getSubmissionId()).orElse(null);
     User reviewer = userRepository.findById(assignment.getReviewerId()).orElse(null);
 
+    LocalDateTime reviewDeadline = null;
+    if (submission != null) {
+      List<Deadline> deadlines = deadlineRepository.findByConferenceId(submission.getConferenceId());
+      if (deadlines != null && !deadlines.isEmpty()) {
+        // Find review deadline by type
+        reviewDeadline = deadlines.stream()
+            .filter(d -> d.getType() == Deadline.DeadlineType.REVIEW)
+            .map(Deadline::getDueDate)
+            .max(LocalDateTime::compareTo)
+            .orElse(null);
+
+        // Fallback: if no review deadline, take the latest deadline
+        if (reviewDeadline == null) {
+          reviewDeadline = deadlines.stream()
+              .map(Deadline::getDueDate)
+              .max(LocalDateTime::compareTo)
+              .orElse(null);
+        }
+      }
+    }
+
     return AssignmentResponseDTO.builder()
         .id(assignment.getId())
         .submissionId(assignment.getSubmissionId())
@@ -793,6 +844,7 @@ public class AssignmentService {
         .submissionAbstract(submission != null ? submission.getAbstractText() : null)
         .assignedAt(assignment.getAssignedAt())
         .updatedAt(assignment.getUpdatedAt())
+        .deadline(reviewDeadline)
         .build();
   }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   CCard,
   CCardBody,
@@ -22,17 +22,21 @@ import {
   CModalHeader,
   CModalTitle,
   CBadge,
+  CListGroup,
+  CListGroupItem,
 } from '@coreui/react'
 import {
   reportsService,
   ReportStatistics,
 } from '../../services/reports.service'
+import { conferenceService, ConferenceResponse } from '../../services/conference.service'
 
 /**
  * ReportingDashboard - Dashboard thống kê và báo cáo cho CHAIR (API v1)
  */
 const ReportingDashboard: React.FC = () => {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const conferenceId = searchParams.get('conferenceId')
     ? parseInt(searchParams.get('conferenceId')!)
     : null
@@ -49,6 +53,10 @@ const ReportingDashboard: React.FC = () => {
   const [snapshotting, setSnapshotting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  // Conference selection states
+  const [myConferences, setMyConferences] = useState<ConferenceResponse[]>([])
+  const [isSelectingConference, setIsSelectingConference] = useState(false)
 
   const loadData = useCallback(async () => {
     try {
@@ -70,8 +78,28 @@ const ReportingDashboard: React.FC = () => {
   useEffect(() => {
     if (conferenceId) {
       loadData()
+    } else {
+      loadMyConferences()
     }
   }, [conferenceId, loadData])
+
+  const loadMyConferences = async () => {
+    try {
+      setLoading(true)
+      const data = await conferenceService.getMyConferences()
+      if (data.length === 1) {
+        // Auto select if only one
+        navigate(`?conferenceId=${data[0].id}`, { replace: true })
+      } else {
+        setMyConferences(data)
+        setIsSelectingConference(true)
+        setLoading(false)
+      }
+    } catch (error) {
+      console.error('Error loading conferences:', error)
+      setLoading(false)
+    }
+  }
 
   const handleCreateSnapshot = async () => {
     if (!conferenceId) return
@@ -100,9 +128,6 @@ const ReportingDashboard: React.FC = () => {
       })
       setSuccess(`Export thành công! File: ${result.fileName}`)
       setShowExportModal(false)
-
-      // Download file
-      await reportsService.download(result.downloadUrl, result.fileName)
     } catch (error: any) {
       setError(error.response?.data?.message || 'Không thể export report')
     } finally {
@@ -111,6 +136,43 @@ const ReportingDashboard: React.FC = () => {
   }
 
   if (!conferenceId) {
+    if (loading) {
+      return (
+        <div className="d-flex justify-content-center p-5">
+          <CSpinner color="primary" />
+        </div>
+      )
+    }
+
+    if (isSelectingConference) {
+      return (
+        <CCard className="mx-auto" style={{ maxWidth: '800px' }}>
+          <CCardHeader>
+            <h4>Chọn hội nghị để xem báo cáo</h4>
+          </CCardHeader>
+          <CCardBody>
+            {myConferences.length === 0 ? (
+              <CAlert color="warning">Bạn chưa được gán vào hội nghị nào.</CAlert>
+            ) : (
+              <CListGroup>
+                {myConferences.map(conf => (
+                  <CListGroupItem
+                    key={conf.id}
+                    onClick={() => navigate(`?conferenceId=${conf.id}`)}
+                    className="d-flex justify-content-between align-items-center list-group-item-action"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <span>{conf.name}</span>
+                    <CBadge color="primary" shape="rounded-pill">ID: {conf.id}</CBadge>
+                  </CListGroupItem>
+                ))}
+              </CListGroup>
+            )}
+          </CCardBody>
+        </CCard>
+      )
+    }
+
     return (
       <CCard>
         <CCardBody>
@@ -133,6 +195,9 @@ const ReportingDashboard: React.FC = () => {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h4>Reporting & Analytics Dashboard</h4>
         <div className="d-flex gap-2">
+          <CButton color="secondary" variant="outline" onClick={() => navigate('/app/chair/conferences')}>
+            Đổi hội nghị
+          </CButton>
           <CButton color="info" variant="outline" onClick={handleCreateSnapshot} disabled={snapshotting}>
             {snapshotting ? <CSpinner size="sm" /> : 'Capture Snapshot'}
           </CButton>

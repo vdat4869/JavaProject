@@ -58,6 +58,21 @@ export interface VerifyEmailRequest {
 }
 
 /**
+ * Forgot Password request
+ */
+export interface ForgotPasswordRequest {
+  email: string
+}
+
+/**
+ * Reset Password request
+ */
+export interface ResetPasswordRequest {
+  token: string
+  newPassword: String
+}
+
+/**
  * Auth Service - Xử lý tất cả các API calls liên quan đến authentication
  */
 export const authService = {
@@ -129,5 +144,21 @@ export const authService = {
    */
   changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<void> => {
     await apiClient.post('/auth/change-password', data)
+  },
+
+  /**
+   * Request password reset link
+   * POST /api/auth/forgot-password
+   */
+  forgotPassword: async (data: ForgotPasswordRequest): Promise<void> => {
+    await apiClient.post('/auth/forgot-password', data)
+  },
+
+  /**
+   * Reset password using token
+   * POST /api/auth/reset-password
+   */
+  resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
+    await apiClient.post('/auth/reset-password', data)
   },
 }

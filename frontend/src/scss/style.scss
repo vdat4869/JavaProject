@@ -65,3 +65,162 @@ body {
     --cui-footer-bg: var(--cui-body-bg);
   }
 }
+
+// ==============================================
+// UTH Conference Management System - Custom Theme
+// Professional, light theme for scientific conferences
+// ==============================================
+
+// Custom primary color - Professional Blue
+:root {
+  --uth-primary: #1a5276;
+  --uth-primary-light: #2980b9;
+  --uth-primary-dark: #154360;
+  --uth-accent: #e74c3c;
+  --uth-success: #27ae60;
+  --uth-warning: #f39c12;
+  --uth-bg-light: #f8f9fa;
+  --uth-text-dark: #2c3e50;
+}
+
+// Light sidebar styling
+.sidebar {
+  &.sidebar-light {
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+    
+    .sidebar-header {
+      background: #fff;
+      border-bottom: 2px solid var(--uth-primary) !important;
+    }
+    
+    .nav-link {
+      color: var(--uth-text-dark);
+      
+      &:hover {
+        background-color: rgba(26, 82, 118, 0.1);
+        color: var(--uth-primary);
+      }
+      
+      &.active {
+        background-color: var(--uth-primary);
+        color: #fff;
+        border-radius: 4px;
+        margin: 2px 8px;
+      }
+    }
+    
+    .nav-group-toggle::after {
+      filter: brightness(0) saturate(100%);
+    }
+    
+    .sidebar-nav {
+      padding: 0.5rem;
+    }
+  }
+}
+
+// Header styling
+.header {
+  background: linear-gradient(90deg, var(--uth-primary) 0%, var(--uth-primary-light) 100%);
+  border-bottom: none !important;
+  
+  .header-toggler,
+  .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    
+    &:hover {
+      color: #fff !important;
+    }
+  }
+  
+  .header-nav .dropdown-toggle::after {
+    border-top-color: rgba(255, 255, 255, 0.9);
+  }
+}
+
+// Footer styling
+.footer {
+  background: #fff;
+  border-top: 1px solid #e9ecef;
+  color: var(--uth-text-dark);
+  
+  strong {
+    color: var(--uth-primary);
+  }
+}
+
+// Card improvements
+.card {
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  
+  .card-header {
+    background: linear-gradient(90deg, var(--uth-primary) 0%, var(--uth-primary-light) 100%);
+    color: #fff;
+    border-radius: 8px 8px 0 0;
+    font-weight: 500;
+    
+    &:first-child {
+      border-radius: 8px 8px 0 0;
+    }
+  }
+}
+
+// Button improvements
+.btn-primary {
+  background: linear-gradient(90deg, var(--uth-primary) 0%, var(--uth-primary-light) 100%);
+  border: none;
+  box-shadow: 0 2px 8px rgba(26, 82, 118, 0.3);
+  
+  &:hover {
+    background: linear-gradient(90deg, var(--uth-primary-dark) 0%, var(--uth-primary) 100%);
+    box-shadow: 0 4px 12px rgba(26, 82, 118, 0.4);
+  }
+}
+
+// Badge improvements
+.badge {
+  border-radius: 20px;
+  padding: 0.4em 0.8em;
+  font-weight: 500;
+}
+
+// Table improvements
+.table {
+  thead {
+    background: var(--uth-bg-light);
+    
+    th {
+      color: var(--uth-text-dark);
+      font-weight: 600;
+      border-bottom: 2px solid var(--uth-primary);
+    }
+  }
+}
+
+// Breadcrumb styling
+.breadcrumb {
+  background: transparent;
+  
+  .breadcrumb-item {
+    a {
+      color: var(--uth-primary);
+      text-decoration: none;
+      
+      &:hover {
+        color: var(--uth-primary-dark);
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+// Login card styling (Auth pages)
+.auth-card {
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+  background: rgba(255, 255, 255, 0.95);
+}
+

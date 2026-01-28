@@ -4,28 +4,27 @@ import {
   CButton,
   CCard,
   CCardBody,
-  CCardGroup,
   CCol,
   CForm,
   CFormInput,
-  CInputGroup,
-  CInputGroupText,
   CRow,
   CAlert,
+  CSpinner,
 } from '@coreui/react'
-import CIcon from '@coreui/icons-react'
-import { cilLockLocked, cilUser, cilEnvelopeClosed } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { authService } from '../../services/auth.service'
 
+// UTH Logo - Full version for header
+import uthLogoFull from '../../assets/images/idrV1VcT-T_logos.jpeg'
+
 /**
  * RegisterPage - Trang đăng ký
- *
- * Features:
- * - Email/Password registration (Local account)
- * - Form validation
- * - Error handling
- * - Redirect đến verify email sau khi đăng ký thành công
+ * 
+ * Styled to match Portal UTH aesthetic:
+ * - Teal primary color (#008585)
+ * - Red title text
+ * - Clean white card
+ * - Right-aligned layout
  */
 const RegisterPage: React.FC = () => {
   const { t } = useTranslation()
@@ -90,7 +89,6 @@ const RegisterPage: React.FC = () => {
         fullName: formData.fullName,
       })
 
-      // Redirect đến verify email page
       navigate('/verify-email', {
         state: { email: formData.email, message: t('auth.registrationSuccess') },
       })
@@ -101,97 +99,176 @@ const RegisterPage: React.FC = () => {
     }
   }
 
+  const colors = {
+    teal: '#008585',
+    red: '#b31d1d',
+    border: '#abb5be',
+    text: '#212529'
+  }
+
+  const styles = {
+    card: {
+      borderRadius: '8px',
+      border: 'none',
+      boxShadow: '0 10px 40px rgba(0,0,0,0.25)',
+      backgroundColor: '#fff',
+      padding: '30px 50px',
+      maxWidth: '550px',
+      width: '100%'
+    },
+    logoHeader: {
+      textAlign: 'center' as const,
+      marginBottom: '5px',
+      marginTop: '-15px',
+      overflow: 'hidden',
+      maxHeight: '120px'
+    },
+    logoImage: {
+      maxWidth: '240px',
+      height: 'auto',
+      display: 'inline-block'
+    },
+    title: {
+      color: colors.red,
+      fontSize: '1.5rem',
+      fontWeight: 700,
+      textAlign: 'center' as const,
+      marginBottom: '20px',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '1px'
+    },
+    input: {
+      backgroundColor: '#fff',
+      border: `1px solid ${colors.border}`,
+      borderRadius: '4px',
+      padding: '14px 18px',
+      fontSize: '1rem',
+      color: colors.text
+    },
+    btnSubmit: {
+      backgroundColor: colors.teal,
+      borderColor: colors.teal,
+      color: '#fff',
+      fontWeight: 'bold',
+      padding: '14px',
+      borderRadius: '4px',
+      marginTop: '10px',
+      letterSpacing: '1px'
+    },
+    footerText: {
+      textAlign: 'center' as const,
+      marginTop: '20px',
+      fontSize: '1rem',
+      color: '#495057'
+    }
+  }
+
+  // Custom style for placeholders
+  const inputGlobalStyle = `
+    .custom-input::placeholder {
+      color: #666 !important;
+      opacity: 0.8;
+    }
+  `;
+
   return (
-    <CRow className="justify-content-center">
-      <CCol md={8}>
-        <CCardGroup>
-          <CCard className="p-4">
-            <CCardBody>
-              <CForm onSubmit={handleSubmit}>
-                <h1>{t('common.register') || 'Đăng ký'}</h1>
-                <p className="text-body-secondary">
-                  {t('auth.registerTitle') || 'Tạo tài khoản mới'}
-                </p>
-                {error && (
-                  <CAlert color="danger" className="mb-3">
-                    {error}
-                  </CAlert>
-                )}
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>
-                    <CIcon icon={cilUser} />
-                  </CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    name="fullName"
-                    placeholder={t('common.fullName') || 'Họ và tên'}
-                    autoComplete="name"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    required
-                  />
-                </CInputGroup>
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>
-                    <CIcon icon={cilEnvelopeClosed} />
-                  </CInputGroupText>
-                  <CFormInput
-                    type="email"
-                    name="email"
-                    placeholder={t('common.email') || 'Email'}
-                    autoComplete="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </CInputGroup>
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>
-                    <CIcon icon={cilLockLocked} />
-                  </CInputGroupText>
-                  <CFormInput
-                    type="password"
-                    name="password"
-                    placeholder={t('common.password') || 'Mật khẩu'}
-                    autoComplete="new-password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                  />
-                </CInputGroup>
-                <CInputGroup className="mb-4">
-                  <CInputGroupText>
-                    <CIcon icon={cilLockLocked} />
-                  </CInputGroupText>
-                  <CFormInput
-                    type="password"
-                    name="confirmPassword"
-                    placeholder={t('auth.confirmPassword') || 'Xác nhận mật khẩu'}
-                    autoComplete="new-password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                  />
-                </CInputGroup>
-                <div className="d-grid">
-                  <CButton color="primary" className="px-4" type="submit" disabled={loading}>
-                    {loading
-                      ? t('common.loading') || 'Đang xử lý...'
-                      : t('common.register') || 'Đăng ký'}
-                  </CButton>
-                </div>
-                <CRow className="mt-3">
-                  <CCol className="text-center">
-                    <span className="text-body-secondary">
-                      {t('auth.alreadyHaveAccount') || 'Đã có tài khoản?'}{' '}
-                      <Link to="/login">{t('common.login') || 'Đăng nhập'}</Link>
-                    </span>
-                  </CCol>
-                </CRow>
-              </CForm>
-            </CCardBody>
-          </CCard>
-        </CCardGroup>
+    <CRow className="justify-content-end align-items-center min-vh-100 pe-md-5 me-md-5">
+      <style>{inputGlobalStyle}</style>
+      <CCol xs={12} sm={10} md={8} lg={6} xl={5} className="d-flex justify-content-end pe-lg-5">
+        <CCard style={styles.card}>
+          <CCardBody className="p-0">
+            {/* Logo */}
+            <div style={styles.logoHeader}>
+              <img src={uthLogoFull} alt="UTH Logo" style={styles.logoImage} />
+            </div>
+
+            {/* Title */}
+            <h2 style={styles.title}>Đăng ký tài khoản</h2>
+
+            <CForm onSubmit={handleSubmit}>
+              {error && (
+                <CAlert color="danger" className="mb-3">
+                  {error}
+                </CAlert>
+              )}
+
+              {/* Full Name */}
+              <div className="mb-3">
+                <CFormInput
+                  type="text"
+                  name="fullName"
+                  placeholder={t('common.fullName') || 'Họ và tên'}
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  style={styles.input}
+                  className="custom-input"
+                  required
+                />
+              </div>
+
+              {/* Email */}
+              <div className="mb-3">
+                <CFormInput
+                  type="email"
+                  name="email"
+                  placeholder={t('common.email') || 'Email'}
+                  value={formData.email}
+                  onChange={handleChange}
+                  style={styles.input}
+                  className="custom-input"
+                  required
+                />
+              </div>
+
+              {/* Password */}
+              <div className="mb-3">
+                <CFormInput
+                  type="password"
+                  name="password"
+                  placeholder={t('common.password') || 'Mật khẩu'}
+                  value={formData.password}
+                  onChange={handleChange}
+                  style={styles.input}
+                  className="custom-input"
+                  required
+                />
+              </div>
+
+              {/* Confirm Password */}
+              <div className="mb-4">
+                <CFormInput
+                  type="password"
+                  name="confirmPassword"
+                  placeholder={t('auth.confirmPassword') || 'Xác nhận mật khẩu'}
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  style={styles.input}
+                  className="custom-input"
+                  required
+                />
+              </div>
+
+              {/* Submit Button */}
+              <div className="d-grid gap-2">
+                <CButton type="submit" style={styles.btnSubmit} disabled={loading}>
+                  {loading ? (
+                    <CSpinner size="sm" />
+                  ) : (
+                    t('common.register') || 'ĐĂNG KÝ'
+                  )}
+                </CButton>
+              </div>
+
+              {/* Already Have Account */}
+              <div style={styles.footerText}>
+                {t('auth.alreadyHaveAccount')}{' '}
+                <Link to="/login" style={{ color: colors.teal, fontWeight: 700, textDecoration: 'none' }}>
+                  {t('common.login')}
+                </Link>
+              </div>
+            </CForm>
+          </CCardBody>
+        </CCard>
       </CCol>
     </CRow>
   )
