@@ -47,7 +47,9 @@ export type SSOCallbackResponse = LoginResponse
 export interface RegisterRequest {
   email: string
   password: string
-  fullName: string
+  firstName: string
+  lastName: string
+  organizationId: number
 }
 
 /**

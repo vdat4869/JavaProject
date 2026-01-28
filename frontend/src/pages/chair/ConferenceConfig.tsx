@@ -75,7 +75,7 @@ const ConferenceConfig: React.FC = () => {
       setCfp(cfpData)
     } catch (err: any) {
       console.error('Error loading conference data:', err)
-      setError(err.response?.data?.message || t('conference.loadError') || 'Không thể tải thông tin hội nghị')
+      setError(err.response?.data?.message || t('conference.loadError'))
     } finally {
       setLoading(false)
     }
@@ -100,9 +100,9 @@ const ConferenceConfig: React.FC = () => {
       }
       const updated = await conferenceService.updateConference(parseInt(id!), updateData)
       setConference(updated)
-      setSuccess(t('conference.updateSuccess') || 'Cập nhật thành công')
+      setSuccess(t('conference.updateSuccess'))
     } catch (err: any) {
-      setError(err.response?.data?.message || t('conference.updateFailed') || 'Không thể cập nhật')
+      setError(err.response?.data?.message || t('conference.updateFailed'))
     } finally {
       setSaving(false)
     }
@@ -125,9 +125,9 @@ const ConferenceConfig: React.FC = () => {
       }
       const updated = await conferenceService.createOrUpdateCFP(cfpData)
       setCfp(updated)
-      setSuccess(t('conference.cfpUpdateSuccess') || 'Cập nhật CFP thành công')
+      setSuccess(t('conference.cfpUpdateSuccess'))
     } catch (err: any) {
-      setError(err.response?.data?.message || t('conference.cfpUpdateFailed') || 'Không thể cập nhật CFP')
+      setError(err.response?.data?.message || t('conference.cfpUpdateFailed'))
     } finally {
       setSaving(false)
     }
@@ -135,7 +135,7 @@ const ConferenceConfig: React.FC = () => {
 
   const handlePublishCFP = async () => {
     if (!conference) return
-    if (!window.confirm(t('conference.confirmPublishCFP') || 'Bạn có chắc chắn muốn publish CFP này?')) {
+    if (!window.confirm(t('conference.confirmPublishCFP'))) {
       return
     }
 
@@ -144,10 +144,10 @@ const ConferenceConfig: React.FC = () => {
       setError('')
       const updated = await conferenceService.publishCFP(conference.id)
       setCfp(updated)
-      setSuccess(t('conference.cfpPublished') || 'CFP đã được publish thành công')
+      setSuccess(t('conference.cfpPublished'))
       await loadData() // Reload to get updated conference status
     } catch (err: any) {
-      setError(err.response?.data?.message || t('conference.cfpPublishFailed') || 'Không thể publish CFP')
+      setError(err.response?.data?.message || t('conference.cfpPublishFailed'))
     } finally {
       setPublishing(false)
     }
@@ -155,7 +155,7 @@ const ConferenceConfig: React.FC = () => {
 
   const handleCloseCFP = async () => {
     if (!conference) return
-    if (!window.confirm(t('conference.confirmCloseCFP') || 'Bạn có chắc chắn muốn đóng CFP này?')) {
+    if (!window.confirm(t('conference.confirmCloseCFP'))) {
       return
     }
 
@@ -164,10 +164,10 @@ const ConferenceConfig: React.FC = () => {
       setError('')
       const updated = await conferenceService.closeCFP(conference.id)
       setCfp(updated)
-      setSuccess(t('conference.cfpClosed') || 'CFP đã được đóng thành công')
+      setSuccess(t('conference.cfpCloseSuccess'))
       await loadData() // Reload to get updated conference status
     } catch (err: any) {
-      setError(err.response?.data?.message || t('conference.cfpCloseFailed') || 'Không thể đóng CFP')
+      setError(err.response?.data?.message || t('conference.cfpCloseFailed'))
     } finally {
       setClosing(false)
     }
@@ -225,9 +225,9 @@ const ConferenceConfig: React.FC = () => {
                       published: true,
                     })
                     setConference(updated)
-                    setSuccess(t('conference.publishSuccess') || 'Hội nghị đã được công khai')
+                    setSuccess(t('conference.publishSuccess'))
                   } catch (err: any) {
-                    setError(err.response?.data?.message || 'Không thể công khai hội nghị')
+                    setError(err.response?.data?.message || t('conference.publishFailed'))
                   } finally {
                     setSaving(false)
                   }

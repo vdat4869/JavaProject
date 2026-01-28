@@ -1,5 +1,4 @@
-@use "@coreui/coreui/scss/coreui" as * with ( 
-  $enable-deprecation-messages: false,
+@use "@coreui/coreui/scss/coreui" as * with ($enable-deprecation-messages: false,
 );
 @use "@coreui/chartjs/scss/coreui-chartjs";
 @use "vendors/simplebar";
@@ -15,7 +14,7 @@ body {
   @include transition(padding .15s);
 }
 
-.header > .container-fluid,
+.header>.container-fluid,
 .sidebar-header {
   min-height: calc(4rem + 1px); // stylelint-disable-line function-disallowed-list
 }
@@ -48,7 +47,7 @@ body {
   }
 }
 
-.header > .container-fluid + .container-fluid {
+.header>.container-fluid+.container-fluid {
   min-height: 3rem;
 }
 
@@ -87,20 +86,20 @@ body {
 .sidebar {
   &.sidebar-light {
     background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
-    
+
     .sidebar-header {
       background: #fff;
       border-bottom: 2px solid var(--uth-primary) !important;
     }
-    
+
     .nav-link {
       color: var(--uth-text-dark);
-      
+
       &:hover {
         background-color: rgba(26, 82, 118, 0.1);
         color: var(--uth-primary);
       }
-      
+
       &.active {
         background-color: var(--uth-primary);
         color: #fff;
@@ -108,11 +107,11 @@ body {
         margin: 2px 8px;
       }
     }
-    
+
     .nav-group-toggle::after {
       filter: brightness(0) saturate(100%);
     }
-    
+
     .sidebar-nav {
       padding: 0.5rem;
     }
@@ -123,16 +122,16 @@ body {
 .header {
   background: linear-gradient(90deg, var(--uth-primary) 0%, var(--uth-primary-light) 100%);
   border-bottom: none !important;
-  
+
   .header-toggler,
   .nav-link {
     color: rgba(255, 255, 255, 0.9) !important;
-    
+
     &:hover {
       color: #fff !important;
     }
   }
-  
+
   .header-nav .dropdown-toggle::after {
     border-top-color: rgba(255, 255, 255, 0.9);
   }
@@ -143,7 +142,7 @@ body {
   background: #fff;
   border-top: 1px solid #e9ecef;
   color: var(--uth-text-dark);
-  
+
   strong {
     color: var(--uth-primary);
   }
@@ -154,15 +153,51 @@ body {
   border: none;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   border-radius: 8px;
-  
+
   .card-header {
     background: linear-gradient(90deg, var(--uth-primary) 0%, var(--uth-primary-light) 100%);
     color: #fff;
     border-radius: 8px 8px 0 0;
     font-weight: 500;
-    
+
+    // Support for background overrides
+    &.bg-white,
+    &.bg-light {
+      background: none !important;
+      background-color: var(--cui-card-cap-bg) !important;
+      color: var(--uth-text-dark);
+    }
+
+    // Muted text in card header
+    .text-muted {
+      color: rgba(255, 255, 255, 0.7) !important;
+    }
+
     &:first-child {
       border-radius: 8px 8px 0 0;
+    }
+
+    // Nav tabs in card header
+    .nav-tabs {
+      border-bottom: none;
+
+      .nav-link {
+        color: rgba(255, 255, 255, 0.7);
+        border: none;
+        padding: 0.8rem 1rem;
+
+        &:hover {
+          color: #fff;
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        &.active {
+          color: var(--uth-primary);
+          background-color: #fff;
+          font-weight: 600;
+          border-radius: 6px 6px 0 0;
+        }
+      }
     }
   }
 }
@@ -172,7 +207,7 @@ body {
   background: linear-gradient(90deg, var(--uth-primary) 0%, var(--uth-primary-light) 100%);
   border: none;
   box-shadow: 0 2px 8px rgba(26, 82, 118, 0.3);
-  
+
   &:hover {
     background: linear-gradient(90deg, var(--uth-primary-dark) 0%, var(--uth-primary) 100%);
     box-shadow: 0 4px 12px rgba(26, 82, 118, 0.4);
@@ -190,7 +225,7 @@ body {
 .table {
   thead {
     background: var(--uth-bg-light);
-    
+
     th {
       color: var(--uth-text-dark);
       font-weight: 600;
@@ -202,12 +237,12 @@ body {
 // Breadcrumb styling
 .breadcrumb {
   background: transparent;
-  
+
   .breadcrumb-item {
     a {
       color: var(--uth-primary);
       text-decoration: none;
-      
+
       &:hover {
         color: var(--uth-primary-dark);
         text-decoration: underline;
@@ -223,4 +258,3 @@ body {
   backdrop-filter: blur(4px);
   background: rgba(255, 255, 255, 0.95);
 }
-

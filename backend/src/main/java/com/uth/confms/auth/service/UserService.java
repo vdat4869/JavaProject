@@ -23,9 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 @SuppressWarnings("null")
 public class UserService {
   private final UserRepository userRepository;
+  private final com.uth.confms.common.repository.OrganizationRepository organizationRepository;
 
-  public UserService(UserRepository userRepository) {
+  public UserService(UserRepository userRepository,
+      com.uth.confms.common.repository.OrganizationRepository organizationRepository) {
     this.userRepository = userRepository;
+    this.organizationRepository = organizationRepository;
   }
 
   /**
@@ -86,8 +89,10 @@ public class UserService {
     if (userDTO.getLastName() != null) {
       user.setLastName(userDTO.getLastName());
     }
-    if (userDTO.getAffiliation() != null) {
-      user.setAffiliation(userDTO.getAffiliation());
+    if (userDTO.getOrganizationId() != null) {
+      com.uth.confms.common.entity.Organization org = organizationRepository.findById(userDTO.getOrganizationId())
+          .orElseThrow(() -> new NotFoundException("Organization", userDTO.getOrganizationId()));
+      user.setOrganization(org);
     }
     if (userDTO.getPhone() != null) {
       user.setPhone(userDTO.getPhone());
@@ -227,7 +232,8 @@ public class UserService {
         .email(user.getEmail())
         .firstName(user.getFirstName())
         .lastName(user.getLastName())
-        .affiliation(user.getAffiliation())
+        .organizationId(user.getOrganization() != null ? user.getOrganization().getId() : null)
+        .organizationName(user.getOrganization() != null ? user.getOrganization().getName() : null)
         .phone(user.getPhone())
         .emailVerified(user.getEmailVerified())
         .active(user.getActive())

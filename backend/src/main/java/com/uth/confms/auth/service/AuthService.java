@@ -56,6 +56,7 @@ public class AuthService {
   private final AuditLogService auditLogService;
   private final GoogleTokenService googleTokenService;
   private final EmailService emailService;
+  private final com.uth.confms.common.repository.OrganizationRepository organizationRepository;
 
   public AuthService(
       UserRepository userRepository,
@@ -68,7 +69,8 @@ public class AuthService {
       PasswordResetTokenRepository passwordResetTokenRepository,
       AuditLogService auditLogService,
       GoogleTokenService googleTokenService,
-      EmailService emailService) {
+      EmailService emailService,
+      com.uth.confms.common.repository.OrganizationRepository organizationRepository) {
     this.userRepository = userRepository;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
@@ -80,6 +82,7 @@ public class AuthService {
     this.auditLogService = auditLogService;
     this.googleTokenService = googleTokenService;
     this.emailService = emailService;
+    this.organizationRepository = organizationRepository;
   }
 
   /**
@@ -96,12 +99,17 @@ public class AuthService {
       throw new BusinessException("Email already exists", "EMAIL_EXISTS");
     }
 
+    com.uth.confms.common.entity.Organization organization = null;
+    if (request.getOrganizationId() != null) {
+      organization = organizationRepository.findById(request.getOrganizationId()).orElse(null);
+    }
+
     User user = User.builder()
         .email(request.getEmail())
         .password(passwordEncoder.encode(request.getPassword()))
         .firstName(request.getFirstName())
         .lastName(request.getLastName())
-        .affiliation(request.getAffiliation())
+        .organization(organization)
         .phone(request.getPhone())
         .emailVerified(true) // Email verification disabled - set to true by default
         .active(true)

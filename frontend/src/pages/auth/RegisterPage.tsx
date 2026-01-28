@@ -13,6 +13,7 @@ import {
 } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
 import { authService } from '../../services/auth.service'
+import OrganizationSelect from '../../components/common/OrganizationSelect'
 
 // UTH Logo - Full version for header
 import uthLogoFull from '../../assets/images/idrV1VcT-T_logos.jpeg'
@@ -33,7 +34,9 @@ const RegisterPage: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    fullName: '',
+    firstName: '',
+    lastName: '',
+    organizationId: 0 as number,
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -48,8 +51,8 @@ const RegisterPage: React.FC = () => {
   }
 
   const validateForm = (): boolean => {
-    if (!formData.email || !formData.password || !formData.fullName) {
-      setError(t('auth.allFieldsRequired') || 'Vui lòng điền đầy đủ thông tin')
+    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName || !formData.organizationId) {
+      setError(t('auth.allFieldsRequired') || 'Vui lòng điền đầy đủ thông tin, bao gồm cả đơn vị')
       return false
     }
 
@@ -86,7 +89,9 @@ const RegisterPage: React.FC = () => {
       await authService.register({
         email: formData.email,
         password: formData.password,
-        fullName: formData.fullName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        organizationId: formData.organizationId,
       })
 
       navigate('/verify-email', {
@@ -192,17 +197,40 @@ const RegisterPage: React.FC = () => {
                 </CAlert>
               )}
 
-              {/* Full Name */}
+              {/* Name fields row */}
+              <CRow className="mb-3">
+                <CCol md={7}>
+                  <CFormInput
+                    type="text"
+                    name="firstName"
+                    placeholder={t('common.firstName') || 'Họ và tên đệm'}
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    style={styles.input}
+                    className="custom-input"
+                    required
+                  />
+                </CCol>
+                <CCol md={5}>
+                  <CFormInput
+                    type="text"
+                    name="lastName"
+                    placeholder={t('common.lastName') || 'Tên'}
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    style={styles.input}
+                    className="custom-input"
+                    required
+                  />
+                </CCol>
+              </CRow>
+
               <div className="mb-3">
-                <CFormInput
-                  type="text"
-                  name="fullName"
-                  placeholder={t('common.fullName') || 'Họ và tên'}
-                  value={formData.fullName}
-                  onChange={handleChange}
+                <OrganizationSelect
+                  value={formData.organizationId}
+                  onChange={(id) => setFormData(prev => ({ ...prev, organizationId: id }))}
                   style={styles.input}
-                  className="custom-input"
-                  required
+                  placeholder={t('common.affiliation') || 'Chọn đơn vị công tác'}
                 />
               </div>
 

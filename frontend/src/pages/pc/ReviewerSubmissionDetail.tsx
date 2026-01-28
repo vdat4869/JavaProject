@@ -169,8 +169,8 @@ const ReviewerSubmissionDetail: React.FC = () => {
             <CRow>
                 <CCol md={8}>
                     <CCard className="mb-4 shadow-sm border-0">
-                        <CCardHeader className="bg-white border-bottom py-3">
-                            <h4 className="mb-1 text-primary">{submission.title}</h4>
+                        <CCardHeader className="py-3">
+                            <h4 className="mb-1 text-white">{submission.title}</h4>
                             <div className="d-flex gap-2 mt-2">
                                 {submission.keywords?.split(',').map((kw, i) => (
                                     <span key={i} className="badge bg-light text-dark border">{kw.trim()}</span>

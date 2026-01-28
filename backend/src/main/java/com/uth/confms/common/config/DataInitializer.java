@@ -60,13 +60,12 @@ public class DataInitializer implements CommandLineRunner {
     for (String permName : permissionNames) {
       if (permissionRepository.findByName(permName).isEmpty()) {
         String[] parts = permName.split(":");
-        Permission perm =
-            Permission.builder()
-                .name(permName)
-                .description("Permission: " + permName)
-                .resource(parts.length > 0 ? parts[0] : null)
-                .action(parts.length > 1 ? parts[1] : null)
-                .build();
+        Permission perm = Permission.builder()
+            .name(permName)
+            .description("Permission: " + permName)
+            .resource(parts.length > 0 ? parts[0] : null)
+            .action(parts.length > 1 ? parts[1] : null)
+            .build();
         permissionRepository.save(perm);
       }
     }
@@ -98,24 +97,23 @@ public class DataInitializer implements CommandLineRunner {
         permissionsToAssign.addAll(
             permissionRepository.findAll().stream()
                 .filter(
-                    p ->
-                        p.getName().startsWith("conference:")
-                            || p.getName().startsWith("submission:")
-                            || p.getName().startsWith("decision:")
-                            || p.getName().startsWith("pc:"))
+                    p -> p.getName().startsWith("conference:")
+                        || p.getName().startsWith("submission:")
+                        || p.getName().startsWith("decision:")
+                        || p.getName().startsWith("pc:"))
                 .toList());
         break;
 
       case PC:
-        // PC can read conferences, manage submissions, create/read reviews, and manage PC
+        // PC can read conferences, manage submissions, create/read reviews, and manage
+        // PC
         permissionsToAssign.addAll(
             permissionRepository.findAll().stream()
                 .filter(
-                    p ->
-                        p.getName().equals("conference:read")
-                            || p.getName().startsWith("submission:")
-                            || p.getName().startsWith("review:")
-                            || p.getName().equals("pc:manage"))
+                    p -> p.getName().equals("conference:read")
+                        || p.getName().startsWith("submission:")
+                        || p.getName().startsWith("review:")
+                        || p.getName().equals("pc:manage"))
                 .toList());
         break;
 
@@ -124,10 +122,9 @@ public class DataInitializer implements CommandLineRunner {
         permissionsToAssign.addAll(
             permissionRepository.findAll().stream()
                 .filter(
-                    p ->
-                        p.getName().equals("conference:read")
-                            || p.getName().equals("submission:read")
-                            || p.getName().startsWith("review:"))
+                    p -> p.getName().equals("conference:read")
+                        || p.getName().equals("submission:read")
+                        || p.getName().startsWith("review:"))
                 .toList());
         break;
 
@@ -136,9 +133,8 @@ public class DataInitializer implements CommandLineRunner {
         permissionsToAssign.addAll(
             permissionRepository.findAll().stream()
                 .filter(
-                    p ->
-                        p.getName().equals("conference:read")
-                            || p.getName().startsWith("submission:"))
+                    p -> p.getName().equals("conference:read")
+                        || p.getName().startsWith("submission:"))
                 .toList());
         break;
     }
@@ -169,7 +165,6 @@ public class DataInitializer implements CommandLineRunner {
         .password(passwordEncoder.encode("admin123"))
         .firstName("Admin")
         .lastName("System")
-        .affiliation("UTH University")
         .emailVerified(true) // Admin email is pre-verified
         .active(true)
         .build();

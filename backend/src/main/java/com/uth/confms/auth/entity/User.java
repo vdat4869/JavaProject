@@ -46,7 +46,9 @@ public class User {
   @Column(nullable = false)
   private String lastName;
 
-  private String affiliation;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "organization_id")
+  private com.uth.confms.common.entity.Organization organization;
 
   private String phone;
 

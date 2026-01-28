@@ -14,8 +14,8 @@ export const AINeuralSummary: React.FC<NeuralSummaryProps> = ({ summary, wordCou
     const { t } = useTranslation();
     return (
         <CCard className="mb-3 border-start-info border-start-4 shadow-sm">
-            <CCardHeader className="bg-transparent border-0 d-flex justify-content-between align-items-center">
-                <h6 className="mb-0 text-info fw-bold">AI Neutral Summary</h6>
+            <CCardHeader className="border-0 d-flex justify-content-between align-items-center">
+                <h6 className="mb-0 text-white fw-bold">AI Neutral Summary</h6>
                 <small className="text-muted">{wordCount} words</small>
             </CCardHeader>
             <CCardBody>
@@ -58,7 +58,7 @@ export const AIKeyPoints: React.FC<KeyPointsProps> = ({ claims, methods, dataset
 
     return (
         <CCard className="mb-3 shadow-sm border-0">
-            <CCardHeader className="bg-light">
+            <CCardHeader>
                 <CNav variant="tabs" layout="fill">
                     <CNavItem>
                         <CNavLink active={activeTab === 1} onClick={() => setActiveTab(1)} style={{ cursor: 'pointer' }}>
