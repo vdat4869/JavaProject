@@ -465,9 +465,24 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
         log.info("Đã mở camera-ready cho {} papers trong conference {}", createdCount, conferenceId);
 
-        // Update Deadline if provided
         if (deadline != null) {
             updateCameraReadyDeadline(conferenceId, deadline);
+        }
+
+        // Send notifications
+        if (createdCount > 0) {
+            // Because this is a bulk operation, we spawn a background task or just iterate
+            // For simplicity and since we have the list of submissions effectively (we know
+            // they are the accepted ones),
+            // we can trigger notifications.
+            // But we need the submission object. Using acceptedSubmissions list.
+            for (Submission submission : acceptedSubmissions) {
+                try {
+                    notificationService.sendCameraReadyOpenNotification(submission, deadline);
+                } catch (Exception e) {
+                    log.error("Failed to send camera-ready open notification for submission {}", submission.getId(), e);
+                }
+            }
         }
 
         return createdCount;

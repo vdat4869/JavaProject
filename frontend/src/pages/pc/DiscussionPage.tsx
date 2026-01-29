@@ -143,7 +143,7 @@ const DiscussionPage: React.FC = () => {
               size="sm"
               color="light"
               variant="outline"
-              onClick={() => navigate(`/submissions/${activeSubmissionId}/reviews`)}
+              onClick={() => navigate(`/app/submissions/${activeSubmissionId}/reviews`)}
             >
               Xem chi tiết
             </CButton>

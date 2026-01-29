@@ -27,7 +27,6 @@
     "previous": "Previous",
     "backToLogin": "Back to login",
     "profile": "Profile",
-    "settings": "Account Settings",
     "roles": "Roles",
     "roleNames": {
       "ADMIN": "Administrator",
@@ -82,7 +81,10 @@
     "updateSuccess": "Data updated successfully",
     "actionSuccess": "Action successful",
     "actionFailed": "Action failed",
-    "confirmAction": "Are you sure you want to perform this action?"
+    "confirmAction": "Are you sure you want to perform this action?",
+    "add": "Add",
+    "locale": "Language",
+    "noRoles": "No roles"
   },
   "auth": {
     "loginTitle": "Login to UTH-ConfMS",
@@ -250,7 +252,11 @@
     "city": "City",
     "country": "Country",
     "website": "Website",
-    "contactEmail": "Contact Email"
+    "contactEmail": "Contact Email",
+    "publishFailed": "Failed to publish conference",
+    "closeCFP": "Close CFP",
+    "publishCFP": "Publish CFP",
+    "viewDetails": "View Details"
   },
   "pc": {
     "dashboard": "PC Dashboard",
@@ -310,7 +316,7 @@
     "profileInformation": "Profile Information",
     "firstName": "First Name",
     "lastName": "Last Name",
-    "affiliation": "Affiliation",
+    "organization": "Organization",
     "phone": "Phone Number",
     "status": "Status",
     "roles": "Roles",
@@ -320,9 +326,6 @@
     "updateSuccess": "Profile updated successfully",
     "updateFailed": "Failed to update profile",
     "userNotFound": "User not found"
-  },
-  "settings": {
-    "title": "Account Settings"
   },
   "ai": {
     "assistant": "AI Assistant",
@@ -376,7 +379,13 @@
     "uploadedAt": "Uploaded At",
     "current": "Current",
     "old": "Old",
-    "status": "Status"
+    "status": "Status",
+    "confirmDeleteAuthor": "Are you sure you want to remove this author?",
+    "authorNameRequired": "Author name is required",
+    "setCorresponding": "Set as Corresponding Author",
+    "moveUp": "Move Up",
+    "moveDown": "Move Down",
+    "editAuthor": "Edit Author"
   },
   "admin": {
     "conferenceManagement": "Conference Management",
@@ -433,6 +442,18 @@
     "restoreSuccess": "Data restored successfully!",
     "restoreFailed": "Restoration failed.",
     "loadBackupsError": "Cannot load backup list.",
-    "systemError": "System error during restoration process."
+    "systemError": "System error during restoration process.",
+    "loadUsersError": "Failed to load users"
+  },
+  "review": {
+    "scores": {
+      "STRONG_ACCEPT": "Strong Accept (7)",
+      "ACCEPT": "Accept (6)",
+      "WEAK_ACCEPT": "Weak Accept (5)",
+      "BORDERLINE": "Borderline (4)",
+      "WEAK_REJECT": "Weak Reject (3)",
+      "REJECT": "Reject (2)",
+      "STRONG_REJECT": "Strong Reject (1)"
+    }
   }
 }

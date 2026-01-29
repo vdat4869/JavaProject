@@ -28,9 +28,15 @@ import com.uth.confms.cameraready.entity.ReviewDecision;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import java.time.LocalDateTime;
+
 @Service
 @SuppressWarnings("null")
 public class NotificationService {
+  private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
+
   private final NotificationLogRepository notificationLogRepository;
   private final DecisionRepository decisionRepository;
   private final DecisionHistoryRepository decisionHistoryRepository;
@@ -100,9 +106,11 @@ public class NotificationService {
               .build();
           notificationLogRepository.save(log);
         } catch (Exception e) {
-          // Log failed notification
+          // Log failed notification with FULL stack trace
+          log.error("Failed to send decision notification to {}", author.getEmail(), e);
+
           NotificationLog.NotificationType notificationType = mapDecisionTypeToNotificationType(decision.getType());
-          NotificationLog log = NotificationLog.builder()
+          NotificationLog logEntry = NotificationLog.builder()
               .submissionId(decision.getSubmissionId())
               .userId(author.getUserId())
               .type(notificationType)
@@ -111,7 +119,7 @@ public class NotificationService {
                   generateEmailContent(decision, submission.getTitle(), anonymizedFeedback))
               .status(NotificationLog.NotificationStatus.FAILED)
               .build();
-          notificationLogRepository.save(log);
+          notificationLogRepository.save(logEntry);
         }
       }
     }
@@ -412,6 +420,45 @@ public class NotificationService {
         } catch (Exception e) {
           System.err
               .println("Failed to send camera-ready notification to " + author.getEmail() + ": " + e.getMessage());
+        }
+      }
+    }
+  }
+
+  @Transactional
+  public void sendCameraReadyOpenNotification(Submission submission, LocalDateTime deadline) {
+    Conference conference = conferenceRepository.findById(submission.getConferenceId()).orElse(null);
+    String conferenceName = conference != null ? conference.getName() : "Conference";
+
+    List<SubmissionAuthor> authors = submissionAuthorRepository.findBySubmissionId(submission.getId());
+
+    for (SubmissionAuthor author : authors) {
+      if (author.getEmail() != null && !author.getEmail().isEmpty()) {
+        try {
+          String subject = String.format("Camera-Ready Submission Open: %s", submission.getTitle());
+          StringBuilder content = new StringBuilder();
+          content.append("Xin chào ").append(author.getFirstName()).append(" ").append(author.getLastName())
+              .append(",\n\n");
+          content.append("Chúc mừng! Bài báo của bạn đã được chấp nhận và vòng nộp Camera-Ready đã mở.\n\n");
+          content.append("Conference: ").append(conferenceName).append("\n");
+          content.append("Paper Title: ").append(submission.getTitle()).append("\n");
+
+          if (deadline != null) {
+            content.append("Deadline: ").append(deadline.toString().replace("T", " ")).append("\n");
+          }
+
+          content.append("\nBạn có thể nộp phiên bản Camera-Ready tại:\n");
+          content.append(frontendUrl).append("/submissions/").append(submission.getId()).append("/camera-ready\n\n");
+
+          content.append("Lưu ý: Vui lòng tuân thủ các quy định về định dạng của hội nghị.\n\n");
+          content.append("Trân trọng,\nUTH-ConfMS Team");
+
+          emailService.sendSimpleEmail(author.getEmail(), subject, content.toString());
+
+        } catch (Exception e) {
+          // Use slf4j logger instead of sysout
+          org.slf4j.LoggerFactory.getLogger(NotificationService.class)
+              .error("Failed to send camera-ready open notification to " + author.getEmail(), e);
         }
       }
     }

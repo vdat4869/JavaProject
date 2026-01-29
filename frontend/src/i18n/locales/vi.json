@@ -27,7 +27,6 @@
     "previous": "Trước",
     "backToLogin": "Quay lại đăng nhập",
     "profile": "Hồ sơ cá nhân",
-    "settings": "Cài đặt tài khoản",
     "roles": "Vai trò",
     "roleNames": {
       "ADMIN": "Quản trị viên",
@@ -82,7 +81,10 @@
     "updateSuccess": "Cập nhật dữ liệu thành công",
     "actionSuccess": "Thao tác thành công",
     "actionFailed": "Thao tác thất bại",
-    "confirmAction": "Bạn có chắc chắn muốn thực hiện thao tác này?"
+    "confirmAction": "Bạn có chắc chắn muốn thực hiện thao tác này?",
+    "add": "Thêm",
+    "locale": "Ngôn ngữ",
+    "noRoles": "Không có vai trò"
   },
   "auth": {
     "loginTitle": "Đăng nhập vào UTH-ConfMS",
@@ -250,7 +252,11 @@
     "city": "Thành phố",
     "country": "Quốc gia",
     "website": "Website",
-    "contactEmail": "Email liên hệ"
+    "contactEmail": "Email liên hệ",
+    "publishFailed": "Công bố hội nghị thất bại",
+    "closeCFP": "Đóng CFP",
+    "publishCFP": "Công bố CFP",
+    "viewDetails": "Xem chi tiết"
   },
   "pc": {
     "dashboard": "Bảng điều khiển PC",
@@ -321,9 +327,6 @@
     "updateFailed": "Cập nhật thông tin thất bại",
     "userNotFound": "Không tìm thấy người dùng"
   },
-  "settings": {
-    "title": "Cài đặt tài khoản"
-  },
   "ai": {
     "assistant": "Trợ lý AI",
     "spellCheck": "Kiểm tra chính tả & ngữ pháp",
@@ -376,7 +379,13 @@
     "uploadedAt": "Ngày tải lên",
     "current": "Hiện tại",
     "old": "Cũ",
-    "status": "Trạng thái"
+    "status": "Trạng thái",
+    "confirmDeleteAuthor": "Bạn có chắc chắn muốn xóa tác giả này?",
+    "authorNameRequired": "Tên tác giả là bắt buộc",
+    "setCorresponding": "Đặt làm tác giả liên hệ",
+    "moveUp": "Di chuyển lên",
+    "moveDown": "Di chuyển xuống",
+    "editAuthor": "Chỉnh sửa tác giả"
   },
   "admin": {
     "conferenceManagement": "Quản lý Hội nghị",
@@ -433,6 +442,18 @@
     "restoreSuccess": "Khôi phục dữ liệu thành công!",
     "restoreFailed": "Khôi phục thất bại.",
     "loadBackupsError": "Không thể tải danh sách sao lưu.",
-    "systemError": "Lỗi hệ thống trong quá trình khôi phục."
+    "systemError": "Lỗi hệ thống trong quá trình khôi phục.",
+    "loadUsersError": "Không thể tải danh sách người dùng"
+  },
+  "review": {
+    "scores": {
+      "STRONG_ACCEPT": "Đề nghị chấp nhận tuyệt đối (7)",
+      "ACCEPT": "Đề nghị chấp nhận (6)",
+      "WEAK_ACCEPT": "Đề nghị chấp nhận sau chỉnh sửa (5)",
+      "BORDERLINE": "Ý kiến phân hóa / Cần thảo luận tại hội đồng (4)",
+      "WEAK_REJECT": "Đề nghị không chấp nhận ở giai đoạn hiện tại (3)",
+      "REJECT": "Không đề nghị chấp nhận (2)",
+      "STRONG_REJECT": "Không đề nghị chấp nhận trong mọi trường hợp (1)"
+    }
   }
 }

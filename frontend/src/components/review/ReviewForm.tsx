@@ -13,6 +13,7 @@ import {
   CCardBody,
   CBadge,
 } from '@coreui/react'
+import { useTranslation } from 'react-i18next'
 import {
   reviewService,
   Review,
@@ -52,6 +53,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   onCancel,
   loading = false,
 }) => {
+  const { t } = useTranslation()
   const [summary, setSummary] = useState('')
   const [score, setScore] = useState<ReviewScore>('BORDERLINE')
   const [comments, setComments] = useState('')
@@ -154,13 +156,13 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
 
   const getScoreLabel = (scoreValue: ReviewScore) => {
     const labels: Record<ReviewScore, string> = {
-      STRONG_ACCEPT: 'Chấp nhận mạnh mẽ (7)',
-      ACCEPT: 'Chấp nhận (6)',
-      WEAK_ACCEPT: 'Chấp nhận yếu (5)',
-      BORDERLINE: 'Ranh giới (4)',
-      WEAK_REJECT: 'Từ chối yếu (3)',
-      REJECT: 'Từ chối (2)',
-      STRONG_REJECT: 'Từ chối mạnh mẽ (1)',
+      STRONG_ACCEPT: t('review.scores.STRONG_ACCEPT'),
+      ACCEPT: t('review.scores.ACCEPT'),
+      WEAK_ACCEPT: t('review.scores.WEAK_ACCEPT'),
+      BORDERLINE: t('review.scores.BORDERLINE'),
+      WEAK_REJECT: t('review.scores.WEAK_REJECT'),
+      REJECT: t('review.scores.REJECT'),
+      STRONG_REJECT: t('review.scores.STRONG_REJECT'),
     }
     return labels[scoreValue]
   }
@@ -233,13 +235,13 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
               required
               disabled={isDeadlinePassed || !canEdit}
             >
-              <option value="STRONG_ACCEPT">Chấp nhận mạnh mẽ (7)</option>
-              <option value="ACCEPT">Chấp nhận (6)</option>
-              <option value="WEAK_ACCEPT">Chấp nhận yếu (5)</option>
-              <option value="BORDERLINE">Ranh giới (4)</option>
-              <option value="WEAK_REJECT">Từ chối yếu (3)</option>
-              <option value="REJECT">Từ chối (2)</option>
-              <option value="STRONG_REJECT">Từ chối mạnh mẽ (1)</option>
+              <option value="STRONG_ACCEPT">{t('review.scores.STRONG_ACCEPT')}</option>
+              <option value="ACCEPT">{t('review.scores.ACCEPT')}</option>
+              <option value="WEAK_ACCEPT">{t('review.scores.WEAK_ACCEPT')}</option>
+              <option value="BORDERLINE">{t('review.scores.BORDERLINE')}</option>
+              <option value="WEAK_REJECT">{t('review.scores.WEAK_REJECT')}</option>
+              <option value="REJECT">{t('review.scores.REJECT')}</option>
+              <option value="STRONG_REJECT">{t('review.scores.STRONG_REJECT')}</option>
             </CFormSelect>
             <small className="text-muted">Điểm hiện tại: {getScoreLabel(score)}</small>
           </div>

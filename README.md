@@ -19,10 +19,10 @@ Hệ thống hỗ trợ toàn bộ quy trình hội nghị khoa học:
 | **Submission** | Tác giả nộp bài, sửa, rút, upload PDF + metadata |
 | **PC** | Quản lý PC member, mời reviewer, COI declaration |
 | **Assignment** | Gán bài cho reviewer, quản lý workload |
-| **Review** | Chấm điểm, nhận xét, thảo luận nội bộ |
+| **Review** | Chấm điểm (thang điểm học thuật chuẩn hóa), nhận xét, thảo luận nội bộ |
 | **Decision** | Accept/Reject, gửi email kết quả hàng loạt |
 | **Camera-ready** | Upload bản cuối, kiểm tra PDF, xác nhận copyright |
-| **Reporting** | Dashboard, thống kê, snapshot, export báo cáo (PDF/Excel/CSV) |
+| **Reporting** | Dashboard, thống kê, snapshot, export báo cáo (PDF/Excel/CSV), Audit Logs với bộ lọc & export |
 | **Storage** | Lưu trữ file với MinIO hoặc Local filesystem |
 | **Email** | Gửi email với template, hàng đợi email với Redis |
 | **AI** | Hỗ trợ tóm tắt, gợi ý keyword, COI detection (Gemini AI) |
@@ -91,9 +91,6 @@ UTH-ConfMS/
 │   │   ├── routes/             # React Router config
 │   │   └── services/           # API services (Axios)
 │   └── package.json
-├── database/                   # Database scripts
-│   ├── schema.sql              # Schema hoàn chỉnh
-│   └── README.md               # Hướng dẫn database
 ├── SETUP.md                    # Hướng dẫn setup chi tiết
 └── README.md                   # File này
 ```
@@ -169,71 +166,10 @@ UTH-ConfMS/
 
 ### Cài đặt
 
-#### 1. Clone repository
-```bash
-git clone https://github.com/UTH/confms.git
-cd confms
-```
+Xem hướng dẫn cài đặt chi tiết tại tài liệu [SETUP.md](SETUP.md).
 
-#### 2. Tạo database
-```bash
-createdb uth_confms
-psql -U postgres -d uth_confms -f database/schema.sql
-```
 
-#### 3. Cấu hình Backend
-
-Tạo file `backend/.env` từ template:
-```env
-# Database
-DB_URL=jdbc:postgresql://localhost:5432/uth_confms
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
-
-# JWT
-JWT_SECRET=your-secret-key-min-32-chars
-
-# Email (Gmail SMTP)
-MAIL_HOST=smtp.gmail.com
-MAIL_PORT=587
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-app-password
-
-# Google OAuth2
-GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
-
-# Frontend URL
-FRONTEND_URL=http://localhost:3000
-
-# Storage (local hoặc minio)
-STORAGE_BACKEND=local
-# Nếu dùng MinIO:
-# STORAGE_BACKEND=minio
-# STORAGE_S3_ENDPOINT=http://127.0.0.1:9000
-# STORAGE_S3_BUCKET=java
-# STORAGE_S3_ACCESS_KEY=minioadmin
-# STORAGE_S3_SECRET_KEY=minioadmin123
-
-# AI (optional)
-AI_ENABLED=true
-GEMINI_API_KEY=your-gemini-api-key
-```
-
-#### 4. Chạy Backend
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-#### 5. Chạy Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-#### 6. Truy cập hệ thống
+#### 7. Truy cập hệ thống
 
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8080
@@ -248,7 +184,7 @@ npm run dev
 
 ---
 
-## 7. API Endpoints
+## 8. API Endpoints
 
 ### Authentication
 | Method | Endpoint | Mô tả |
@@ -283,51 +219,13 @@ Xem đầy đủ tại: **http://localhost:8080/swagger-ui.html**
 
 ---
 
-## 8. Cấu hình nâng cao
+## 9. Cấu hình nâng cao
 
-### Storage Backend
-
-Hệ thống hỗ trợ 2 storage backend:
-
-**Local Storage** (mặc định):
-```env
-STORAGE_BACKEND=local
-STORAGE_BASE_DIR=/data/uploads
-```
-
-**MinIO** (S3-compatible):
-```env
-STORAGE_BACKEND=minio
-STORAGE_S3_ENDPOINT=http://127.0.0.1:9000
-STORAGE_S3_BUCKET=java
-STORAGE_S3_ACCESS_KEY=minioadmin
-STORAGE_S3_SECRET_KEY=minioadmin123
-```
-
-### AI Configuration
-
-```env
-AI_ENABLED=true
-AI_PROVIDER=gemini
-GEMINI_API_KEY=your-api-key
-GEMINI_MODEL=gemini-2.5-flash
-AI_CONFIDENCE_THRESHOLD=0.5
-```
-
-### Rate Limiting
-
-```env
-RATE_LIMITING_ENABLED=true
-RATE_LIMITING_USE_REDIS=true
-RATE_LIMITING_AUTH_MAX=5
-RATE_LIMITING_AUTH_WINDOW=60
-RATE_LIMITING_API_MAX=100
-RATE_LIMITING_API_WINDOW=60
-```
+Xem hướng dẫn cấu hình chi tiết (Storage, AI, Rate Limiting) tại tài liệu [SETUP.md](SETUP.md#cấu-hình-nâng-cao).
 
 ---
 
-## 9. Ghi chú quan trọng
+## 10. Ghi chú quan trọng
 
 - ✅ Hỗ trợ **double-blind review** đầy đủ
 - ✅ AI chỉ gợi ý, **luôn yêu cầu xác nhận thủ công**
@@ -339,7 +237,7 @@ RATE_LIMITING_API_WINDOW=60
 
 ---
 
-## 10. Tài liệu yêu cầu
+## 11. Tài liệu yêu cầu
 
 - User Requirements
 - SRS (Software Requirements Specification)
@@ -353,7 +251,7 @@ RATE_LIMITING_API_WINDOW=60
 
 ---
 
-## 11. License & Team
+## 12. License & Team
 
 **Sinh viên Khoa CNTT – Trường Đại học Giao thông Vận tải TP.HCM (UTH)**  
 Đồ án môn học Lập trình Java - Năm 2025

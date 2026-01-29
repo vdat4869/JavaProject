@@ -47,10 +47,7 @@ const AppHeaderDropdown = () => {
           <CIcon icon={cilUser} className="me-2" />
           {t('common.profile') || 'Profile'}
         </CDropdownItem>
-        <CDropdownItem onClick={() => navigate('/app/settings')}>
-          <CIcon icon={cilSettings} className="me-2" />
-          {t('common.settings') || 'Settings'}
-        </CDropdownItem>
+
         <CDropdownDivider />
         <CDropdownItem onClick={handleLogout}>
           <CIcon icon={cilLockLocked} className="me-2" />

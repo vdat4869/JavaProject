@@ -41,7 +41,8 @@ public class SubmissionResponseDTO {
       LocalDateTime createdAt,
       LocalDateTime updatedAt,
       Boolean canEdit,
-      Boolean canWithdraw) {
+      Boolean canWithdraw,
+      String reviewMode) {
     this.id = id;
     this.conferenceId = conferenceId;
     this.authorId = authorId;
@@ -58,6 +59,7 @@ public class SubmissionResponseDTO {
     this.updatedAt = updatedAt;
     this.canEdit = canEdit;
     this.canWithdraw = canWithdraw;
+    this.reviewMode = reviewMode;
   }
 
   public Long getId() {
@@ -237,7 +239,7 @@ public class SubmissionResponseDTO {
     }
 
     public SubmissionResponseDTO build() {
-      SubmissionResponseDTO dto = new SubmissionResponseDTO(
+      return new SubmissionResponseDTO(
           id,
           conferenceId,
           authorId,
@@ -253,9 +255,8 @@ public class SubmissionResponseDTO {
           createdAt,
           updatedAt,
           canEdit,
-          canWithdraw);
-      dto.setReviewMode(reviewMode);
-      return dto;
+          canWithdraw,
+          reviewMode);
     }
 
     public Builder conferenceId(Long conferenceId) {

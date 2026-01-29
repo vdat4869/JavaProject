@@ -895,20 +895,7 @@ export const routes: RouteObject[] = [
           </Suspense>
         ),
       },
-      {
-        path: 'settings',
-        element: (
-          <Suspense
-            fallback={
-              <div className="d-flex justify-content-center p-5">
-                <CSpinner color="primary" />
-              </div>
-            }
-          >
-            <ProfilePage />
-          </Suspense>
-        ),
-      },
+
       // Admin routes
       {
         path: 'admin/users',

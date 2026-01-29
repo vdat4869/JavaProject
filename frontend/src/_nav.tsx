@@ -1,4 +1,3 @@
-import React from 'react'
 import CIcon from '@coreui/icons-react'
 import {
   cilSpeedometer,
@@ -14,9 +13,8 @@ import {
   cilShieldAlt,
   cilEnvelopeLetter,
   cilUser,
-  cilSettings,
 } from '@coreui/icons'
-import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
+import { CNavItem, CNavTitle } from '@coreui/react'
 
 /**
  * Navigation menu cho UTH-ConfMS
@@ -180,22 +178,10 @@ const _nav: any[] = [
     roles: ['ADMIN'],
   },
   {
-    component: CNavTitle,
-    name: 'common.settings',
-    roles: ['AUTHOR', 'PC', 'CHAIR', 'ADMIN'],
-  },
-  {
     component: CNavItem,
     name: 'common.profile',
     to: '/app/profile',
     icon: <CIcon icon={cilUser} customClassName="nav-icon" />,
-    roles: ['AUTHOR', 'PC', 'CHAIR', 'ADMIN'],
-  },
-  {
-    component: CNavItem,
-    name: 'common.settings',
-    to: '/app/settings',
-    icon: <CIcon icon={cilSettings} customClassName="nav-icon" />,
     roles: ['AUTHOR', 'PC', 'CHAIR', 'ADMIN'],
   },
 ]

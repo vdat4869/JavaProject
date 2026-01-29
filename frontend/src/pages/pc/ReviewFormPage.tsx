@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { CCard, CCardHeader, CButton } from '@coreui/react'
-import { useTranslation } from 'react-i18next'
+
 import { reviewService, ReviewSubmitDTO } from '../../services/review.service'
 import ReviewForm from '../../components/review/ReviewForm'
 
@@ -14,7 +14,7 @@ import ReviewForm from '../../components/review/ReviewForm'
  * - Submit review (finalize)
  */
 const ReviewFormPage: React.FC = () => {
-  const { t } = useTranslation()
+
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { id } = useParams<{ id?: string }>()
