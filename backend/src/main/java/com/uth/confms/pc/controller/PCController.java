@@ -103,6 +103,14 @@ public class PCController {
     return ResponseEntity.ok(ApiResponse.success(pcService.getPCMembers(conferenceId, chairId)));
   }
 
+  @GetMapping("/conference/{conferenceId}/membership")
+  @PreAuthorize("isAuthenticated()")
+  public ResponseEntity<ApiResponse<PCMemberDTO>> getMyMembership(
+      @PathVariable Long conferenceId, Authentication authentication) {
+    Long userId = getUserIdFromAuthentication(authentication);
+    return ResponseEntity.ok(ApiResponse.success(pcService.getMembership(conferenceId, userId)));
+  }
+
   @GetMapping("/conference/{conferenceId}/invitations")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
   public ResponseEntity<ApiResponse<List<PCInvitationResponseDTO>>> getInvitations(

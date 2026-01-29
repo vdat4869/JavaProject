@@ -5,6 +5,7 @@ import com.uth.confms.auth.service.UserService;
 import com.uth.confms.common.dto.ApiResponse;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -152,6 +153,21 @@ public class UserController {
   public ResponseEntity<ApiResponse<Void>> activateUser(@PathVariable Long id) {
     userService.activateUser(id);
     return ResponseEntity.ok(ApiResponse.success("User activated successfully", null));
+  }
+
+  /**
+   * Cập nhật quyền (roles) cho user (chỉ admin)
+   *
+   * @param id    ID của user cần cập nhật
+   * @param roles Tập hợp các tên role mới
+   * @return ApiResponse xác nhận cập nhật thành công
+   */
+  @PutMapping("/{id}/roles")
+  @PreAuthorize("hasRole('ADMIN')")
+  public ResponseEntity<ApiResponse<Void>> updateRoles(
+      @PathVariable Long id, @RequestBody Set<String> roles) {
+    userService.updateUserRoles(id, roles);
+    return ResponseEntity.ok(ApiResponse.success("User roles updated successfully", null));
   }
 
   /**

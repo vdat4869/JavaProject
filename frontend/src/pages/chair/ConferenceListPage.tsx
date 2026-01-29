@@ -162,7 +162,7 @@ const ConferenceListPage: React.FC = () => {
                           color="info"
                           size="sm"
                           variant="outline"
-                          title="Assignment Dashboard"
+                          title={t('conference.assignmentsDashboard')}
                           onClick={() => navigate(`/app/chair/assignments?conferenceId=${conference.id}`)}
                         >
                           <CIcon icon={cilSpeedometer} />
@@ -171,7 +171,7 @@ const ConferenceListPage: React.FC = () => {
                           color="info"
                           size="sm"
                           variant="outline"
-                          title="Manage PC"
+                          title={t('conference.managePC')}
                           onClick={() => navigate(`/app/chair/pc?conferenceId=${conference.id}`)}
                         >
                           <CIcon icon={cilPeople} />
@@ -180,7 +180,7 @@ const ConferenceListPage: React.FC = () => {
                           color="info"
                           size="sm"
                           variant="outline"
-                          title="Manage Submissions"
+                          title={t('conference.manageSubmissions')}
                           onClick={() => navigate(`/app/chair/submissions?conferenceId=${conference.id}`)}
                         >
                           <CIcon icon={cilFile} />
@@ -189,7 +189,7 @@ const ConferenceListPage: React.FC = () => {
                           color="success"
                           size="sm"
                           variant="outline"
-                          title="Decision Board"
+                          title={t('conference.decisionBoard')}
                           onClick={() => navigate(`/app/chair/decisions?conferenceId=${conference.id}`)}
                         >
                           <CIcon icon={cilCheckCircle} />
@@ -198,7 +198,7 @@ const ConferenceListPage: React.FC = () => {
                           color="primary"
                           size="sm"
                           variant="outline"
-                          title="Camera-ready"
+                          title={t('conference.cameraReadyBoard')}
                           onClick={() => navigate(`/app/chair/camera-ready?conferenceId=${conference.id}`)}
                         >
                           <CIcon icon={cilCloudUpload} />

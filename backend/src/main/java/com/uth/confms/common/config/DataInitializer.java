@@ -117,17 +117,6 @@ public class DataInitializer implements CommandLineRunner {
                 .toList());
         break;
 
-      case REVIEWER:
-        // REVIEWER can read conferences, read submissions, and create/read reviews
-        permissionsToAssign.addAll(
-            permissionRepository.findAll().stream()
-                .filter(
-                    p -> p.getName().equals("conference:read")
-                        || p.getName().equals("submission:read")
-                        || p.getName().startsWith("review:"))
-                .toList());
-        break;
-
       case AUTHOR:
         // AUTHOR can read conferences and manage their own submissions
         permissionsToAssign.addAll(

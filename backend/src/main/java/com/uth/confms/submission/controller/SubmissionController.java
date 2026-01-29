@@ -82,7 +82,7 @@ public class SubmissionController {
 
     @Operation(summary = "Lấy thông tin submission", description = "Trả về thông tin chi tiết của một submission theo ID")
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('REVIEWER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<SubmissionResponseDTO>> getSubmission(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             Authentication authentication) {
@@ -147,7 +147,7 @@ public class SubmissionController {
 
     @Operation(summary = "Download PDF file hiện tại", description = "Download file PDF hiện tại (current version) của submission")
     @GetMapping("/{id}/file")
-    @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('REVIEWER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('ADMIN')")
     public ResponseEntity<InputStreamResource> downloadPdfFile(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             Authentication authentication)
@@ -170,7 +170,7 @@ public class SubmissionController {
 
     @Operation(summary = "Xem lịch sử upload PDF", description = "Lấy danh sách tất cả các version của PDF file đã upload cho submission")
     @GetMapping("/{id}/files")
-    @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('REVIEWER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<SubmissionFileDTO>>> getFileVersions(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             Authentication authentication) {
@@ -181,7 +181,7 @@ public class SubmissionController {
 
     @Operation(summary = "Download file version cụ thể", description = "Download một version cụ thể của PDF file theo fileId")
     @GetMapping("/{id}/files/{fileId}")
-    @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('REVIEWER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('ADMIN')")
     public ResponseEntity<InputStreamResource> downloadFileVersion(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             @Parameter(description = "ID của file version") @PathVariable Long fileId,

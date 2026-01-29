@@ -4,6 +4,7 @@ import com.uth.confms.auth.dto.UserDTO;
 import com.uth.confms.auth.entity.User;
 import com.uth.confms.auth.repository.UserRepository;
 import com.uth.confms.common.exception.NotFoundException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -20,15 +21,19 @@ import org.springframework.transaction.annotation.Transactional;
  * @version 1.0
  */
 @Service
+@Transactional(readOnly = true)
 @SuppressWarnings("null")
 public class UserService {
   private final UserRepository userRepository;
   private final com.uth.confms.common.repository.OrganizationRepository organizationRepository;
+  private final com.uth.confms.auth.repository.RoleRepository roleRepository;
 
   public UserService(UserRepository userRepository,
-      com.uth.confms.common.repository.OrganizationRepository organizationRepository) {
+      com.uth.confms.common.repository.OrganizationRepository organizationRepository,
+      com.uth.confms.auth.repository.RoleRepository roleRepository) {
     this.userRepository = userRepository;
     this.organizationRepository = organizationRepository;
+    this.roleRepository = roleRepository;
   }
 
   /**
@@ -201,6 +206,33 @@ public class UserService {
   }
 
   /**
+   * Cập nhật danh sách các vai trò của người dùng
+   *
+   * @param userId    ID của người dùng cần cập nhật
+   * @param roleNames Tập hợp các tên vai trò mới
+   * @throws NotFoundException nếu user hoặc bất kỳ role nào không tồn tại
+   */
+  @Transactional
+  public void updateUserRoles(Long userId, Set<String> roleNames) {
+    User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User", userId));
+
+    Set<com.uth.confms.auth.entity.Role> newRoles = new HashSet<>();
+    for (String roleNameStr : roleNames) {
+      try {
+        com.uth.confms.auth.enums.RoleName roleName = com.uth.confms.auth.enums.RoleName.valueOf(roleNameStr);
+        com.uth.confms.auth.entity.Role role = roleRepository.findByName(roleName)
+            .orElseThrow(() -> new NotFoundException("Role not found: " + roleNameStr));
+        newRoles.add(role);
+      } catch (IllegalArgumentException e) {
+        throw new com.uth.confms.common.exception.BusinessException("Invalid role name: " + roleNameStr);
+      }
+    }
+
+    user.setRoles(newRoles);
+    userRepository.save(user);
+  }
+
+  /**
    * Đếm tổng số user đang active
    *
    * @return Số lượng active users
@@ -216,6 +248,25 @@ public class UserService {
    */
   public long countVerifiedUsers() {
     return userRepository.countByEmailVerifiedTrue();
+  }
+
+  /**
+   * Kiểm tra nếu người dùng có vai trò cụ thể
+   *
+   * @param userId   ID của người dùng
+   * @param roleName Tên vai trò (e.g., ADMIN, PC_MEMBER)
+   * @return true nếu có vai trò này
+   */
+  public boolean hasRole(Long userId, String roleName) {
+    try {
+      User user = userRepository.findById(userId).orElse(null);
+      if (user == null)
+        return false;
+      return user.getRoles().stream()
+          .anyMatch(r -> r.getName().name().equalsIgnoreCase(roleName));
+    } catch (Exception e) {
+      return false;
+    }
   }
 
   /**

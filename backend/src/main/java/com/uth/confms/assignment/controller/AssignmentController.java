@@ -76,7 +76,7 @@ public class AssignmentController {
   }
 
   @PostMapping("/{id}/accept")
-  @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
+  @PreAuthorize("hasRole('PC')")
   public ResponseEntity<ApiResponse<AssignmentResponseDTO>> acceptAssignment(
       @PathVariable Long id, Authentication authentication) {
     Long reviewerId = getUserIdFromAuthentication(authentication);
@@ -85,7 +85,7 @@ public class AssignmentController {
   }
 
   @PostMapping("/{id}/decline")
-  @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
+  @PreAuthorize("hasRole('PC')")
   public ResponseEntity<ApiResponse<AssignmentResponseDTO>> declineAssignment(
       @PathVariable Long id, Authentication authentication) {
     Long reviewerId = getUserIdFromAuthentication(authentication);
@@ -114,7 +114,7 @@ public class AssignmentController {
   }
 
   @GetMapping("/my")
-  @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
+  @PreAuthorize("hasRole('PC')")
   public ResponseEntity<ApiResponse<List<AssignmentResponseDTO>>> getMyAssignments(
       Authentication authentication) {
     Long reviewerId = getUserIdFromAuthentication(authentication);

@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { authService } from '../../services/auth.service'
 import uthLogoFull from '../../assets/images/idrV1VcT-T_logos.jpeg'
+// SSO redirect handler
 
 /**
  * SsoRedirectPage - Trang redirect đến SSO provider

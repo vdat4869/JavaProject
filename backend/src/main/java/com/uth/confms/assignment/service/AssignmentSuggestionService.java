@@ -109,6 +109,14 @@ public class AssignmentSuggestionService {
         .orElseThrow(
             () -> new NotFoundException("Submission with id " + submissionId + " not found"));
 
+    // Detect institutional COI before generating suggestions
+    try {
+      coiService.detectInstitutionalConflicts(submissionId);
+    } catch (Exception e) {
+      // Log and continue
+      System.err.println("Failed to detect institutional COI for suggestions: " + e.getMessage());
+    }
+
     // Get all PC members for this conference (with expertiseTopics loaded)
     List<PCMember> pcMembers = pcMemberRepository.findByConferenceIdAndStatusWithExpertise(
         submission.getConferenceId(), PCMember.PCMemberStatus.ACCEPTED);

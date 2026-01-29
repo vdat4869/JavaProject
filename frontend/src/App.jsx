@@ -24,22 +24,12 @@ const AppRoutes = () => {
  * App - Root component
  */
 const App = () => {
-  const { isColorModeSet, setColorMode } = useColorModes('uth-confms-theme')
+  const { setColorMode } = useColorModes('uth-confms-theme')
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.href.split('?')[1])
-    const theme = urlParams.get('theme') && urlParams.get('theme').match(/^[A-Za-z0-9\s]+/)[0]
-    if (theme) {
-      setColorMode(theme)
-    }
-
-    if (isColorModeSet()) {
-      return
-    }
-
-    // Default theme
+    // Force light mode
     setColorMode('light')
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [setColorMode])
 
   return (
     <UIProvider>

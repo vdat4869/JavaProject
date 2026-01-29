@@ -56,6 +56,7 @@ public class SecurityConfig {
             auth -> auth.requestMatchers(
                 "/api/auth/**",
                 "/api/conferences/public",
+                "/api/organizations",
                 "/oauth2/**",
                 "/login/oauth2/**",
                 "/swagger-ui/**",

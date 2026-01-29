@@ -28,6 +28,7 @@ import {
 } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { userService, UserDTO } from '../../services/user.service'
+import OrganizationSelect from '../../components/common/OrganizationSelect'
 import ChangePasswordForm from '../../components/profile/ChangePasswordForm'
 
 /**
@@ -50,7 +51,8 @@ const ProfilePage: React.FC = () => {
     firstName: '',
     lastName: '',
     email: '',
-    affiliation: '',
+    organizationId: null as number | null,
+    organizationName: '',
     phone: '',
   })
 
@@ -67,7 +69,8 @@ const ProfilePage: React.FC = () => {
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
         email: userData.email || '',
-        affiliation: userData.affiliation || '',
+        organizationId: userData.organizationId || null,
+        organizationName: userData.organizationName || '',
         phone: userData.phone || '',
       })
     } catch (err: any) {
@@ -87,6 +90,16 @@ const ProfilePage: React.FC = () => {
     setSuccess('')
   }
 
+  const handleOrganizationChange = (id: number, name: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      organizationId: id,
+      organizationName: name,
+    }))
+    setError('')
+    setSuccess('')
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -97,7 +110,7 @@ const ProfilePage: React.FC = () => {
       const updatedUser = await userService.updateCurrentUser({
         firstName: formData.firstName,
         lastName: formData.lastName,
-        affiliation: formData.affiliation,
+        organizationId: formData.organizationId || undefined,
         phone: formData.phone,
       })
       setUser(updatedUser)
@@ -216,12 +229,10 @@ const ProfilePage: React.FC = () => {
                   <CInputGroupText>
                     <CIcon icon={cilBuilding} />
                   </CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    name="affiliation"
-                    placeholder={t('profile.affiliation') || 'Tổ chức'}
-                    value={formData.affiliation}
-                    onChange={handleChange}
+                  <OrganizationSelect
+                    value={formData.organizationId || undefined}
+                    onChange={handleOrganizationChange}
+                    placeholder={t('profile.organization') || 'Tổ chức/Trường'}
                   />
                 </CInputGroup>
 

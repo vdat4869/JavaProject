@@ -12,7 +12,6 @@ import {
   CButton,
   CAlert,
   CSpinner,
-  CTabs,
   CNav,
   CNavItem,
   CNavLink,
@@ -200,7 +199,7 @@ const ConferenceConfig: React.FC = () => {
         <CCardBody>
           <CAlert color="danger">{t('conference.notFound') || 'Không tìm thấy hội nghị'}</CAlert>
           <CButton color="secondary" onClick={() => navigate('/app/chair/conferences')}>
-            {t('common.back') || 'Quay lại'}
+            {t('common.back')}
           </CButton>
         </CCardBody>
       </CCard>
@@ -262,10 +261,10 @@ const ConferenceConfig: React.FC = () => {
             disabled={saving}
           >
             <CIcon icon={cilTrash} className="me-2" />
-            {t('common.delete') || 'Xóa'}
+            {t('common.delete')}
           </CButton>
           <CButton color="secondary" onClick={() => navigate('/app/chair/conferences')}>
-            {t('common.back') || 'Quay lại'}
+            {t('common.back')}
           </CButton>
         </div>
       </div>
@@ -509,7 +508,7 @@ const ConferenceConfig: React.FC = () => {
                         tracks: conference.tracks,
                       }
                       await conferenceService.updateConference(parseInt(id!), updateData)
-                      setSuccess(t('conference.tracksUpdated') || 'Tracks đã được cập nhật')
+                      setSuccess(t('conference.tracksUpdated'))
                     } catch (err: any) {
                       setError(err.response?.data?.message || t('common.error') || 'Lỗi khi cập nhật tracks')
                     } finally {
@@ -547,7 +546,7 @@ const ConferenceConfig: React.FC = () => {
                         deadlines: conference.deadlines,
                       }
                       await conferenceService.updateConference(parseInt(id!), updateData)
-                      setSuccess(t('conference.deadlinesUpdated') || 'Deadlines đã được cập nhật')
+                      setSuccess(t('conference.deadlinesUpdated'))
                     } catch (err: any) {
                       setError(
                         err.response?.data?.message || t('common.error') || 'Lỗi khi cập nhật deadlines',

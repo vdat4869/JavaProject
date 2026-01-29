@@ -191,12 +191,8 @@ public class PCService {
     // Assign roles to user
     Role pcRole = roleRepository.findByName(RoleName.PC)
         .orElseGet(() -> roleRepository.save(Role.builder().name(RoleName.PC).description("Role: PC").build()));
-    Role reviewerRole = roleRepository.findByName(RoleName.REVIEWER)
-        .orElseGet(
-            () -> roleRepository.save(Role.builder().name(RoleName.REVIEWER).description("Role: REVIEWER").build()));
 
     user.getRoles().add(pcRole);
-    user.getRoles().add(reviewerRole);
     userRepository.save(user);
 
     return mapMemberToDTO(pcMember, user);
@@ -216,6 +212,15 @@ public class PCService {
     // Update invitation status
     invitation.setStatus(PCInvitation.InvitationStatus.DECLINED);
     pcInvitationRepository.save(invitation);
+  }
+
+  public PCMemberDTO getMembership(Long conferenceId, Long userId) {
+    return pcMemberRepository.findByConferenceIdAndUserId(conferenceId, userId)
+        .map(member -> {
+          User user = userRepository.findById(userId).orElse(null);
+          return mapMemberToDTO(member, user);
+        })
+        .orElse(null);
   }
 
   public List<PCMemberDTO> getPCMembers(Long conferenceId, Long chairId) {

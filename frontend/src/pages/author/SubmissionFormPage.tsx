@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CCard, CCardBody, CCardHeader } from '@coreui/react'
-import { useTranslation } from 'react-i18next'
+import { CAlert, CCard, CCardBody, CCardHeader, CButton } from '@coreui/react'
 import { submissionService } from '../../services/submission.service'
+import { pcService } from '../../services/pc.service'
+import { conferenceService } from '../../services/conference.service'
+import { useAuth } from '../../context/AuthContext'
 import SubmissionForm from '../../components/submission/SubmissionForm'
 
 /**
@@ -14,18 +16,78 @@ import SubmissionForm from '../../components/submission/SubmissionForm'
  * - Validation
  */
 const SubmissionFormPage: React.FC = () => {
-  const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const conferenceId = parseInt(searchParams.get('conferenceId') || '0')
+  const { user } = useAuth()
   const [loading, setLoading] = useState(false)
+  const [isRestricted, setIsRestricted] = useState(false)
+  const [restrictionReason, setRestrictionReason] = useState('')
+  const [checkingRole, setCheckingRole] = useState(true)
+
+  React.useEffect(() => {
+    const checkRole = async () => {
+      if (!conferenceId || !user) return
+
+      try {
+        setCheckingRole(true)
+        // 1. Check if Chair
+        const conference = await conferenceService.getConference(conferenceId)
+        if (conference.chairId === user.id) {
+          setIsRestricted(true)
+          setRestrictionReason('Bạn không được phép nộp bài vào hội nghị mà bạn đang làm Chair.')
+          return
+        }
+
+        // 2. Check if PC Member
+        const membership = await pcService.getMyMembership(conferenceId)
+        if (membership && membership.status === 'ACCEPTED') {
+          setIsRestricted(true)
+          setRestrictionReason('Bạn không được phép nộp bài vào hội nghị mà bạn đã chấp nhận tham gia hội đồng PC.')
+          return
+        }
+      } catch (error) {
+        console.error('Error checking role:', error)
+      } finally {
+        setCheckingRole(false)
+      }
+    }
+
+    checkRole()
+  }, [conferenceId, user])
 
   if (!conferenceId) {
     return (
       <CCard>
         <CCardBody>
           <p className="text-danger">Vui lòng chọn hội nghị</p>
-          <button onClick={() => navigate('/app/author')}>Quay lại</button>
+          <CButton color="primary" onClick={() => navigate('/app/author')}>Quay lại</CButton>
+        </CCardBody>
+      </CCard>
+    )
+  }
+
+  if (checkingRole) {
+    return <div>Đang kiểm tra quyền hạn...</div>
+  }
+
+  if (isRestricted) {
+    return (
+      <CCard>
+        <CCardHeader>
+          <h4>Nộp bài mới</h4>
+        </CCardHeader>
+        <CCardBody>
+          <CAlert color="warning" className="d-flex align-items-center">
+            <div>
+              <strong>Từ chối truy cập:</strong> {restrictionReason}
+            </div>
+          </CAlert>
+          <div className="mt-3">
+            <CButton color="secondary" onClick={() => navigate('/app/author/submissions')}>
+              Quay lại danh sách bài nộp
+            </CButton>
+          </div>
         </CCardBody>
       </CCard>
     )

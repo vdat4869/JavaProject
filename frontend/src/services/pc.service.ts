@@ -313,4 +313,14 @@ export const pcService = {
     )
     return response.data.data || response.data
   },
+  /**
+   * Lấy membership của user hiện tại trong conference
+   * GET /api/pc/conference/{conferenceId}/membership
+   */
+  getMyMembership: async (conferenceId: number): Promise<PCMember | null> => {
+    const response = await apiClient.get<{ success: boolean; data: PCMember }>(
+      `/pc/conference/${conferenceId}/membership`
+    )
+    return response.data.data || response.data
+  },
 }

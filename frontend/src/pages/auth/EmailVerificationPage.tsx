@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { CCard, CCardBody, CAlert, CButton, CSpinner, CRow, CCol } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
 import { authService } from '../../services/auth.service'
@@ -13,7 +13,8 @@ const EmailVerificationPage: React.FC = () => {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { refreshUser } = useAuth()
+  const { refreshUser, isAuthenticated } = useAuth()
+  const location = useLocation()
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
 
@@ -41,13 +42,28 @@ const EmailVerificationPage: React.FC = () => {
 
   useEffect(() => {
     const token = searchParams.get('token')
+    const state = location.state as any
+    const stateMessage = state?.message
+
     if (token) {
       verifyEmail(token)
+    } else if (stateMessage) {
+      // Nếu được redirect từ RegisterPage với message thành công
+      setStatus('success')
+      setMessage(stateMessage)
+
+      // Nếu đã authenticated thì sau 3s tự redirect về dashboard
+      if (isAuthenticated) {
+        setTimeout(() => navigate('/app'), 3000)
+      }
+    } else if (isAuthenticated) {
+      // Nếu đã đăng nhập rồi mà vào đây không có token thì về dashboard
+      navigate('/app')
     } else {
       setStatus('error')
       setMessage(t('auth.invalidToken') || 'Token không hợp lệ.')
     }
-  }, [searchParams, verifyEmail, t])
+  }, [searchParams, verifyEmail, t, location.state, isAuthenticated, navigate])
 
   const colors = {
     teal: '#008585',

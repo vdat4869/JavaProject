@@ -4,6 +4,5 @@ public enum RoleName {
     ADMIN,
     CHAIR,
     PC,
-    REVIEWER,
     AUTHOR
 }

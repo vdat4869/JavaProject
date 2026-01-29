@@ -8,7 +8,8 @@ export interface UserDTO {
   email: string
   firstName: string
   lastName: string
-  affiliation?: string
+  organizationId?: number
+  organizationName?: string
   phone?: string
   emailVerified: boolean
   active: boolean
@@ -127,5 +128,13 @@ export const userService = {
   getUserStats: async (): Promise<UserStats> => {
     const response = await apiClient.get<any>('/users/stats/summary')
     return response.data?.data || response.data
+  },
+
+  /**
+   * Cập nhật quyền (roles) cho user (ADMIN only)
+   * PUT /api/users/{id}/roles
+   */
+  updateUserRoles: async (id: number, roles: string[]): Promise<void> => {
+    await apiClient.put(`/users/${id}/roles`, roles)
   },
 }

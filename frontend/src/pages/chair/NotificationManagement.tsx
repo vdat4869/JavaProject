@@ -30,6 +30,7 @@ import {
     Decision,
     BulkNotificationRequest,
 } from '../../services/decision.service'
+import { aiService } from '../../services/ai.service'
 
 /**
  * NotificationManagement - Quản lý gửi notifications
@@ -278,7 +279,38 @@ const NotificationManagement: React.FC = () => {
                     </div>
 
                     <div className="mb-3">
-                        <CFormLabel>Nội dung bổ sung (tùy chọn)</CFormLabel>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                            <CFormLabel className="mb-0">Nội dung bổ sung (tùy chọn)</CFormLabel>
+                            <CButton
+                                color="warning"
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                    try {
+                                        setSending(true);
+                                        const res = await aiService.emailDraft({
+                                            conferenceId: conferenceId || undefined,
+                                            emailType: 'DECISION',
+                                            context: `Decision: ${notificationType}, Count: ${selectedIds.length}`,
+                                            tone: 'formal',
+                                            language: 'vi'
+                                        });
+                                        if (res.body) {
+                                            setCustomMessage(res.body);
+                                            if (res.subject) setCustomSubject(res.subject);
+                                        }
+                                    } catch (err) {
+                                        console.error('AI Draft failed', err);
+                                        alert('Không thể gọi AI soạn thảo. Vui lòng thử lại sau.');
+                                    } finally {
+                                        setSending(false);
+                                    }
+                                }}
+                                disabled={sending}
+                            >
+                                {sending ? <CSpinner size="sm" /> : <>AI Soạn thảo</>}
+                            </CButton>
+                        </div>
                         <CFormTextarea
                             value={customMessage}
                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>

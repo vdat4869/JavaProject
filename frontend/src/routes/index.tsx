@@ -16,6 +16,7 @@ const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage')
 const ResetPasswordPage = lazy(() => import('../pages/auth/ResetPasswordPage'))
 
 // Preload layouts ngay sau khi app load
+const PublicPortal = lazy(() => import('../pages/PublicPortal'))
 const AppLayout = lazy(() => {
   // Preload ngay
   return import('../layouts/AppLayout')
@@ -87,7 +88,20 @@ const NotificationManagement = lazy(() => import('../pages/chair/NotificationMan
 export const routes: RouteObject[] = [
   {
     path: '/',
-    element: <Navigate to="/login" replace />,
+    element: (
+      <Suspense
+        fallback={
+          <div
+            className="d-flex justify-content-center align-items-center"
+            style={{ minHeight: '100vh' }}
+          >
+            <CSpinner color="primary" />
+          </div>
+        }
+      >
+        <PublicPortal />
+      </Suspense>
+    ),
   },
   {
     path: '/login',
@@ -370,7 +384,7 @@ export const routes: RouteObject[] = [
             <ReviewerSubmissionDetail />
           </Suspense>
         ),
-        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
+        handle: { roles: ['PC'] as UserRole[] },
       },
       {
         path: 'pc/assignments',
@@ -385,7 +399,7 @@ export const routes: RouteObject[] = [
             <AssignedPaperList />
           </Suspense>
         ),
-        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
+        handle: { roles: ['PC'] as UserRole[] },
       },
       {
         path: 'pc/reviews/new',
@@ -400,7 +414,7 @@ export const routes: RouteObject[] = [
             <ReviewFormPage />
           </Suspense>
         ),
-        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
+        handle: { roles: ['PC'] as UserRole[] },
       },
       {
         path: 'pc/reviews/:id/edit',
@@ -415,7 +429,7 @@ export const routes: RouteObject[] = [
             <ReviewFormPage />
           </Suspense>
         ),
-        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
+        handle: { roles: ['PC'] as UserRole[] },
       },
       {
         path: 'pc/reviews/:id/discussion',
@@ -430,7 +444,7 @@ export const routes: RouteObject[] = [
             <DiscussionPage />
           </Suspense>
         ),
-        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
+        handle: { roles: ['PC'] as UserRole[] },
       },
       {
         path: 'pc/submissions/:submissionId/discussion',
@@ -445,7 +459,7 @@ export const routes: RouteObject[] = [
             <DiscussionPage />
           </Suspense>
         ),
-        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
+        handle: { roles: ['PC'] as UserRole[] },
       },
       {
         path: 'pc/discussions',
@@ -460,7 +474,7 @@ export const routes: RouteObject[] = [
             <PaperDiscussionBoard />
           </Suspense>
         ),
-        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
+        handle: { roles: ['PC'] as UserRole[] },
       },
       {
         path: 'pc/coi',
@@ -475,7 +489,7 @@ export const routes: RouteObject[] = [
             <COIDeclaration />
           </Suspense>
         ),
-        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
+        handle: { roles: ['PC'] as UserRole[] },
       },
       {
         path: 'pc/cois',
@@ -490,7 +504,7 @@ export const routes: RouteObject[] = [
             <MyCOIsList />
           </Suspense>
         ),
-        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
+        handle: { roles: ['PC'] as UserRole[] },
       },
       {
         path: 'pc/invitation/accept',
@@ -533,7 +547,7 @@ export const routes: RouteObject[] = [
             <ReviewerWorkload />
           </Suspense>
         ),
-        handle: { roles: ['PC', 'REVIEWER'] as UserRole[] },
+        handle: { roles: ['PC'] as UserRole[] },
       },
       // Chair routes
       {

@@ -1,8 +1,5 @@
 import React, { useState } from 'react'
 import {
-  CCard,
-  CCardBody,
-  CCardHeader,
   CTable,
   CTableBody,
   CTableDataCell,
@@ -19,7 +16,6 @@ import {
   CModalFooter,
   CModalHeader,
   CModalTitle,
-  CSpinner,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { cilPlus, cilPencil, cilTrash, cilCheck, cilX } from '@coreui/icons'
@@ -57,7 +53,7 @@ const TrackEditor: React.FC<TrackEditorProps> = ({ tracks, onChange }) => {
   }
 
   const handleDelete = (index: number) => {
-    if (window.confirm(t('conference.confirmDeleteTrack') || 'Bạn có chắc chắn muốn xóa track này?')) {
+    if (window.confirm(t('conference.confirmDeleteTrack'))) {
       const newTracks = tracks.filter((_, i) => i !== index)
       onChange(newTracks)
     }
@@ -65,7 +61,7 @@ const TrackEditor: React.FC<TrackEditorProps> = ({ tracks, onChange }) => {
 
   const handleSave = () => {
     if (!formData.name.trim()) {
-      alert(t('conference.trackNameRequired') || 'Tên track là bắt buộc')
+      alert(t('conference.trackNameRequired'))
       return
     }
 
@@ -78,27 +74,29 @@ const TrackEditor: React.FC<TrackEditorProps> = ({ tracks, onChange }) => {
     onChange(newTracks)
     setShowModal(false)
     setFormData({ name: '', description: '', active: true })
+    setShowModal(false)
+    setFormData({ name: '', description: '', active: true })
   }
 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h6>{t('conference.tracks') || 'Tracks'}</h6>
+        <h6>{t('conference.tracks')}</h6>
         <CButton color="primary" size="sm" onClick={handleAdd}>
-          <CIcon icon={cilPlus} /> {t('conference.addTrack') || 'Thêm Track'}
+          <CIcon icon={cilPlus} /> {t('conference.addTrack')}
         </CButton>
       </div>
 
       {tracks.length === 0 ? (
-        <p className="text-muted">{t('conference.noTracks') || 'Chưa có track nào'}</p>
+        <p className="text-muted">{t('conference.noTracks')}</p>
       ) : (
         <CTable hover responsive>
           <CTableHead>
             <CTableRow>
-              <CTableHeaderCell>{t('conference.trackName') || 'Tên'}</CTableHeaderCell>
-              <CTableHeaderCell>{t('conference.description') || 'Mô tả'}</CTableHeaderCell>
-              <CTableHeaderCell>{t('common.status') || 'Trạng thái'}</CTableHeaderCell>
-              <CTableHeaderCell>{t('common.actions') || 'Thao tác'}</CTableHeaderCell>
+              <CTableHeaderCell>{t('conference.trackName')}</CTableHeaderCell>
+              <CTableHeaderCell>{t('conference.description')}</CTableHeaderCell>
+              <CTableHeaderCell>{t('common.status')}</CTableHeaderCell>
+              <CTableHeaderCell>{t('common.actions')}</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>
@@ -136,8 +134,8 @@ const TrackEditor: React.FC<TrackEditorProps> = ({ tracks, onChange }) => {
         <CModalHeader>
           <CModalTitle>
             {editingIndex !== null
-              ? t('conference.editTrack') || 'Sửa Track'
-              : t('conference.addTrack') || 'Thêm Track'}
+              ? t('conference.editTrack')
+              : t('conference.addTrack')}
           </CModalTitle>
         </CModalHeader>
         <CModalBody>
@@ -159,14 +157,14 @@ const TrackEditor: React.FC<TrackEditorProps> = ({ tracks, onChange }) => {
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              placeholder={t('conference.trackDescriptionPlaceholder') || 'Mô tả về track...'}
+              placeholder={t('conference.trackDescriptionPlaceholder')}
             />
           </div>
           <div className="mb-3">
             <CFormCheck
               type="checkbox"
               id="trackActive"
-              label={t('conference.active') || 'Hoạt động'}
+              label={t('conference.active')}
               checked={formData.active !== false}
               onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
             />

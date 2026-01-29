@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CFormInput, CListGroup, CListGroupItem } from '@coreui/react';
-import axios from 'axios';
+import apiClient from '../../services/api';
 
 interface Organization {
     id: number;
@@ -34,14 +34,25 @@ const OrganizationSelect: React.FC<OrganizationSelectProps> = ({
     useEffect(() => {
         const fetchOrgs = async () => {
             try {
-                const response = await axios.get('/api/organizations');
-                setOrganizations(response.data);
+                const response = await apiClient.get('/organizations');
+                setOrganizations(response.data?.data || response.data);
             } catch (error) {
                 console.error('Error fetching organizations:', error);
             }
         };
         fetchOrgs();
     }, []);
+
+    useEffect(() => {
+        if (organizations.length > 0 && value) {
+            const org = organizations.find(o => o.id === value);
+            if (org) {
+                setSearchTerm(org.name);
+            }
+        } else if (!value) {
+            setSearchTerm('');
+        }
+    }, [value, organizations]);
 
     useEffect(() => {
         if (searchTerm.trim() === '') {
@@ -61,6 +72,11 @@ const OrganizationSelect: React.FC<OrganizationSelectProps> = ({
         setShowDropdown(false);
     };
 
+    const handleBlur = () => {
+        // Delay to allow onClick to fire
+        setTimeout(() => setShowDropdown(false), 200);
+    };
+
     return (
         <div className="position-relative w-100" style={style}>
             <CFormInput
@@ -72,6 +88,7 @@ const OrganizationSelect: React.FC<OrganizationSelectProps> = ({
                     setShowDropdown(true);
                 }}
                 onFocus={() => setShowDropdown(true)}
+                onBlur={handleBlur}
                 className={`${className} custom-input`}
                 autoComplete="off"
             />

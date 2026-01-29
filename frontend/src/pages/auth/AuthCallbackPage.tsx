@@ -12,6 +12,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import uthLogoFull from '../../assets/images/idrV1VcT-T_logos.jpeg'
+// SSO callback handler
 
 /**
  * AuthCallbackPage - Trang xử lý SSO callback

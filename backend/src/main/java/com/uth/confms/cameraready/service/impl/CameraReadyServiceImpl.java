@@ -784,7 +784,7 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
                         // Import pages từ paper vào merged document (tạo bản copy thay vì reference)
                         for (int i = 0; i < paperDoc.getNumberOfPages(); i++) {
-                            PDPage importedPage = mergedDocument.importPage(paperDoc.getPage(i));
+                            mergedDocument.importPage(paperDoc.getPage(i));
                             currentPageNumber++;
                         }
 

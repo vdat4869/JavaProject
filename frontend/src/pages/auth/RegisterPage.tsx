@@ -13,6 +13,7 @@ import {
 } from '@coreui/react'
 import { useTranslation } from 'react-i18next'
 import { authService } from '../../services/auth.service'
+import { useAuth } from '../../context/AuthContext'
 import OrganizationSelect from '../../components/common/OrganizationSelect'
 
 // UTH Logo - Full version for header
@@ -29,6 +30,7 @@ import uthLogoFull from '../../assets/images/idrV1VcT-T_logos.jpeg'
  */
 const RegisterPage: React.FC = () => {
   const { t } = useTranslation()
+  const { loginWithTokens } = useAuth()
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: '',
@@ -36,7 +38,7 @@ const RegisterPage: React.FC = () => {
     confirmPassword: '',
     firstName: '',
     lastName: '',
-    organizationId: 0 as number,
+    organizationId: null as number | null,
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -86,7 +88,7 @@ const RegisterPage: React.FC = () => {
     setLoading(true)
 
     try {
-      await authService.register({
+      const response = await authService.register({
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
@@ -94,9 +96,16 @@ const RegisterPage: React.FC = () => {
         organizationId: formData.organizationId,
       })
 
-      navigate('/verify-email', {
-        state: { email: formData.email, message: t('auth.registrationSuccess') },
-      })
+      // Auto-login after registration
+      if (response.accessToken && response.refreshToken) {
+        await loginWithTokens(response.accessToken, response.refreshToken)
+        navigate('/app')
+      } else {
+        // Fallback to verification page if no tokens (though backend returns them)
+        navigate('/verify-email', {
+          state: { email: formData.email, message: t('auth.registrationSuccess') },
+        })
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || t('auth.registrationFailed') || 'Đăng ký thất bại')
     } finally {
@@ -227,10 +236,10 @@ const RegisterPage: React.FC = () => {
 
               <div className="mb-3">
                 <OrganizationSelect
-                  value={formData.organizationId}
+                  value={formData.organizationId || undefined}
                   onChange={(id) => setFormData(prev => ({ ...prev, organizationId: id }))}
                   style={styles.input}
-                  placeholder={t('common.affiliation') || 'Chọn đơn vị công tác'}
+                  placeholder={t('common.organization') || 'Chọn đơn vị công tác'}
                 />
               </div>
 

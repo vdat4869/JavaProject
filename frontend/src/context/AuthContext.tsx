@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 /**
  * User roles trong hệ thống
  */
-export type UserRole = 'GUEST' | 'AUTHOR' | 'REVIEWER' | 'PC' | 'CHAIR' | 'ADMIN'
+export type UserRole = 'GUEST' | 'AUTHOR' | 'PC' | 'CHAIR' | 'ADMIN'
 
 /**
  * User interface
@@ -62,7 +62,7 @@ const normalizeRoles = (roles: any[] | undefined): UserRole[] => {
       return roleStr.toUpperCase().replace('ROLE_', '') as UserRole
     })
     .filter((role: UserRole) =>
-      ['GUEST', 'AUTHOR', 'REVIEWER', 'PC', 'CHAIR', 'ADMIN'].includes(role)
+      ['GUEST', 'AUTHOR', 'PC', 'CHAIR', 'ADMIN'].includes(role)
     )
 }
 

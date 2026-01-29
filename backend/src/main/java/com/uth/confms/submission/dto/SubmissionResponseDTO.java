@@ -20,6 +20,7 @@ public class SubmissionResponseDTO {
   private List<SubmissionFileDTO> files;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
+  private String reviewMode;
 
   public SubmissionResponseDTO() {
   }
@@ -187,6 +188,14 @@ public class SubmissionResponseDTO {
     this.canWithdraw = canWithdraw;
   }
 
+  public String getReviewMode() {
+    return reviewMode;
+  }
+
+  public void setReviewMode(String reviewMode) {
+    this.reviewMode = reviewMode;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -206,6 +215,7 @@ public class SubmissionResponseDTO {
     private List<SubmissionFileDTO> files;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private String reviewMode;
     private Boolean canEdit;
     private Boolean canWithdraw;
 
@@ -227,7 +237,7 @@ public class SubmissionResponseDTO {
     }
 
     public SubmissionResponseDTO build() {
-      return new SubmissionResponseDTO(
+      SubmissionResponseDTO dto = new SubmissionResponseDTO(
           id,
           conferenceId,
           authorId,
@@ -244,6 +254,8 @@ public class SubmissionResponseDTO {
           updatedAt,
           canEdit,
           canWithdraw);
+      dto.setReviewMode(reviewMode);
+      return dto;
     }
 
     public Builder conferenceId(Long conferenceId) {
@@ -308,6 +320,11 @@ public class SubmissionResponseDTO {
 
     public Builder updatedAt(LocalDateTime updatedAt) {
       this.updatedAt = updatedAt;
+      return this;
+    }
+
+    public Builder reviewMode(String reviewMode) {
+      this.reviewMode = reviewMode;
       return this;
     }
 

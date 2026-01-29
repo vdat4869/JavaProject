@@ -1,14 +1,12 @@
 import React, { useState } from 'react'
 import {
-  CCard,
-  CCardBody,
+  CButton,
   CTable,
   CTableBody,
   CTableDataCell,
   CTableHead,
   CTableHeaderCell,
   CTableRow,
-  CButton,
   CFormInput,
   CFormLabel,
   CFormCheck,
@@ -22,6 +20,7 @@ import CIcon from '@coreui/icons-react'
 import { cilPlus, cilPencil, cilTrash, cilArrowTop, cilArrowBottom } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { SubmissionAuthor } from '../../services/submission.service'
+import OrganizationSelect from '../common/OrganizationSelect'
 
 interface AuthorEditorProps {
   authors: SubmissionAuthor[]
@@ -160,7 +159,7 @@ const AuthorEditor: React.FC<AuthorEditorProps> = ({ authors, onChange }) => {
               <CTableHeaderCell style={{ width: '50px' }}>#</CTableHeaderCell>
               <CTableHeaderCell>{t('submission.authorName') || 'Họ tên'}</CTableHeaderCell>
               <CTableHeaderCell>{t('submission.email') || 'Email'}</CTableHeaderCell>
-              <CTableHeaderCell>{t('submission.affiliation') || 'Đơn vị'}</CTableHeaderCell>
+              <CTableHeaderCell>{t('submission.organization') || 'Tổ chức/Đơn vị'}</CTableHeaderCell>
               <CTableHeaderCell>{t('submission.corresponding') || 'Tác giả liên hệ'}</CTableHeaderCell>
               <CTableHeaderCell>{t('common.actions') || 'Thao tác'}</CTableHeaderCell>
             </CTableRow>
@@ -278,12 +277,12 @@ const AuthorEditor: React.FC<AuthorEditorProps> = ({ authors, onChange }) => {
             />
           </div>
           <div className="mb-3">
-            <CFormLabel>{t('submission.affiliation') || 'Đơn vị công tác'}</CFormLabel>
-            <CFormInput
-              type="text"
-              value={formData.affiliation || ''}
-              onChange={(e) => setFormData({ ...formData, affiliation: e.target.value })}
-              placeholder={t('submission.affiliationPlaceholder') || 'Tên trường/viện/tổ chức'}
+            <CFormLabel>{t('submission.organization') || 'Đơn vị công tác'}</CFormLabel>
+            <OrganizationSelect
+              value={undefined} // Since we store name in affiliation, we don't have ID here easily without lookup
+              onChange={(_, name) => setFormData({ ...formData, affiliation: name || '' })}
+              placeholder={t('submission.organizationPlaceholder') || 'Chọn trường/viện/tổ chức'}
+            // If affiliation already exists, we might want to show it as searchTerm but OrganizationSelect currently syncs with value
             />
           </div>
           <div className="mb-3">

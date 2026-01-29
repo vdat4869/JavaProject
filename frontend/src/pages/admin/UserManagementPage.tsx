@@ -24,9 +24,10 @@ import {
   CModalTitle,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
-import { cilSearch, cilCheckCircle, cilXCircle, cilReload } from '@coreui/icons'
+import { cilSearch, cilCheckCircle, cilXCircle, cilReload, cilShieldAlt } from '@coreui/icons'
 import { useTranslation } from 'react-i18next'
 import { userService, UserDTO, UserStats } from '../../services/user.service'
+import { CFormCheck } from '@coreui/react'
 
 /**
  * UserManagementPage - Trang quản lý user (ADMIN only)
@@ -51,6 +52,11 @@ const UserManagementPage: React.FC = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [selectedUser, setSelectedUser] = useState<UserDTO | null>(null)
   const [actionType, setActionType] = useState<'activate' | 'deactivate' | null>(null)
+  const [showRoleModal, setShowRoleModal] = useState(false)
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([])
+  const [roleSaving, setRoleSaving] = useState(false)
+
+  const availableRoles = ['ADMIN', 'CHAIR', 'PC', 'AUTHOR']
 
   const pageSize = 20
 
@@ -133,6 +139,35 @@ const UserManagementPage: React.FC = () => {
     }
   }
 
+  const handleManageRoles = (user: UserDTO) => {
+    setSelectedUser(user)
+    setSelectedRoles(user.roles || [])
+    setShowRoleModal(true)
+  }
+
+  const handleRoleToggle = (role: string) => {
+    if (selectedRoles.includes(role)) {
+      setSelectedRoles(selectedRoles.filter((r) => r !== role))
+    } else {
+      setSelectedRoles([...selectedRoles, role])
+    }
+  }
+
+  const saveRoles = async () => {
+    if (!selectedUser) return
+
+    try {
+      setRoleSaving(true)
+      await userService.updateUserRoles(selectedUser.id, selectedRoles)
+      setShowRoleModal(false)
+      await loadUsers()
+    } catch (err: any) {
+      setError(err.response?.data?.message || t('common.error'))
+    } finally {
+      setRoleSaving(false)
+    }
+  }
+
   return (
     <div>
       <h2 className="mb-4">{t('admin.userManagement')}</h2>
@@ -159,7 +194,7 @@ const UserManagementPage: React.FC = () => {
       )}
 
       <CCard>
-        <CCardHeader>
+        <CCardHeader className="bg-white">
           <div className="d-flex justify-content-between align-items-center">
             <h5>{t('admin.userList')}</h5>
             <CButton color="secondary" size="sm" onClick={loadUsers}>
@@ -195,12 +230,12 @@ const UserManagementPage: React.FC = () => {
           ) : (
             <>
               <CTable hover responsive>
-                <CTableHead>
+                <CTableHead color="light">
                   <CTableRow>
                     <CTableHeaderCell>{t('common.id')}</CTableHeaderCell>
                     <CTableHeaderCell>{t('common.email')}</CTableHeaderCell>
                     <CTableHeaderCell>{t('common.name')}</CTableHeaderCell>
-                    <CTableHeaderCell>{t('common.affiliation')}</CTableHeaderCell>
+                    <CTableHeaderCell>{t('common.organization')}</CTableHeaderCell>
                     <CTableHeaderCell>{t('common.status')}</CTableHeaderCell>
                     <CTableHeaderCell>{t('common.roles')}</CTableHeaderCell>
                     <CTableHeaderCell>{t('common.actions')}</CTableHeaderCell>
@@ -221,7 +256,7 @@ const UserManagementPage: React.FC = () => {
                         <CTableDataCell>
                           {user.firstName} {user.lastName}
                         </CTableDataCell>
-                        <CTableDataCell>{user.affiliation || '-'}</CTableDataCell>
+                        <CTableDataCell>{user.organizationName || '-'}</CTableDataCell>
                         <CTableDataCell>
                           {user.active ? (
                             <CBadge color="success">
@@ -240,7 +275,7 @@ const UserManagementPage: React.FC = () => {
                         </CTableDataCell>
                         <CTableDataCell>
                           {user.roles
-                            ? user.roles.map((r) => t(`common.roleNames.${r}`) || r).join(', ')
+                            ? user.roles.map((r: string) => t(`common.roleNames.${r}`) || r).join(', ')
                             : t('common.noRoles')}
                         </CTableDataCell>
                         <CTableDataCell>
@@ -248,6 +283,7 @@ const UserManagementPage: React.FC = () => {
                             <CButton
                               color="warning"
                               size="sm"
+                              className="me-2"
                               onClick={() => handleDeactivate(user)}
                               disabled={actionLoading === user.id}
                             >
@@ -257,12 +293,16 @@ const UserManagementPage: React.FC = () => {
                             <CButton
                               color="success"
                               size="sm"
+                              className="me-2"
                               onClick={() => handleActivate(user)}
                               disabled={actionLoading === user.id}
                             >
                               {t('admin.activate')}
                             </CButton>
                           )}
+                          <CButton color="info" size="sm" onClick={() => handleManageRoles(user)}>
+                            <CIcon icon={cilShieldAlt} /> {t('admin.manageRoles')}
+                          </CButton>
                         </CTableDataCell>
                       </CTableRow>
                     ))
@@ -336,6 +376,37 @@ const UserManagementPage: React.FC = () => {
             ) : (
               t('admin.deactivate')
             )}
+          </CButton>
+        </CModalFooter>
+      </CModal>
+
+      <CModal visible={showRoleModal} onClose={() => setShowRoleModal(false)}>
+        <CModalHeader>
+          <CModalTitle>{t('admin.manageRoles')}</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <p>
+            {t('admin.selectRoles')} <strong>{selectedUser?.email}</strong>
+          </p>
+          <div className="mt-3">
+            {availableRoles.map((role) => (
+              <CFormCheck
+                key={role}
+                id={`role-${role}`}
+                label={t(`common.roleNames.${role}`) || role}
+                checked={selectedRoles.includes(role)}
+                onChange={() => handleRoleToggle(role)}
+                className="mb-2"
+              />
+            ))}
+          </div>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setShowRoleModal(false)}>
+            {t('common.cancel')}
+          </CButton>
+          <CButton color="primary" onClick={saveRoles} disabled={roleSaving}>
+            {roleSaving ? <CSpinner size="sm" /> : t('common.save')}
           </CButton>
         </CModalFooter>
       </CModal>

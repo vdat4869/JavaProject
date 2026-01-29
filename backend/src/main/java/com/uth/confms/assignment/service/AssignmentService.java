@@ -126,6 +126,15 @@ public class AssignmentService {
       throw new BusinessException("Reviewer must have accepted the PC invitation");
     }
 
+    // Automatic COI detection: Check if reviewer is an author or has institutional
+    // COI
+    try {
+      coiService.detectAndSuggestCOI(dto.getReviewerId(), dto.getSubmissionId());
+    } catch (Exception e) {
+      // Log error but continue - the explicit hasCOI check below will use what it can
+      System.err.println("Failed to auto-detect COI: " + e.getMessage());
+    }
+
     // Check for COI
     if (coiService.hasCOI(dto.getReviewerId(), dto.getSubmissionId())) {
       throw new BusinessException("Cannot assign reviewer with conflict of interest");
@@ -167,19 +176,7 @@ public class AssignmentService {
 
     assignment = assignmentRepository.save(assignment);
 
-    // Automatic COI detection: Check if reviewer is an author of this submission
-    try {
-      coiService.detectAndSuggestCOI(dto.getReviewerId(), dto.getSubmissionId());
-    } catch (Exception e) {
-      // Log error but don't fail assignment creation
-      System.err.println(
-          "Failed to auto-detect COI for reviewer "
-              + dto.getReviewerId()
-              + " and submission "
-              + dto.getSubmissionId()
-              + ": "
-              + e.getMessage());
-    }
+    // Automatic COI detection (moved up to validation phase)
 
     return mapToDTO(assignment);
   }
@@ -322,6 +319,13 @@ public class AssignmentService {
       throw new BusinessException("New reviewer must have accepted the PC invitation");
     }
 
+    // Automatic COI detection
+    try {
+      coiService.detectAndSuggestCOI(newReviewerId, submission.getId());
+    } catch (Exception e) {
+      System.err.println("Failed to auto-detect COI during reassignment: " + e.getMessage());
+    }
+
     // Check for COI
     if (coiService.hasCOI(newReviewerId, submission.getId())) {
       throw new BusinessException("Cannot reassign to reviewer with conflict of interest");
@@ -354,19 +358,7 @@ public class AssignmentService {
 
     newAssignment = assignmentRepository.save(newAssignment);
 
-    // Automatic COI detection
-    try {
-      coiService.detectAndSuggestCOI(newReviewerId, submission.getId());
-    } catch (Exception e) {
-      // Log error but don't fail reassignment
-      System.err.println(
-          "Failed to auto-detect COI for reviewer "
-              + newReviewerId
-              + " and submission "
-              + submission.getId()
-              + ": "
-              + e.getMessage());
-    }
+    // Automatic COI detection (moved up to validation phase)
 
     // Audit logging
     try {

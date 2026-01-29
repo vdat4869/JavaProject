@@ -14,6 +14,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { authService } from '../../services/auth.service'
 import uthLogoFull from '../../assets/images/idrV1VcT-T_logos.jpeg'
+// Reset password handler
 
 /**
  * ResetPasswordPage - Trang thiết lập mật khẩu mới

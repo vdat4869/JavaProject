@@ -1,8 +1,5 @@
 import React, { useState } from 'react'
 import {
-  CCard,
-  CCardBody,
-  CCardHeader,
   CTable,
   CTableBody,
   CTableDataCell,
@@ -74,7 +71,7 @@ const DeadlineEditor: React.FC<DeadlineEditorProps> = ({ deadlines, onChange }) 
   }
 
   const handleDelete = (index: number) => {
-    if (window.confirm(t('conference.confirmDeleteDeadline') || 'Bạn có chắc chắn muốn xóa deadline này?')) {
+    if (window.confirm(t('conference.confirmDeleteDeadline'))) {
       const newDeadlines = deadlines.filter((_, i) => i !== index)
       onChange(newDeadlines)
     }
@@ -82,7 +79,7 @@ const DeadlineEditor: React.FC<DeadlineEditorProps> = ({ deadlines, onChange }) 
 
   const handleSave = () => {
     if (!formData.dueDate) {
-      alert(t('conference.deadlineDateRequired') || 'Ngày deadline là bắt buộc')
+      alert(t('conference.deadlineDateRequired'))
       return
     }
 
@@ -141,7 +138,7 @@ const DeadlineEditor: React.FC<DeadlineEditorProps> = ({ deadlines, onChange }) 
       </div>
 
       {deadlines.length === 0 ? (
-        <p className="text-muted">{t('conference.noDeadlines') || 'Chưa có deadline nào'}</p>
+        <p className="text-muted">{t('conference.noDeadlines')}</p>
       ) : (
         <CTable hover responsive>
           <CTableHead>
@@ -231,7 +228,7 @@ const DeadlineEditor: React.FC<DeadlineEditorProps> = ({ deadlines, onChange }) 
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              placeholder={t('conference.deadlineDescriptionPlaceholder') || 'Mô tả về deadline...'}
+              placeholder={t('conference.deadlineDescriptionPlaceholder')}
             />
           </div>
           <div className="mb-3">

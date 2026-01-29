@@ -32,4 +32,7 @@ public class SimilarityHintResponse {
 
     /** Thời gian xử lý (ms) */
     private Long processingTimeMs;
+
+    /** Lý giải của AI cho gợi ý này */
+    private String rationale;
 }

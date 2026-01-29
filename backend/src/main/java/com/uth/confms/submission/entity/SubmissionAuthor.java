@@ -24,6 +24,10 @@ public class SubmissionAuthor {
 
   private String email;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "organization_id")
+  private com.uth.confms.common.entity.Organization organization;
+
   private String affiliation;
 
   @Column(nullable = false)
@@ -128,6 +132,14 @@ public class SubmissionAuthor {
 
   public void setOrderIndex(Integer orderIndex) {
     this.orderIndex = orderIndex;
+  }
+
+  public com.uth.confms.common.entity.Organization getOrganization() {
+    return organization;
+  }
+
+  public void setOrganization(com.uth.confms.common.entity.Organization organization) {
+    this.organization = organization;
   }
 
   public static Builder builder() {

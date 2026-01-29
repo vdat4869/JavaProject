@@ -5,6 +5,8 @@ import com.uth.confms.auth.repository.UserRepository;
 import com.uth.confms.pc.entity.ConflictOfInterest;
 import com.uth.confms.pc.repository.ConflictOfInterestRepository;
 import com.uth.confms.submission.entity.Submission;
+import com.uth.confms.submission.entity.SubmissionAuthor;
+import com.uth.confms.submission.repository.SubmissionAuthorRepository;
 import com.uth.confms.submission.repository.SubmissionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.HashSet;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +33,7 @@ public class COIService {
   private final ConflictOfInterestRepository coiRepository;
   private final SubmissionRepository submissionRepository;
   private final UserRepository userRepository;
+  private final SubmissionAuthorRepository submissionAuthorRepository;
 
   public boolean hasCOI(Long reviewerId, Long submissionId) {
     return coiRepository.findByReviewerIdAndSubmissionId(reviewerId, submissionId)
@@ -43,19 +46,46 @@ public class COIService {
     Submission submission = submissionRepository.findById(submissionId)
         .orElseThrow(() -> new RuntimeException("Submission not found"));
 
-    // Check if reviewer is the author
+    // Check if reviewer is the author (primary author)
     if (submission.getAuthorId().equals(reviewerId)) {
-      saveInstitutionalCOI(reviewerId, submissionId, "Reviewer is the author of this submission");
+      saveInstitutionalCOI(reviewerId, submissionId, "Reviewer is the primary author of this submission");
       return;
+    }
+
+    // Check if reviewer is any of the co-authors
+    List<SubmissionAuthor> authors = submissionAuthorRepository.findBySubmission(submission);
+    for (SubmissionAuthor author : authors) {
+      if (author.getUserId() != null && author.getUserId().equals(reviewerId)) {
+        saveInstitutionalCOI(reviewerId, submissionId, "Reviewer is a co-author of this submission");
+        return;
+      }
     }
 
     // Automatic institutional COI detection
     User reviewer = userRepository.findById(reviewerId).orElseThrow();
-    User author = userRepository.findById(submission.getAuthorId()).orElseThrow();
+    if (reviewer.getOrganization() == null) {
+      return;
+    }
 
-    if (reviewer.getOrganization() != null && author.getOrganization() != null
-        && reviewer.getOrganization().getId().equals(author.getOrganization().getId())) {
-      saveInstitutionalCOI(reviewerId, submissionId, "Same organization: " + reviewer.getOrganization().getName());
+    Long reviewerOrgId = reviewer.getOrganization().getId();
+
+    // Check primary author's organization
+    User primaryAuthor = userRepository.findById(submission.getAuthorId()).orElseThrow();
+    if (primaryAuthor.getOrganization() != null
+        && primaryAuthor.getOrganization().getId().equals(reviewerOrgId)) {
+      saveInstitutionalCOI(reviewerId, submissionId,
+          "Same organization as primary author: " + reviewer.getOrganization().getName());
+      return;
+    }
+
+    // Check all co-authors' organizations
+    for (SubmissionAuthor author : authors) {
+      if (author.getOrganization() != null && author.getOrganization().getId().equals(reviewerOrgId)) {
+        saveInstitutionalCOI(reviewerId, submissionId,
+            "Same organization as co-author (" + author.getFirstName() + " " + author.getLastName() + "): "
+                + reviewer.getOrganization().getName());
+        return;
+      }
     }
   }
 
@@ -64,23 +94,54 @@ public class COIService {
     Submission submission = submissionRepository.findById(submissionId)
         .orElseThrow(() -> new RuntimeException("Submission not found"));
 
-    User author = userRepository.findById(submission.getAuthorId())
-        .orElseThrow(() -> new RuntimeException("Author not found"));
+    // Get all authors (primary + co-authors)
+    List<Long> authorUserIds = new ArrayList<>();
+    authorUserIds.add(submission.getAuthorId());
 
-    if (author.getOrganization() == null) {
-      log.debug("Author has no organization, skipping institutional COI check.");
+    List<SubmissionAuthor> coAuthors = submissionAuthorRepository.findBySubmission(submission);
+    for (SubmissionAuthor sa : coAuthors) {
+      if (sa.getUserId() != null) {
+        authorUserIds.add(sa.getUserId());
+      }
+    }
+
+    // Get all unique organizations of these authors
+    Set<Long> authorOrgIds = new HashSet<>();
+    for (Long userId : authorUserIds) {
+      userRepository.findById(userId).ifPresent(u -> {
+        if (u.getOrganization() != null) {
+          authorOrgIds.add(u.getOrganization().getId());
+        }
+      });
+    }
+
+    // Also check organizations directly from coAuthors table (if userId is null but
+    // organization is set)
+    for (SubmissionAuthor sa : coAuthors) {
+      if (sa.getOrganization() != null) {
+        authorOrgIds.add(sa.getOrganization().getId());
+      }
+    }
+
+    if (authorOrgIds.isEmpty()) {
+      log.debug("No organizations found for authors of submission {}, skipping institutional COI scan.", submissionId);
       return;
     }
 
-    Long orgId = author.getOrganization().getId();
-
-    List<User> usersInSameOrg = userRepository.findAll().stream()
-        .filter(u -> u.getOrganization() != null && u.getOrganization().getId().equals(orgId))
-        .filter(u -> !u.getId().equals(author.getId()))
+    // Find all users in these organizations
+    List<User> usersInSameOrgs = userRepository.findAll().stream()
+        .filter(u -> u.getOrganization() != null && authorOrgIds.contains(u.getOrganization().getId()))
         .toList();
 
-    for (User reviewer : usersInSameOrg) {
-      saveInstitutionalCOI(reviewer.getId(), submissionId, "Same organization: " + author.getOrganization().getName());
+    for (User reviewer : usersInSameOrgs) {
+      // Don't flag authors as having COI with themselves (handled by other logic)
+      if (authorUserIds.contains(reviewer.getId())) {
+        continue;
+      }
+
+      String orgName = reviewer.getOrganization().getName();
+      saveInstitutionalCOI(reviewer.getId(), submissionId,
+          "Institutional conflict: Same organization (" + orgName + ")");
     }
   }
 
@@ -145,7 +206,6 @@ public class COIService {
 
   public COIStatisticsDTO getCOIStatistics(Long conferenceId, Long chairId) {
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
-    long totalSubmissions = submissions.size();
     long submissionsWithCOI = submissions.stream()
         .filter(s -> !coiRepository.findBySubmissionId(s.getId()).isEmpty())
         .count();

@@ -49,7 +49,7 @@ export interface RegisterRequest {
   password: string
   firstName: string
   lastName: string
-  organizationId: number
+  organizationId: number | null
 }
 
 /**
@@ -82,8 +82,9 @@ export const authService = {
    * Đăng ký tài khoản mới
    * POST /api/auth/register
    */
-  register: async (data: RegisterRequest): Promise<void> => {
-    await apiClient.post('/auth/register', data)
+  register: async (data: RegisterRequest): Promise<LoginResponse> => {
+    const response = await apiClient.post<any>('/auth/register', data)
+    return response.data?.data || response.data
   },
 
   /**

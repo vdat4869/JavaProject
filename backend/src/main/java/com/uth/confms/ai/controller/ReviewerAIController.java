@@ -41,7 +41,7 @@ public class ReviewerAIController {
      * Tạo tóm tắt trung lập cho PC bidding.
      */
     @PostMapping("/pc/neutral-summary")
-    @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
+    @PreAuthorize("hasRole('PC')")
     public ResponseEntity<ApiResponse<NeutralSummaryResponse>> neutralSummary(
             @Valid @RequestBody NeutralSummaryRequest request,
             Authentication authentication) {
@@ -54,7 +54,7 @@ public class ReviewerAIController {
      * Trích xuất key points từ abstract.
      */
     @PostMapping("/pc/key-points")
-    @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
+    @PreAuthorize("hasRole('PC')")
     public ResponseEntity<ApiResponse<KeyPointsResponse>> keyPoints(
             @Valid @RequestBody KeyPointsRequest request,
             Authentication authentication) {

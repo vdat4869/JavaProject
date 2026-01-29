@@ -182,8 +182,7 @@ const CreateConferencePage: React.FC = () => {
 
             <div className="mt-3">
               <small className="text-muted">
-                {t('conference.createHint') ||
-                  'Lưu ý: Bạn có thể thêm tracks, deadlines và cấu hình CFP sau khi tạo hội nghị.'}
+                {t('conference.createHint')}
               </small>
             </div>
           </CForm>

@@ -2,14 +2,15 @@ package com.uth.confms.submission.service;
 
 import com.uth.confms.assignment.entity.Assignment;
 import com.uth.confms.assignment.repository.AssignmentRepository;
+import com.uth.confms.auth.service.UserService;
 import com.uth.confms.common.exception.BusinessException;
 import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.UnauthorizedException;
 import com.uth.confms.conference.entity.Deadline;
 import com.uth.confms.conference.entity.Deadline.DeadlineType;
 import com.uth.confms.conference.repository.DeadlineRepository;
+import com.uth.confms.conference.entity.Conference;
 import com.uth.confms.conference.repository.ConferenceRepository;
-import com.uth.confms.pc.entity.PCMember;
 import com.uth.confms.pc.repository.PCMemberRepository;
 import com.uth.confms.pc.service.COIService;
 import com.uth.confms.storage.service.StorageService;
@@ -69,6 +70,7 @@ public class SubmissionService {
   private final COIService coiService;
   private final PCMemberRepository pcMemberRepository;
   private final AssignmentRepository assignmentRepository;
+  private final UserService userService;
 
   @Value("${app.submission.deadline.grace-period-hours:24}")
   private int gracePeriodHours;
@@ -85,7 +87,8 @@ public class SubmissionService {
       StorageService storageService,
       COIService coiService,
       PCMemberRepository pcMemberRepository,
-      AssignmentRepository assignmentRepository) {
+      AssignmentRepository assignmentRepository,
+      UserService userService) {
     this.submissionRepository = submissionRepository;
     this.submissionAuthorRepository = submissionAuthorRepository;
     this.submissionFileRepository = submissionFileRepository;
@@ -95,6 +98,7 @@ public class SubmissionService {
     this.coiService = coiService;
     this.pcMemberRepository = pcMemberRepository;
     this.assignmentRepository = assignmentRepository;
+    this.userService = userService;
   }
 
   /**
@@ -109,6 +113,9 @@ public class SubmissionService {
   public SubmissionResponseDTO createSubmission(SubmissionCreateDTO dto, Long authorId) {
     // Check if submission deadline has passed
     checkSubmissionDeadline(dto.getConferenceId());
+
+    // Check if author is Chair or PC (cannot submit to their own conference)
+    validateAuthorRole(dto.getConferenceId(), authorId);
 
     Submission submission = Submission.builder()
         .conferenceId(dto.getConferenceId())
@@ -146,9 +153,12 @@ public class SubmissionService {
       submissionAuthorRepository.saveAll(authors);
     }
 
-    // Automatic COI detection: Check if any PC members are authors of this
-    // submission
-    detectCOIForSubmission(savedSubmission);
+    // Automatic institutional COI detection for all PC members
+    try {
+      coiService.detectInstitutionalConflicts(savedSubmission.getId());
+    } catch (Exception e) {
+      logger.error("Failed to auto-detect institutional COI: {}", e.getMessage());
+    }
 
     return mapToDTO(savedSubmission);
   }
@@ -161,7 +171,7 @@ public class SubmissionService {
     // Check authorization
     validateSubmissionAccess(submission, userId);
 
-    return mapToDTO(submission);
+    return mapToDTO(submission, userId);
   }
 
   public List<SubmissionResponseDTO> getMySubmissions(Long authorId) {
@@ -285,45 +295,14 @@ public class SubmissionService {
     submission.setStatus(Submission.SubmissionStatus.SUBMITTED);
     Submission updatedSubmission = submissionRepository.save(submission);
 
-    // Automatic COI detection: Check if any PC members are authors of this
-    // submission
-    detectCOIForSubmission(updatedSubmission);
+    // Automatic institutional COI detection for all PC members
+    try {
+      coiService.detectInstitutionalConflicts(updatedSubmission.getId());
+    } catch (Exception e) {
+      logger.error("Failed to auto-detect institutional COI: {}", e.getMessage());
+    }
 
     return mapToDTO(updatedSubmission);
-  }
-
-  /**
-   * Tự động phát hiện COI cho submission: Check nếu PC members là authors của
-   * submission
-   *
-   * @param submission Submission cần check
-   */
-  private void detectCOIForSubmission(Submission submission) {
-    try {
-      // Get all PC members for this conference
-      List<PCMember> pcMembers = pcMemberRepository.findByConferenceIdAndStatus(
-          submission.getConferenceId(), PCMember.PCMemberStatus.ACCEPTED);
-
-      // Get all authors of this submission
-      List<SubmissionAuthor> authors = submissionAuthorRepository.findBySubmission(submission);
-
-      // For each PC member, check if they are an author
-      for (PCMember pcMember : pcMembers) {
-        boolean isAuthor = authors.stream().anyMatch(author -> author.getUserId().equals(pcMember.getUserId()));
-
-        if (isAuthor) {
-          // Auto-detect COI
-          coiService.detectAndSuggestCOI(pcMember.getUserId(), submission.getId());
-        }
-      }
-    } catch (Exception e) {
-      // Log error but don't fail submission creation/submission
-      System.err.println(
-          "Failed to auto-detect COI for submission "
-              + submission.getId()
-              + ": "
-              + e.getMessage());
-    }
   }
 
   @Transactional
@@ -476,6 +455,33 @@ public class SubmissionService {
   }
 
   /**
+   * Kiểm tra nếu author là Chair hoặc PC member của hội nghị
+   * Chair và PC member (đã ACCEPTED) không được phép nộp bài vào chính hội nghị
+   * đó
+   *
+   * @param conferenceId ID của conference
+   * @param authorId     ID của author
+   * @throws BusinessException Nếu author là Chair hoặc PC
+   */
+  private void validateAuthorRole(Long conferenceId, Long authorId) {
+    // 1. Kiểm tra nếu là Chair
+    com.uth.confms.conference.entity.Conference conference = conferenceRepository.findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
+
+    if (conference.getChairId().equals(authorId)) {
+      throw new BusinessException("Bạn không được phép nộp bài vào hội nghị mà bạn đang làm Chair");
+    }
+
+    // 2. Kiểm tra nếu là PC Member đã chấp nhận
+    java.util.Optional<com.uth.confms.pc.entity.PCMember> pcMember = pcMemberRepository
+        .findByConferenceIdAndUserId(conferenceId, authorId);
+    if (pcMember.isPresent()
+        && pcMember.get().getStatus() == com.uth.confms.pc.entity.PCMember.PCMemberStatus.ACCEPTED) {
+      throw new BusinessException("Bạn không được phép nộp bài vào hội nghị mà bạn đã chấp nhận tham gia hội đồng PC");
+    }
+  }
+
+  /**
    * Tính checksum từ InputStream
    *
    * @param inputStream InputStream của file
@@ -507,6 +513,10 @@ public class SubmissionService {
   }
 
   private SubmissionResponseDTO mapToDTO(Submission submission) {
+    return mapToDTO(submission, null);
+  }
+
+  private SubmissionResponseDTO mapToDTO(Submission submission, Long currentUserId) {
     List<SubmissionAuthorDTO> authors = submissionAuthorRepository.findBySubmission(submission).stream()
         .map(this::mapAuthorToDTO)
         .collect(Collectors.toList());
@@ -514,6 +524,33 @@ public class SubmissionService {
     List<SubmissionFileDTO> files = submissionFileRepository.findBySubmission(submission).stream()
         .map(this::mapFileToDTO)
         .collect(Collectors.toList());
+
+    Conference conference = conferenceRepository.findById(submission.getConferenceId()).orElse(null);
+    String reviewMode = conference != null && conference.getReviewMode() != null ? conference.getReviewMode().name()
+        : "DOUBLE_BLIND";
+
+    // Double-blind protection: Blur authors if caller is a reviewer (and not
+    // chair/admin/author)
+    if (currentUserId != null && conference != null
+        && conference.getReviewMode() == Conference.ReviewMode.DOUBLE_BLIND) {
+      boolean isAuthor = submission.getAuthorId().equals(currentUserId);
+      boolean isChair = conference.getChairId().equals(currentUserId);
+      boolean isAdmin = userService.hasRole(currentUserId, "ADMIN");
+
+      if (!isAuthor && !isChair && !isAdmin) {
+        // Blur authors for reviewers
+        authors = authors.stream()
+            .map(a -> SubmissionAuthorDTO.builder()
+                .firstName("Anonymous")
+                .lastName("Author")
+                .email("hidden@example.com")
+                .affiliation("Hidden for Review")
+                .isCorresponding(a.getIsCorresponding())
+                .orderIndex(a.getOrderIndex())
+                .build())
+            .collect(Collectors.toList());
+      }
+    }
 
     boolean canEdit = submission.getStatus() == Submission.SubmissionStatus.DRAFT ||
         submission.getStatus() == Submission.SubmissionStatus.SUBMITTED;
@@ -539,6 +576,7 @@ public class SubmissionService {
         .updatedAt(submission.getUpdatedAt())
         .canEdit(canEdit)
         .canWithdraw(canWithdraw)
+        .reviewMode(reviewMode)
         .build();
   }
 
