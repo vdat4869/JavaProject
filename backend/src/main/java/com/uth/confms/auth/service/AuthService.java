@@ -229,16 +229,15 @@ public class AuthService {
   }
 
   /**
-   * Logout - currently a no-op because token invalidation is handled on the
-   * client or via token blacklist if implemented.
+   * Logout - Revoke refresh token and log action
    */
   public void logout(String refreshToken, HttpServletRequest httpRequest) {
     String tokenHash = sha256Hex(refreshToken);
-    refreshTokenRepository.revokeByTokenHash(tokenHash, LocalDateTime.now());
 
-    // Try to get user from refresh token for audit logging
+    // Try to get user from refresh token for audit logging BEFORE revoking
     try {
-      // Find refresh token to get user
+      // Find refresh token to get user (even if already revoked by controller,
+      // but here we check before we might have repeated the logic)
       var refreshTokenOpt = refreshTokenRepository.findByTokenHashAndRevokedFalse(tokenHash);
       if (refreshTokenOpt.isPresent()) {
         var rt = refreshTokenOpt.get();
@@ -255,8 +254,12 @@ public class AuthService {
         }
       }
     } catch (Exception e) {
-      // Don't block logout if audit logging fails
+      log.warn("Failed to log logout action", e);
     }
+
+    // Revoke the token (already called in AuthController, but good to have as
+    // backup/service logic)
+    refreshTokenRepository.revokeByTokenHash(tokenHash, LocalDateTime.now());
   }
 
   private String extractClientIp(HttpServletRequest request) {

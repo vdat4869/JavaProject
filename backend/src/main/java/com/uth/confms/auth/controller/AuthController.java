@@ -114,23 +114,21 @@ public class AuthController {
   /**
    * Đăng xuất khỏi hệ thống
    *
-   * <p>
-   * Lưu ý: Token invalidation được xử lý bởi frontend
-   *
+   * @param request Chứa refresh token để thực hiện revoke
    * @return ApiResponse xác nhận đã logout
    */
   @PostMapping("/logout")
   public ResponseEntity<ApiResponse<Void>> logout(
-      @RequestHeader(name = "Authorization", required = false) String authorization,
+      @Valid @RequestBody LogoutRequest request,
       HttpServletRequest httpRequest) {
-    if (authorization != null && authorization.startsWith("Bearer ")) {
-      String token = authorization.replace("Bearer ", "");
+    String refreshToken = request.getRefreshToken();
+    if (refreshToken != null && !refreshToken.isBlank()) {
       try {
         // compute hash and revoke the refresh token record
-        String tokenHash = sha256Hex(token);
+        String tokenHash = sha256Hex(refreshToken);
         refreshTokenRepository.revokeByTokenHash(tokenHash, java.time.LocalDateTime.now());
         // Logout through AuthService for audit logging
-        authService.logout(token, httpRequest);
+        authService.logout(refreshToken, httpRequest);
       } catch (Exception ignored) {
         // ignore
       }
