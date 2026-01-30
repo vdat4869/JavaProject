@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DeadlineRepository extends JpaRepository<Deadline, Long> {
   List<Deadline> findByConferenceId(Long conferenceId);
+
+  List<Deadline> findByConferenceIdIn(List<Long> conferenceIds);
 }

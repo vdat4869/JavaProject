@@ -99,4 +99,10 @@ public class AIConfig {
             return openaiApiKey != null && !openaiApiKey.isBlank();
         }
     }
+
+    public String getCurrentModel() {
+        if (mockMode)
+            return "mock-model";
+        return "gemini".equalsIgnoreCase(provider) ? geminiModel : openaiModel;
+    }
 }

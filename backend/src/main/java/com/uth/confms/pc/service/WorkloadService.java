@@ -12,9 +12,9 @@ import com.uth.confms.pc.dto.WorkloadDTO;
 import com.uth.confms.pc.dto.WorkloadStatsDTO;
 import com.uth.confms.pc.entity.PCMember;
 import com.uth.confms.pc.repository.PCMemberRepository;
-import com.uth.confms.submission.entity.Submission;
-import com.uth.confms.submission.repository.SubmissionRepository;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -22,12 +22,13 @@ import org.springframework.stereotype.Service;
 /**
  * Service quản lý workload tracking cho reviewers
  *
- * <p>Service này xử lý các nghiệp vụ liên quan đến:
+ * <p>
+ * Service này xử lý các nghiệp vụ liên quan đến:
  *
  * <ul>
- *   <li>Lấy workload của một reviewer
- *   <li>Lấy workload statistics của một conference
- *   <li>Tính toán workload status (LOW, NORMAL, HIGH, OVERLOADED)
+ * <li>Lấy workload của một reviewer
+ * <li>Lấy workload statistics của một conference
+ * <li>Tính toán workload status (LOW, NORMAL, HIGH, OVERLOADED)
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -40,7 +41,6 @@ public class WorkloadService {
   private final PCMemberRepository pcMemberRepository;
   private final UserRepository userRepository;
   private final ConferenceRepository conferenceRepository;
-  private final SubmissionRepository submissionRepository;
 
   @Value("${app.pc.workload.max-assignments:8}")
   private int maxAssignmentsPerReviewer;
@@ -52,62 +52,44 @@ public class WorkloadService {
       AssignmentRepository assignmentRepository,
       PCMemberRepository pcMemberRepository,
       UserRepository userRepository,
-      ConferenceRepository conferenceRepository,
-      SubmissionRepository submissionRepository) {
+      ConferenceRepository conferenceRepository) {
     this.assignmentRepository = assignmentRepository;
     this.pcMemberRepository = pcMemberRepository;
     this.userRepository = userRepository;
     this.conferenceRepository = conferenceRepository;
-    this.submissionRepository = submissionRepository;
   }
 
   /**
    * Lấy workload của một reviewer trong một conference
    *
-   * @param reviewerId ID của reviewer
+   * @param reviewerId   ID của reviewer
    * @param conferenceId ID của conference
    * @return WorkloadDTO chứa thông tin workload
    */
   public WorkloadDTO getReviewerWorkload(Long reviewerId, Long conferenceId) {
-    Conference conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository.findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
-    User reviewer =
-        userRepository.findById(reviewerId).orElseThrow(() -> new NotFoundException("Reviewer not found"));
+    User reviewer = userRepository.findById(reviewerId)
+        .orElseThrow(() -> new NotFoundException("Reviewer not found"));
 
-    // Get all assignments for this reviewer
-    List<Assignment> allAssignments = assignmentRepository.findByReviewerId(reviewerId);
-
-    // Filter assignments for this conference
-    List<Assignment> conferenceAssignments =
-        allAssignments.stream()
-            .filter(
-                assignment -> {
-                  Submission submission =
-                      submissionRepository.findById(assignment.getSubmissionId()).orElse(null);
-                  return submission != null && submission.getConferenceId().equals(conferenceId);
-                })
-            .collect(Collectors.toList());
+    // Optimized: Direct query to get conference assignments for this reviewer
+    List<Assignment> conferenceAssignments = assignmentRepository.findByReviewerIdAndConferenceId(reviewerId,
+        conferenceId);
 
     // Count assignments by status for this conference
-    long assignedCount =
-        conferenceAssignments.stream()
-            .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ASSIGNED)
-            .count();
-    long acceptedCount =
-        conferenceAssignments.stream()
-            .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ACCEPTED)
-            .count();
-    long declinedCount =
-        conferenceAssignments.stream()
-            .filter(a -> a.getStatus() == Assignment.AssignmentStatus.DECLINED)
-            .count();
-    long completedCount =
-        conferenceAssignments.stream()
-            .filter(a -> a.getStatus() == Assignment.AssignmentStatus.COMPLETED)
-            .count();
+    long assignedCount = conferenceAssignments.stream()
+        .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ASSIGNED)
+        .count();
+    long acceptedCount = conferenceAssignments.stream()
+        .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ACCEPTED)
+        .count();
+    long declinedCount = conferenceAssignments.stream()
+        .filter(a -> a.getStatus() == Assignment.AssignmentStatus.DECLINED)
+        .count();
+    long completedCount = conferenceAssignments.stream()
+        .filter(a -> a.getStatus() == Assignment.AssignmentStatus.COMPLETED)
+        .count();
 
     long totalAssignments = assignedCount + acceptedCount + completedCount; // Exclude declined
 
@@ -136,14 +118,13 @@ public class WorkloadService {
    * Lấy workload statistics của một conference
    *
    * @param conferenceId ID của conference
-   * @param chairId ID của chair (for authorization)
+   * @param chairId      ID của chair (for authorization)
    * @return WorkloadStatsDTO chứa thông tin statistics
    */
   public WorkloadStatsDTO getConferenceWorkloadStats(Long conferenceId, Long chairId) {
-    Conference conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -151,10 +132,9 @@ public class WorkloadService {
     }
 
     // Get all PC members
-    List<PCMember> pcMembers =
-        pcMemberRepository.findByConferenceId(conferenceId).stream()
-            .filter(member -> member.getStatus() == PCMember.PCMemberStatus.ACCEPTED)
-            .collect(Collectors.toList());
+    List<PCMember> pcMembers = pcMemberRepository.findByConferenceId(conferenceId).stream()
+        .filter(member -> member.getStatus() == PCMember.PCMemberStatus.ACCEPTED)
+        .collect(Collectors.toList());
 
     int totalReviewers = pcMembers.size();
 
@@ -170,66 +150,60 @@ public class WorkloadService {
     int highWorkloadCount = 0;
     int overloadedCount = 0;
 
-    List<WorkloadDTO> reviewerWorkloads =
-        pcMembers.stream()
-            .map(
-                member -> {
-                  // Get all assignments for this reviewer
-                  List<Assignment> allAssignments = assignmentRepository.findByReviewerId(member.getUserId());
+    // Optimized: Single query to get all assignments for the conference
+    List<Assignment> allConferenceAssignments = assignmentRepository.findByConferenceId(conferenceId);
 
-                  // Filter assignments for this conference
-                  List<Assignment> conferenceAssignments =
-                      allAssignments.stream()
-                          .filter(
-                              assignment -> {
-                                Submission submission =
-                                    submissionRepository.findById(assignment.getSubmissionId()).orElse(null);
-                                return submission != null && submission.getConferenceId().equals(conferenceId);
-                              })
-                          .collect(Collectors.toList());
+    // Group assignments by reviewerId
+    Map<Long, List<Assignment>> reviewerAssignmentsMap = allConferenceAssignments.stream()
+        .collect(Collectors.groupingBy(Assignment::getReviewerId));
 
-                  // Count assignments by status for this conference
-                  long assigned =
-                      conferenceAssignments.stream()
-                          .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ASSIGNED)
-                          .count();
-                  long accepted =
-                      conferenceAssignments.stream()
-                          .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ACCEPTED)
-                          .count();
-                  long declined =
-                      conferenceAssignments.stream()
-                          .filter(a -> a.getStatus() == Assignment.AssignmentStatus.DECLINED)
-                          .count();
-                  long completed =
-                      conferenceAssignments.stream()
-                          .filter(a -> a.getStatus() == Assignment.AssignmentStatus.COMPLETED)
-                          .count();
+    // Batch fetch User details
+    List<Long> reviewerIds = pcMembers.stream().map(PCMember::getUserId).collect(Collectors.toList());
+    Map<Long, User> userMap = userRepository.findAllById(reviewerIds).stream()
+        .collect(Collectors.toMap(User::getId, u -> u));
 
-                  long total = assigned + accepted + completed; // Exclude declined
+    List<WorkloadDTO> reviewerWorkloads = pcMembers.stream()
+        .map(member -> {
+          List<Assignment> conferenceAssignments = reviewerAssignmentsMap.getOrDefault(member.getUserId(),
+              new ArrayList<>());
 
-                  User reviewer = userRepository.findById(member.getUserId()).orElse(null);
+          // Count assignments by status for this conference
+          long rAssignedCount = conferenceAssignments.stream()
+              .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ASSIGNED)
+              .count();
+          long rAcceptedCount = conferenceAssignments.stream()
+              .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ACCEPTED)
+              .count();
+          long rDeclinedCount = conferenceAssignments.stream()
+              .filter(a -> a.getStatus() == Assignment.AssignmentStatus.DECLINED)
+              .count();
+          long rCompletedCount = conferenceAssignments.stream()
+              .filter(a -> a.getStatus() == Assignment.AssignmentStatus.COMPLETED)
+              .count();
 
-                  String workloadStatus = calculateWorkloadStatus(total);
-                  double workloadPercentage = (double) total / maxAssignmentsPerReviewer * 100.0;
+          long totalCount = rAssignedCount + rAcceptedCount + rCompletedCount; // Exclude declined
 
-                  return WorkloadDTO.builder()
-                      .reviewerId(member.getUserId())
-                      .reviewerEmail(reviewer != null ? reviewer.getEmail() : null)
-                      .reviewerName(reviewer != null ? reviewer.getFullName() : null)
-                      .conferenceId(conferenceId)
-                      .conferenceName(conference.getName())
-                      .totalAssignments(total)
-                      .assignedCount(assigned)
-                      .acceptedCount(accepted)
-                      .declinedCount(declined)
-                      .completedCount(completed)
-                      .workloadStatus(workloadStatus)
-                      .maxAssignments(maxAssignmentsPerReviewer)
-                      .workloadPercentage(workloadPercentage)
-                      .build();
-                })
-            .collect(Collectors.toList());
+          User reviewer = userMap.get(member.getUserId());
+          String wStatus = calculateWorkloadStatus(totalCount);
+          double wPercentage = (double) totalCount / maxAssignmentsPerReviewer * 100.0;
+
+          return WorkloadDTO.builder()
+              .reviewerId(member.getUserId())
+              .reviewerEmail(reviewer != null ? reviewer.getEmail() : null)
+              .reviewerName(reviewer != null ? reviewer.getFullName() : null)
+              .conferenceId(conferenceId)
+              .conferenceName(conference.getName())
+              .totalAssignments(totalCount)
+              .assignedCount(rAssignedCount)
+              .acceptedCount(rAcceptedCount)
+              .declinedCount(rDeclinedCount)
+              .completedCount(rCompletedCount)
+              .workloadStatus(wStatus)
+              .maxAssignments(maxAssignmentsPerReviewer)
+              .workloadPercentage(wPercentage)
+              .build();
+        })
+        .collect(Collectors.toList());
 
     // Aggregate statistics
     for (WorkloadDTO workload : reviewerWorkloads) {
@@ -255,8 +229,7 @@ public class WorkloadService {
       }
     }
 
-    double averageAssignmentsPerReviewer =
-        totalReviewers > 0 ? (double) totalAssignments / totalReviewers : 0.0;
+    double averageAssignmentsPerReviewer = totalReviewers > 0 ? (double) totalAssignments / totalReviewers : 0.0;
 
     return WorkloadStatsDTO.builder()
         .conferenceId(conferenceId)
@@ -279,61 +252,42 @@ public class WorkloadService {
   /**
    * Kiểm tra reviewer có vượt quá workload limit không trong một conference
    *
-   * @param reviewerId ID của reviewer
+   * @param reviewerId   ID của reviewer
    * @param conferenceId ID của conference
    * @return true nếu vượt quá limit, false nếu không
    */
   public boolean isOverloaded(Long reviewerId, Long conferenceId) {
-    List<Assignment> allAssignments = assignmentRepository.findByReviewerId(reviewerId);
-    List<Assignment> conferenceAssignments =
-        allAssignments.stream()
-            .filter(
-                assignment -> {
-                  Submission submission =
-                      submissionRepository.findById(assignment.getSubmissionId()).orElse(null);
-                  return submission != null && submission.getConferenceId().equals(conferenceId);
-                })
-            .collect(Collectors.toList());
+    List<Assignment> conferenceAssignments = assignmentRepository.findByReviewerIdAndConferenceId(reviewerId,
+        conferenceId);
 
-    long acceptedCount =
-        conferenceAssignments.stream()
-            .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ACCEPTED)
-            .count();
-    long assignedCount =
-        conferenceAssignments.stream()
-            .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ASSIGNED)
-            .count();
+    long acceptedCount = conferenceAssignments.stream()
+        .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ACCEPTED)
+        .count();
+    long assignedCount = conferenceAssignments.stream()
+        .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ASSIGNED)
+        .count();
     long total = acceptedCount + assignedCount;
     return total >= maxAssignmentsPerReviewer;
   }
 
   /**
-   * Kiểm tra reviewer có gần đạt workload limit không (warning threshold) trong một conference
+   * Kiểm tra reviewer có gần đạt workload limit không (warning threshold) trong
+   * một conference
    *
-   * @param reviewerId ID của reviewer
+   * @param reviewerId   ID của reviewer
    * @param conferenceId ID của conference
    * @return true nếu gần đạt limit, false nếu không
    */
   public boolean isNearLimit(Long reviewerId, Long conferenceId) {
-    List<Assignment> allAssignments = assignmentRepository.findByReviewerId(reviewerId);
-    List<Assignment> conferenceAssignments =
-        allAssignments.stream()
-            .filter(
-                assignment -> {
-                  Submission submission =
-                      submissionRepository.findById(assignment.getSubmissionId()).orElse(null);
-                  return submission != null && submission.getConferenceId().equals(conferenceId);
-                })
-            .collect(Collectors.toList());
+    List<Assignment> conferenceAssignments = assignmentRepository.findByReviewerIdAndConferenceId(reviewerId,
+        conferenceId);
 
-    long acceptedCount =
-        conferenceAssignments.stream()
-            .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ACCEPTED)
-            .count();
-    long assignedCount =
-        conferenceAssignments.stream()
-            .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ASSIGNED)
-            .count();
+    long acceptedCount = conferenceAssignments.stream()
+        .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ACCEPTED)
+        .count();
+    long assignedCount = conferenceAssignments.stream()
+        .filter(a -> a.getStatus() == Assignment.AssignmentStatus.ASSIGNED)
+        .count();
     long total = acceptedCount + assignedCount;
     double percentage = (double) total / maxAssignmentsPerReviewer;
     return percentage >= warningThreshold && percentage < 1.0;
@@ -370,15 +324,14 @@ public class WorkloadService {
    * Lấy workload alerts (overloaded và near-limit reviewers) cho một conference
    *
    * @param conferenceId ID của conference
-   * @param chairId ID của chair (for authorization)
+   * @param chairId      ID của chair (for authorization)
    * @return List of WorkloadAlertDTO
    */
   public List<com.uth.confms.pc.dto.WorkloadAlertDTO> getWorkloadAlerts(
       Long conferenceId, Long chairId) {
-    Conference conference =
-        conferenceRepository
-            .findById(conferenceId)
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    Conference conference = conferenceRepository
+        .findById(conferenceId)
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
     if (!conference.getChairId().equals(chairId)) {
@@ -387,10 +340,9 @@ public class WorkloadService {
     }
 
     // Get all PC members
-    List<PCMember> pcMembers =
-        pcMemberRepository.findByConferenceId(conferenceId).stream()
-            .filter(member -> member.getStatus() == PCMember.PCMemberStatus.ACCEPTED)
-            .collect(Collectors.toList());
+    List<PCMember> pcMembers = pcMemberRepository.findByConferenceId(conferenceId).stream()
+        .filter(member -> member.getStatus() == PCMember.PCMemberStatus.ACCEPTED)
+        .collect(Collectors.toList());
 
     return pcMembers.stream()
         .map(
@@ -403,18 +355,16 @@ public class WorkloadService {
 
               if (workload.getWorkloadStatus().equals("OVERLOADED")) {
                 alertType = "OVERLOADED";
-                message =
-                    String.format(
-                        "Reviewer has exceeded the maximum workload limit (%d assignments)",
-                        maxAssignmentsPerReviewer);
+                message = String.format(
+                    "Reviewer has exceeded the maximum workload limit (%d assignments)",
+                    maxAssignmentsPerReviewer);
               } else if (isNearLimit(member.getUserId(), conferenceId)) {
                 alertType = "NEAR_LIMIT";
-                message =
-                    String.format(
-                        "Reviewer is near the workload limit (%d/%d assignments, %.1f%%)",
-                        workload.getTotalAssignments(),
-                        maxAssignmentsPerReviewer,
-                        workload.getWorkloadPercentage());
+                message = String.format(
+                    "Reviewer is near the workload limit (%d/%d assignments, %.1f%%)",
+                    workload.getTotalAssignments(),
+                    maxAssignmentsPerReviewer,
+                    workload.getWorkloadPercentage());
               }
 
               // Only return alerts

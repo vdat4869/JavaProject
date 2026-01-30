@@ -66,7 +66,7 @@ public class AuthorAIService {
 
         if (!aiResponse.isSuccess()) {
             auditService.createErrorLog(userId, request.getConferenceId(), AIFeature.SPELL_CHECK,
-                    "gpt-4o-mini", userPrompt.toString(), aiResponse.getErrorMessage(),
+                    aiGateway.getCurrentModelName(), userPrompt.toString(), aiResponse.getErrorMessage(),
                     aiResponse.getProcessingTimeMs());
 
             return SpellCheckResponse.builder()
@@ -103,7 +103,7 @@ public class AuthorAIService {
         // Audit log
         AIAuditLog auditLog = auditService.createAuditLog(
                 userId, request.getConferenceId(), AIFeature.SPELL_CHECK,
-                "gpt-4o-mini", userPrompt.toString(), aiResponse.getContent(),
+                aiGateway.getCurrentModelName(), userPrompt.toString(), aiResponse.getContent(),
                 aiResponse.getProcessingTimeMs(), aiResponse.getTokensUsed());
 
         return SpellCheckResponse.builder()
@@ -140,7 +140,7 @@ public class AuthorAIService {
 
         if (!aiResponse.isSuccess()) {
             auditService.createErrorLog(userId, request.getConferenceId(), AIFeature.ABSTRACT_POLISH,
-                    "gpt-4o-mini", userPrompt, aiResponse.getErrorMessage(),
+                    aiGateway.getCurrentModelName(), userPrompt, aiResponse.getErrorMessage(),
                     aiResponse.getProcessingTimeMs());
 
             return AbstractPolishResponse.builder()
@@ -177,13 +177,14 @@ public class AuthorAIService {
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to parse AI response: {}", e.getMessage());
+            log.warn("Failed to parse AI abstract polishing response: {}. Content: {}", e.getMessage(),
+                    aiResponse.getContent());
             polishedAbstract = aiResponse.getContent();
         }
 
         AIAuditLog auditLog = auditService.createAuditLog(
                 userId, request.getConferenceId(), AIFeature.ABSTRACT_POLISH,
-                "gpt-4o-mini", userPrompt, aiResponse.getContent(),
+                aiGateway.getCurrentModelName(), userPrompt, aiResponse.getContent(),
                 aiResponse.getProcessingTimeMs(), aiResponse.getTokensUsed());
 
         return AbstractPolishResponse.builder()
@@ -228,13 +229,14 @@ public class AuthorAIService {
         if (request.getExistingKeywords() != null && !request.getExistingKeywords().isBlank()) {
             userPrompt.append("\n\nExisting keywords (avoid these): ").append(request.getExistingKeywords());
         }
-        userPrompt.append("\n\nSuggest up to ").append(request.getMaxKeywords()).append(" keywords.");
+        userPrompt.append("\n\nSuggest up to ").append(request.getMaxKeywords() != null ? request.getMaxKeywords() : 5)
+                .append(" keywords.");
 
         AIGatewayService.AIResponse aiResponse = aiGateway.chat(systemPrompt, userPrompt.toString());
 
         if (!aiResponse.isSuccess()) {
             auditService.createErrorLog(userId, request.getConferenceId(), AIFeature.KEYWORD_SUGGEST,
-                    "gpt-4o-mini", userPrompt.toString(), aiResponse.getErrorMessage(),
+                    aiGateway.getCurrentModelName(), userPrompt.toString(), aiResponse.getErrorMessage(),
                     aiResponse.getProcessingTimeMs());
 
             return KeywordSuggestResponse.builder()
@@ -270,7 +272,7 @@ public class AuthorAIService {
 
         AIAuditLog auditLog = auditService.createAuditLog(
                 userId, request.getConferenceId(), AIFeature.KEYWORD_SUGGEST,
-                "gpt-4o-mini", userPrompt.toString(), aiResponse.getContent(),
+                aiGateway.getCurrentModelName(), userPrompt.toString(), aiResponse.getContent(),
                 aiResponse.getProcessingTimeMs(), aiResponse.getTokensUsed());
 
         return KeywordSuggestResponse.builder()

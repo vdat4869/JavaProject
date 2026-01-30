@@ -47,8 +47,10 @@ public class AIGatewayService {
         }
 
         if ("gemini".equalsIgnoreCase(aiConfig.getProvider())) {
+            log.info("Calling real Gemini AI (model: {})", aiConfig.getGeminiModel());
             return callGemini(systemPrompt, userPrompt);
         } else {
+            log.info("Calling real OpenAI AI (model: {})", aiConfig.getOpenaiModel());
             return callOpenAI(systemPrompt, userPrompt);
         }
     }
@@ -127,14 +129,52 @@ public class AIGatewayService {
     }
 
     private String generateMockResponse(String systemPrompt, String userPrompt) {
-        if (systemPrompt.contains("summary")) {
-            return "{\"summary\": \"Đây là bản tóm tắt mô phỏng (Gemini Mock Mode).\", \"tone\": \"Trang trọng\"}";
+        String sysMatch = systemPrompt.toLowerCase();
+
+        if (sysMatch.contains("keyword")) {
+            return """
+                    [
+                      {"keyword": "Machine Learning", "relevanceScore": 0.95, "explanation": "Chủ đề chính của bài báo", "isCommon": true},
+                      {"keyword": "Artificial Intelligence", "relevanceScore": 0.88, "explanation": "Lĩnh vực nghiên cứu rộng hơn", "isCommon": true},
+                      {"keyword": "Deep Learning", "relevanceScore": 0.82, "explanation": "Phương pháp được sử dụng", "isCommon": false},
+                      {"keyword": "Automation", "relevanceScore": 0.75, "explanation": "Ứng dụng thực tế", "isCommon": true}
+                    ]
+                    """;
         }
+
+        if (sysMatch.contains("spell") || sysMatch.contains("grammar")) {
+            return """
+                    [
+                      {"type": "STYLE", "original": "very good", "replacement": "excellent", "explanation": "Sử dụng từ chuyên môn hơn", "field": "abstract"},
+                      {"type": "GRAMMAR", "original": "is go", "replacement": "is going", "explanation": "Sai thì động từ", "field": "abstract"}
+                    ]
+                    """;
+        }
+
+        if (sysMatch.contains("polishedabstract") || sysMatch.contains("editor")) {
+            return """
+                    {
+                      "polishedAbstract": "This paper presents a novel approach to conference management using AI-driven automation.",
+                      "changes": [
+                        {"before": "novel methodology", "after": "novel approach", "changeType": "CLARITY", "explanation": "Clearer terminology"}
+                      ]
+                    }
+                    """;
+        }
+
+        if (sysMatch.contains("summary")) {
+            return "{\"summary\": \"Đây là bản tóm tắt mô phỏng (AI Mock Mode).\", \"tone\": \"Trang trọng\"}";
+        }
+
         return "{\"claims\": [\"Tính năng mock mới\"], \"methods\": [], \"datasets\": [], \"findings\": []}";
     }
 
     public boolean isAvailable() {
         return aiConfig.isConfigured();
+    }
+
+    public String getCurrentModelName() {
+        return aiConfig.getCurrentModel();
     }
 
     public static class AIResponse {

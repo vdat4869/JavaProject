@@ -394,15 +394,11 @@ public class AssignmentService {
       throw new UnauthorizedException("Only conference chair or admin can view assignments");
     }
 
-    return assignmentRepository.findBySubmissionId(submissionId).stream()
-        .map(this::mapToDTO)
-        .collect(Collectors.toList());
+    return mapToDTOList(assignmentRepository.findBySubmissionId(submissionId));
   }
 
   public List<AssignmentResponseDTO> getMyAssignments(Long reviewerId) {
-    return assignmentRepository.findByReviewerId(reviewerId).stream()
-        .map(this::mapToDTO)
-        .collect(Collectors.toList());
+    return mapToDTOList(assignmentRepository.findByReviewerId(reviewerId));
   }
 
   public AssignmentResponseDTO getAssignment(Long assignmentId, Long userId) {
@@ -549,11 +545,8 @@ public class AssignmentService {
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
     List<Long> submissionIds = submissions.stream().map(Submission::getId).collect(Collectors.toList());
 
-    // Get all assignments for these submissions
-    List<Assignment> allAssignments = new ArrayList<>();
-    for (Long submissionId : submissionIds) {
-      allAssignments.addAll(assignmentRepository.findBySubmissionId(submissionId));
-    }
+    // Get all assignments for these submissions in one query
+    List<Assignment> allAssignments = assignmentRepository.findBySubmissionIdIn(submissionIds);
 
     // Calculate statistics
     int totalAssignments = allAssignments.size();
@@ -662,18 +655,13 @@ public class AssignmentService {
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
     List<Long> submissionIds = submissions.stream().map(Submission::getId).collect(Collectors.toList());
 
-    // Get all assignments
-    List<Assignment> allAssignments = new ArrayList<>();
-    for (Long submissionId : submissionIds) {
-      allAssignments.addAll(assignmentRepository.findBySubmissionId(submissionId));
-    }
+    // Get all assignments in one query
+    List<Assignment> allAssignments = assignmentRepository.findBySubmissionIdIn(submissionIds);
 
     // Get all reviews for these assignments
     List<Long> assignmentIds = allAssignments.stream().map(Assignment::getId).collect(Collectors.toList());
-    List<Review> allReviews = new ArrayList<>();
-    for (Long assignmentId : assignmentIds) {
-      allReviews.addAll(reviewRepository.findByAssignmentId(assignmentId));
-    }
+    // Get all reviews for these assignments in one query
+    List<Review> allReviews = reviewRepository.findByAssignmentIdIn(assignmentIds);
 
     // Calculate average review score
     List<Review> submittedReviews = allReviews.stream()
@@ -838,5 +826,79 @@ public class AssignmentService {
         .updatedAt(assignment.getUpdatedAt())
         .deadline(reviewDeadline)
         .build();
+  }
+
+  private List<AssignmentResponseDTO> mapToDTOList(List<Assignment> assignments) {
+    if (assignments == null || assignments.isEmpty()) {
+      return new ArrayList<>();
+    }
+
+    // Collect all unique IDs
+    List<Long> submissionIds = assignments.stream()
+        .map(Assignment::getSubmissionId)
+        .distinct()
+        .collect(Collectors.toList());
+
+    List<Long> reviewerIds = assignments.stream()
+        .map(Assignment::getReviewerId)
+        .distinct()
+        .collect(Collectors.toList());
+
+    // Batch fetch related entities
+    Map<Long, Submission> submissionMap = submissionRepository.findAllById(submissionIds).stream()
+        .collect(Collectors.toMap(Submission::getId, s -> s));
+
+    Map<Long, User> reviewerMap = userRepository.findAllById(reviewerIds).stream()
+        .collect(Collectors.toMap(User::getId, u -> u));
+
+    // Collect conference IDs from submissions to fetch deadlines
+    List<Long> conferenceIds = submissionMap.values().stream()
+        .map(Submission::getConferenceId)
+        .distinct()
+        .collect(Collectors.toList());
+
+    Map<Long, List<Deadline>> deadlineMap = deadlineRepository.findByConferenceIdIn(conferenceIds).stream()
+        .collect(Collectors.groupingBy(d -> d.getConference().getId()));
+
+    return assignments.stream()
+        .map(assignment -> {
+          Submission submission = submissionMap.get(assignment.getSubmissionId());
+          User reviewer = reviewerMap.get(assignment.getReviewerId());
+
+          LocalDateTime reviewDeadline = null;
+          if (submission != null) {
+            List<Deadline> deadlines = deadlineMap.getOrDefault(submission.getConferenceId(), new ArrayList<>());
+            if (!deadlines.isEmpty()) {
+              reviewDeadline = deadlines.stream()
+                  .filter(d -> d.getType() == Deadline.DeadlineType.REVIEW)
+                  .map(Deadline::getDueDate)
+                  .max(LocalDateTime::compareTo)
+                  .orElse(null);
+
+              if (reviewDeadline == null) {
+                reviewDeadline = deadlines.stream()
+                    .map(Deadline::getDueDate)
+                    .max(LocalDateTime::compareTo)
+                    .orElse(null);
+              }
+            }
+          }
+
+          return AssignmentResponseDTO.builder()
+              .id(assignment.getId())
+              .submissionId(assignment.getSubmissionId())
+              .submissionTitle(submission != null ? submission.getTitle() : null)
+              .reviewerId(assignment.getReviewerId())
+              .reviewerEmail(reviewer != null ? reviewer.getEmail() : null)
+              .reviewerName(reviewer != null ? reviewer.getFullName() : null)
+              .status(assignment.getStatus().name())
+              .isPrimary(assignment.getIsPrimary())
+              .submissionAbstract(submission != null ? submission.getAbstractText() : null)
+              .assignedAt(assignment.getAssignedAt())
+              .updatedAt(assignment.getUpdatedAt())
+              .deadline(reviewDeadline)
+              .build();
+        })
+        .collect(Collectors.toList());
   }
 }

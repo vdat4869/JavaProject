@@ -13,6 +13,8 @@ public interface SubmissionFileRepository extends JpaRepository<SubmissionFile, 
 
   List<SubmissionFile> findBySubmissionId(Long submissionId);
 
+  List<SubmissionFile> findBySubmissionIdIn(List<Long> submissionIds);
+
   Optional<SubmissionFile> findBySubmissionAndIsCurrentTrue(Submission submission);
 
   Optional<SubmissionFile> findBySubmissionIdAndIsCurrentTrue(Long submissionId);

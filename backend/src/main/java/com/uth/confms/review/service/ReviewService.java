@@ -410,11 +410,8 @@ public class ReviewService {
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
     List<Long> submissionIds = submissions.stream().map(Submission::getId).collect(Collectors.toList());
 
-    // Get all reviews for these submissions
-    List<Review> allReviews = new ArrayList<>();
-    for (Long submissionId : submissionIds) {
-      allReviews.addAll(reviewRepository.findBySubmissionId(submissionId));
-    }
+    // Optimized: Use findBySubmissionIdIn to get all reviews in one query
+    List<Review> allReviews = reviewRepository.findBySubmissionIdIn(submissionIds);
 
     // Calculate total reviews
     int totalReviews = allReviews.size();
@@ -489,6 +486,11 @@ public class ReviewService {
     Map<Long, List<Review>> reviewsByReviewer = allReviews.stream()
         .collect(Collectors.groupingBy(Review::getReviewerId));
 
+    // Batch fetch reviewer details
+    List<Long> allReviewerIds = new ArrayList<>(reviewsByReviewer.keySet());
+    Map<Long, User> userMap = userRepository.findAllById(allReviewerIds).stream()
+        .collect(Collectors.toMap(User::getId, u -> u));
+
     for (Map.Entry<Long, List<Review>> entry : reviewsByReviewer.entrySet()) {
       Long reviewerId = entry.getKey();
       List<Review> reviewerReviews = entry.getValue();
@@ -534,7 +536,7 @@ public class ReviewService {
             .orElse(0.0);
       }
 
-      User reviewer = userRepository.findById(reviewerId).orElse(null);
+      User reviewer = userMap.get(reviewerId);
       String reviewerName = reviewer != null ? reviewer.getFullName() : "Unknown";
 
       reviewerMetrics.put(

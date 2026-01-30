@@ -11,6 +11,7 @@ import com.uth.confms.conference.entity.Deadline.DeadlineType;
 import com.uth.confms.conference.repository.DeadlineRepository;
 import com.uth.confms.conference.entity.Conference;
 import com.uth.confms.conference.repository.ConferenceRepository;
+import com.uth.confms.conference.repository.TrackRepository;
 import com.uth.confms.pc.repository.PCMemberRepository;
 import com.uth.confms.pc.service.COIService;
 import com.uth.confms.storage.service.StorageService;
@@ -29,7 +30,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +76,7 @@ public class SubmissionService {
   private final PCMemberRepository pcMemberRepository;
   private final AssignmentRepository assignmentRepository;
   private final UserService userService;
+  private final TrackRepository trackRepository;
 
   @Value("${app.submission.deadline.grace-period-hours:24}")
   private int gracePeriodHours;
@@ -88,7 +94,8 @@ public class SubmissionService {
       COIService coiService,
       PCMemberRepository pcMemberRepository,
       AssignmentRepository assignmentRepository,
-      UserService userService) {
+      UserService userService,
+      TrackRepository trackRepository) {
     this.submissionRepository = submissionRepository;
     this.submissionAuthorRepository = submissionAuthorRepository;
     this.submissionFileRepository = submissionFileRepository;
@@ -99,6 +106,7 @@ public class SubmissionService {
     this.pcMemberRepository = pcMemberRepository;
     this.assignmentRepository = assignmentRepository;
     this.userService = userService;
+    this.trackRepository = trackRepository;
   }
 
   /**
@@ -175,9 +183,8 @@ public class SubmissionService {
   }
 
   public List<SubmissionResponseDTO> getMySubmissions(Long authorId) {
-    return submissionRepository.findByAuthorId(authorId).stream()
-        .map(this::mapToDTO)
-        .collect(Collectors.toList());
+    List<Submission> submissions = submissionRepository.findByAuthorId(authorId);
+    return mapToDTOList(submissions, authorId);
   }
 
   @Transactional
@@ -559,6 +566,13 @@ public class SubmissionService {
         submission.getStatus() != Submission.SubmissionStatus.ACCEPTED &&
         submission.getStatus() != Submission.SubmissionStatus.CAMERA_READY;
 
+    String trackName = null;
+    if (submission.getTrackId() != null) {
+      trackName = trackRepository.findById(submission.getTrackId())
+          .map(com.uth.confms.conference.entity.Track::getName)
+          .orElse(null);
+    }
+
     return SubmissionResponseDTO.builder()
         .id(submission.getId())
         .conferenceId(submission.getConferenceId())
@@ -577,7 +591,86 @@ public class SubmissionService {
         .canEdit(canEdit)
         .canWithdraw(canWithdraw)
         .reviewMode(reviewMode)
+        .trackName(trackName)
         .build();
+  }
+
+  private List<SubmissionResponseDTO> mapToDTOList(List<Submission> submissions, Long currentUserId) {
+    if (submissions.isEmpty()) {
+      return List.of();
+    }
+
+    List<Long> submissionIds = submissions.stream().map(Submission::getId).collect(Collectors.toList());
+
+    // Batch fetch authors and files
+    Map<Long, List<SubmissionAuthor>> authorsMap = submissionAuthorRepository.findBySubmissionIdIn(submissionIds)
+        .stream().collect(Collectors.groupingBy(a -> a.getSubmission().getId()));
+
+    Map<Long, List<SubmissionFile>> filesMap = submissionFileRepository.findBySubmissionIdIn(submissionIds)
+        .stream().collect(Collectors.groupingBy(f -> f.getSubmission().getId()));
+
+    Set<Long> trackIds = submissions.stream()
+        .map(Submission::getTrackId)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+    Map<Long, String> trackNameMap = trackRepository.findAllById(trackIds).stream()
+        .collect(Collectors.toMap(com.uth.confms.conference.entity.Track::getId,
+            com.uth.confms.conference.entity.Track::getName));
+
+    // Get conference details once if needed (for double-blind check)
+    // For simplicity, we assume all submissions in the list belong to the same
+    // conference or we fetch them as needed.
+    // In getSubmissionsByConference, they are all from the same conference.
+    Map<Long, Conference> conferenceMap = new HashMap<>();
+
+    // Optimize: Check admin role once for the current user
+    boolean isGlobalAdmin = currentUserId != null && userService.hasRole(currentUserId, "ADMIN");
+
+    return submissions.stream().map(submission -> {
+      List<SubmissionAuthorDTO> authors = authorsMap.getOrDefault(submission.getId(), List.of()).stream()
+          .map(this::mapAuthorToDTO).collect(Collectors.toList());
+
+      List<SubmissionFileDTO> files = filesMap.getOrDefault(submission.getId(), List.of()).stream()
+          .map(this::mapFileToDTO).collect(Collectors.toList());
+
+      Conference conference = conferenceMap.computeIfAbsent(submission.getConferenceId(),
+          id -> conferenceRepository.findById(id).orElse(null));
+
+      String reviewMode = conference != null && conference.getReviewMode() != null ? conference.getReviewMode().name()
+          : "DOUBLE_BLIND";
+
+      // Double-blind protection
+      if (currentUserId != null && conference != null
+          && conference.getReviewMode() == Conference.ReviewMode.DOUBLE_BLIND) {
+        boolean isAuthor = submission.getAuthorId().equals(currentUserId);
+        boolean isChair = conference.getChairId().equals(currentUserId);
+
+        if (!isAuthor && !isChair && !isGlobalAdmin) {
+          authors = authors.stream()
+              .map(a -> SubmissionAuthorDTO.builder()
+                  .firstName("Anonymous").lastName("Author").email("hidden@example.com")
+                  .affiliation("Hidden for Review").isCorresponding(a.getIsCorresponding())
+                  .orderIndex(a.getOrderIndex()).build())
+              .collect(Collectors.toList());
+        }
+      }
+
+      boolean canEdit = submission.getStatus() == Submission.SubmissionStatus.DRAFT ||
+          submission.getStatus() == Submission.SubmissionStatus.SUBMITTED;
+      boolean canWithdraw = !submission.getWithdrawn() &&
+          submission.getStatus() != Submission.SubmissionStatus.ACCEPTED &&
+          submission.getStatus() != Submission.SubmissionStatus.CAMERA_READY;
+
+      return SubmissionResponseDTO.builder()
+          .id(submission.getId()).conferenceId(submission.getConferenceId())
+          .authorId(submission.getAuthorId()).title(submission.getTitle())
+          .abstractText(submission.getAbstractText()).status(submission.getStatus().name())
+          .pdfFilePath(submission.getPdfFilePath()).trackId(submission.getTrackId())
+          .keywords(submission.getKeywords()).withdrawn(submission.getWithdrawn())
+          .authors(authors).files(files).createdAt(submission.getCreatedAt())
+          .updatedAt(submission.getUpdatedAt()).canEdit(canEdit).canWithdraw(canWithdraw)
+          .reviewMode(reviewMode).trackName(trackNameMap.get(submission.getTrackId())).build();
+    }).collect(Collectors.toList());
   }
 
   private SubmissionAuthorDTO mapAuthorToDTO(SubmissionAuthor author) {
@@ -808,6 +901,6 @@ public class SubmissionService {
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
 
     // Map to DTOs
-    return submissions.stream().map(this::mapToDTO).collect(Collectors.toList());
+    return mapToDTOList(submissions, userId);
   }
 }

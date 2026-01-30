@@ -80,7 +80,7 @@ public class ChairAIService {
 
         if (!aiResponse.isSuccess()) {
             auditService.createErrorLog(userId, request.getConferenceId(), AIFeature.EMAIL_DRAFT,
-                    "gpt-4o-mini", userPrompt, aiResponse.getErrorMessage(),
+                    aiGateway.getCurrentModelName(), userPrompt, aiResponse.getErrorMessage(),
                     aiResponse.getProcessingTimeMs());
 
             return EmailDraftResponse.builder()
@@ -112,7 +112,7 @@ public class ChairAIService {
 
         AIAuditLog auditLog = auditService.createAuditLog(
                 userId, request.getConferenceId(), AIFeature.EMAIL_DRAFT,
-                "gpt-4o-mini", userPrompt, aiResponse.getContent(),
+                aiGateway.getCurrentModelName(), userPrompt, aiResponse.getContent(),
                 aiResponse.getProcessingTimeMs(), aiResponse.getTokensUsed());
 
         return EmailDraftResponse.builder()

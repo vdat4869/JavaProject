@@ -21,6 +21,7 @@ public class SubmissionResponseDTO {
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
   private String reviewMode;
+  private String trackName;
 
   public SubmissionResponseDTO() {
   }
@@ -42,7 +43,8 @@ public class SubmissionResponseDTO {
       LocalDateTime updatedAt,
       Boolean canEdit,
       Boolean canWithdraw,
-      String reviewMode) {
+      String reviewMode,
+      String trackName) {
     this.id = id;
     this.conferenceId = conferenceId;
     this.authorId = authorId;
@@ -60,6 +62,7 @@ public class SubmissionResponseDTO {
     this.canEdit = canEdit;
     this.canWithdraw = canWithdraw;
     this.reviewMode = reviewMode;
+    this.trackName = trackName;
   }
 
   public Long getId() {
@@ -198,6 +201,14 @@ public class SubmissionResponseDTO {
     this.reviewMode = reviewMode;
   }
 
+  public String getTrackName() {
+    return trackName;
+  }
+
+  public void setTrackName(String trackName) {
+    this.trackName = trackName;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -220,9 +231,15 @@ public class SubmissionResponseDTO {
     private String reviewMode;
     private Boolean canEdit;
     private Boolean canWithdraw;
+    private String trackName;
 
     public Builder id(Long id) {
       this.id = id;
+      return this;
+    }
+
+    public Builder trackName(String trackName) {
+      this.trackName = trackName;
       return this;
     }
 
@@ -256,7 +273,8 @@ public class SubmissionResponseDTO {
           updatedAt,
           canEdit,
           canWithdraw,
-          reviewMode);
+          reviewMode,
+          trackName);
     }
 
     public Builder conferenceId(Long conferenceId) {

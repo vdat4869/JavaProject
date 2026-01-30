@@ -12,5 +12,7 @@ public interface SubmissionAuthorRepository extends JpaRepository<SubmissionAuth
 
   List<SubmissionAuthor> findBySubmissionId(Long submissionId);
 
+  List<SubmissionAuthor> findBySubmissionIdIn(List<Long> submissionIds);
+
   void deleteBySubmission(Submission submission);
 }
