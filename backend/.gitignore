@@ -45,3 +45,7 @@ backend/uploads/
 *.sqlite
 # Environment variables
 .env
+
+# Test Reports
+TestReport.xlsx
+backend/src/test
