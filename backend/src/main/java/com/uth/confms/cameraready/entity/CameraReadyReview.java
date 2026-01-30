@@ -38,16 +38,16 @@ public class CameraReadyReview {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "decision", nullable = false, length = 20)
-    private ReviewDecision decision;
+    private ReviewDecision decision; // Quyết định duyệt (APPROVED/REJECTED)
 
     @Column(name = "note", columnDefinition = "TEXT")
-    private String note;
+    private String note; // Ghi chú của reviewer
 
     @Column(name = "reviewed_by", nullable = false)
-    private Long reviewedBy;
+    private Long reviewedBy; // ID của người duyệt (Chair)
 
     @Column(name = "reviewed_at", nullable = false)
-    private LocalDateTime reviewedAt;
+    private LocalDateTime reviewedAt; // Thời gian duyệt
 
     @PrePersist
     protected void onCreate() {

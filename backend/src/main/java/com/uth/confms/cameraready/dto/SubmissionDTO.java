@@ -27,13 +27,13 @@ public class SubmissionDTO {
     private Long conferenceId;
     private Long trackId;
     private String trackName;
-    private CameraReadyStatus status;
-    private VersionDTO currentVersion;
-    private Boolean copyrightConfirmed;
-    private LocalDateTime copyrightConfirmedAt;
-    private LocalDateTime deadline;
-    private Boolean canUpload;
-    private Boolean canConfirmCopyright;
+    private CameraReadyStatus status; // Trạng thái hiện tại
+    private VersionDTO currentVersion; // Phiên bản hiện tại
+    private Boolean copyrightConfirmed; // Đã xong bản quyền chưa
+    private LocalDateTime copyrightConfirmedAt; // Thời gian xác nhận bản quyền
+    private LocalDateTime deadline; // Hạn chót
+    private Boolean canUpload; // Có được phép upload không
+    private Boolean canConfirmCopyright; // Có được phép xác nhận bản quyền không
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -5,13 +5,13 @@ import java.util.List;
 
 public class CFPResponseDTO {
   private Long id;
-  private String callForPapers;
+  private String callForPapers; // Nội dung mời viết bài
   @Deprecated
-  private String topics; // Deprecated: Use topicsList instead
-  private List<TopicDTO> topicsList; // Structured topics from Conference
-  private List<TrackDTO> tracks; // Tracks from Conference
-  private String submissionGuidelines;
-  private Boolean open;
+  private String topics; // Đã cũ
+  private List<TopicDTO> topicsList; // Danh sách chủ đề
+  private List<TrackDTO> tracks; // Danh sách tracks
+  private String submissionGuidelines; // Hướng dẫn nộp bài
+  private Boolean open; // Trạng thái mở/đóng
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 

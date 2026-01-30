@@ -74,6 +74,7 @@ public class SubmissionController {
     @Operation(summary = "Lấy danh sách submissions của tác giả", description = "Trả về danh sách tất cả submissions của tác giả hiện tại")
     @GetMapping("/my")
     @PreAuthorize("hasRole('AUTHOR')")
+    // Lấy danh sách submissions của tác giả (My Submissions)
     public ResponseEntity<ApiResponse<List<SubmissionResponseDTO>>> getMySubmissions(
             Authentication authentication) {
         Long authorId = getUserIdFromAuthentication(authentication);
@@ -83,6 +84,7 @@ public class SubmissionController {
     @Operation(summary = "Lấy thông tin submission", description = "Trả về thông tin chi tiết của một submission theo ID")
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('ADMIN')")
+    // Lấy chi tiết submission
     public ResponseEntity<ApiResponse<SubmissionResponseDTO>> getSubmission(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             Authentication authentication) {
@@ -93,6 +95,7 @@ public class SubmissionController {
     @Operation(summary = "Tạo submission mới", description = "Tạo một submission mới với thông tin title, abstract, keywords, authors")
     @PostMapping
     @PreAuthorize("hasRole('AUTHOR')")
+    // Tạo submission mới
     public ResponseEntity<ApiResponse<SubmissionResponseDTO>> createSubmission(
             @Valid @RequestBody SubmissionCreateDTO dto, Authentication authentication) {
         Long authorId = getUserIdFromAuthentication(authentication);
@@ -103,6 +106,7 @@ public class SubmissionController {
     @Operation(summary = "Cập nhật submission", description = "Cập nhật thông tin submission (chỉ cho phép khi status là DRAFT hoặc SUBMITTED)")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('AUTHOR')")
+    // Cập nhật submission
     public ResponseEntity<ApiResponse<SubmissionResponseDTO>> updateSubmission(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             @Valid @RequestBody SubmissionUpdateDTO dto,
@@ -115,6 +119,7 @@ public class SubmissionController {
     @Operation(summary = "Submit submission", description = "Nộp submission (chuyển từ DRAFT sang SUBMITTED, yêu cầu phải có PDF file)")
     @PostMapping("/{id}/submit")
     @PreAuthorize("hasRole('AUTHOR')")
+    // Submit bài (chuyển trạng thái sang SUBMITTED)
     public ResponseEntity<ApiResponse<SubmissionResponseDTO>> submitSubmission(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             Authentication authentication) {
@@ -125,6 +130,7 @@ public class SubmissionController {
     @Operation(summary = "Rút submission", description = "Rút submission đã submit (không cho phép rút nếu đã ACCEPTED hoặc CAMERA_READY)")
     @PostMapping("/{id}/withdraw")
     @PreAuthorize("hasRole('AUTHOR')")
+    // Rút bài (withdraw)
     public ResponseEntity<ApiResponse<SubmissionResponseDTO>> withdrawSubmission(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             Authentication authentication) {
@@ -136,6 +142,7 @@ public class SubmissionController {
     @Operation(summary = "Upload PDF file", description = "Upload PDF file cho submission (hỗ trợ nhiều version, version mới sẽ là current)")
     @PostMapping("/{id}/upload-pdf")
     @PreAuthorize("hasRole('AUTHOR')")
+    // Upload file PDF
     public ResponseEntity<ApiResponse<SubmissionFileDTO>> uploadPdf(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             @Parameter(description = "File PDF cần upload") @RequestParam("file") MultipartFile file,
@@ -148,6 +155,7 @@ public class SubmissionController {
     @Operation(summary = "Download PDF file hiện tại", description = "Download file PDF hiện tại (current version) của submission")
     @GetMapping("/{id}/file")
     @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('ADMIN')")
+    // Tải file PDF hiện tại
     public ResponseEntity<InputStreamResource> downloadPdfFile(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             Authentication authentication)
@@ -171,6 +179,7 @@ public class SubmissionController {
     @Operation(summary = "Xem lịch sử upload PDF", description = "Lấy danh sách tất cả các version của PDF file đã upload cho submission")
     @GetMapping("/{id}/files")
     @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('ADMIN')")
+    // Xem lịch sử các phiên bản file
     public ResponseEntity<ApiResponse<List<SubmissionFileDTO>>> getFileVersions(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             Authentication authentication) {
@@ -182,6 +191,7 @@ public class SubmissionController {
     @Operation(summary = "Download file version cụ thể", description = "Download một version cụ thể của PDF file theo fileId")
     @GetMapping("/{id}/files/{fileId}")
     @PreAuthorize("hasRole('AUTHOR') or hasRole('CHAIR') or hasRole('PC') or hasRole('ADMIN')")
+    // Tải một phiên bản file cụ thể
     public ResponseEntity<InputStreamResource> downloadFileVersion(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             @Parameter(description = "ID của file version") @PathVariable Long fileId,
@@ -210,6 +220,7 @@ public class SubmissionController {
     @Operation(summary = "Xóa submission draft", description = "Xóa submission (chỉ cho phép xóa submission ở trạng thái DRAFT)")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('AUTHOR')")
+    // Xóa submission (chỉ xóa được bản nháp DRAFT)
     public ResponseEntity<ApiResponse<Void>> deleteSubmission(
             @Parameter(description = "ID của submission") @PathVariable Long id,
             Authentication authentication) {
@@ -221,6 +232,7 @@ public class SubmissionController {
     @Operation(summary = "Lấy danh sách submissions của conference", description = "Trả về danh sách tất cả submissions của một conference (CHAIR/ADMIN only)")
     @GetMapping("/conference/{conferenceId}")
     @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+    // Lấy danh sách submission của hội nghị (dành cho Chair/Admin)
     public ResponseEntity<ApiResponse<List<SubmissionResponseDTO>>> getSubmissionsByConference(
             @Parameter(description = "ID của conference") @PathVariable Long conferenceId,
             Authentication authentication) {

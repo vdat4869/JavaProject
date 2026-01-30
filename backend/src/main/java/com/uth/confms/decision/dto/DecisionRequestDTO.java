@@ -6,13 +6,14 @@ import jakarta.validation.constraints.NotNull;
 /**
  * DTO cho request tạo decision
  *
- * <p>DTO này chứa thông tin decision cần tạo:
+ * <p>
+ * DTO này chứa thông tin decision cần tạo:
  *
  * <ul>
- *   <li>submissionId - ID của submission (required)
- *   <li>type - Loại decision (required): ACCEPT, REJECT, CONDITIONAL_ACCEPT
- *   <li>comments - Comments của chair (optional)
- *   <li>sendNotification - Có gửi email notification ngay không (default: true)
+ * <li>submissionId - ID của submission (required)
+ * <li>type - Loại decision (required): ACCEPT, REJECT, CONDITIONAL_ACCEPT
+ * <li>comments - Comments của chair (optional)
+ * <li>sendNotification - Có gửi email notification ngay không (default: true)
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -25,9 +26,9 @@ public class DecisionRequestDTO {
   @NotBlank(message = "Decision type is required")
   private String type; // ACCEPT, REJECT, CONDITIONAL_ACCEPT
 
-  private String comments;
+  private String comments; // Nhận xét
 
-  private Boolean sendNotification = true; // Whether to send email notification immediately
+  private Boolean sendNotification = true; // Gửi email ngay lập tức (mặc định: true)
 
   public Long getSubmissionId() {
     return submissionId;

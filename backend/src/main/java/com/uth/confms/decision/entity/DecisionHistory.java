@@ -8,12 +8,14 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Entity đại diện cho lịch sử thay đổi của decision (audit trail)
  *
- * <p>DecisionHistory track mọi thay đổi của decision để đảm bảo audit trail đầy đủ:
+ * <p>
+ * DecisionHistory track mọi thay đổi của decision để đảm bảo audit trail đầy
+ * đủ:
  *
  * <ul>
- *   <li>Track changes: type, comments, locked status
- *   <li>Track who made the change và when
- *   <li>Support compliance và audit requirements
+ * <li>Track changes: type, comments, locked status
+ * <li>Track who made the change và when
+ * <li>Support compliance và audit requirements
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -31,29 +33,30 @@ public class DecisionHistory {
   private Long decisionId;
 
   @Column(nullable = false)
-  private Long changedBy;
+  private Long changedBy; // Người thực hiện thay đổi
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private ChangeType changeType;
+  private ChangeType changeType; // Loại thay đổi
 
   @Column(columnDefinition = "TEXT")
-  private String oldValue;
+  private String oldValue; // Giá trị cũ
 
   @Column(columnDefinition = "TEXT")
-  private String newValue;
+  private String newValue; // Giá trị mới
 
   @Column(columnDefinition = "TEXT")
-  private String fieldName;
+  private String fieldName; // Tên trường bị thay đổi
 
   @Column(columnDefinition = "TEXT")
-  private String description;
+  private String description; // Mô tả chi tiết
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime changedAt;
 
-  public DecisionHistory() {}
+  public DecisionHistory() {
+  }
 
   public DecisionHistory(
       Long id,

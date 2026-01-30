@@ -207,6 +207,9 @@ public class ConferenceService {
     return mapToDTO(conference);
   }
 
+  /**
+   * Lấy danh sách các hội nghị đã được public (công khai).
+   */
   @Transactional(readOnly = true)
   public List<ConferenceResponseDTO> getPublishedConferences() {
     return conferenceRepository.findByPublishedTrue().stream()
@@ -214,6 +217,10 @@ public class ConferenceService {
         .collect(Collectors.toList());
   }
 
+  /**
+   * Lấy danh sách hội nghị mà user đang làm Chair.
+   * Nếu user là Admin, trả về tất cả hội nghị.
+   */
   @Transactional(readOnly = true)
   public List<ConferenceResponseDTO> getConferencesByChair(Long userId) {
     User user = userRepository.findById(userId)
@@ -234,6 +241,10 @@ public class ConferenceService {
         .collect(Collectors.toList());
   }
 
+  /**
+   * Cập nhật thông tin hội nghị.
+   * Chỉ có Chair của hội nghị hoặc Admin mới được phép cập nhật.
+   */
   @Transactional
   public ConferenceResponseDTO updateConference(Long id, ConferenceUpdateDTO dto, Long userId) {
     String errorMessage = "Conference with id " + id + " not found";
@@ -381,6 +392,10 @@ public class ConferenceService {
     return mapToDTO(updatedConference);
   }
 
+  /**
+   * Xóa hội nghị.
+   * Chỉ xóa được nếu hội nghị chưa có bài nộp nào.
+   */
   @Transactional
   public void deleteConference(Long id, Long chairId) {
     String errorMessage = "Conference with id " + id + " not found";

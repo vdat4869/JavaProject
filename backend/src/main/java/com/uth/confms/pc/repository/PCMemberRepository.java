@@ -11,15 +11,18 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PCMemberRepository extends JpaRepository<PCMember, Long> {
+  // Tìm tất cả thành viên PC của conference
   List<PCMember> findByConferenceId(Long conferenceId);
 
+  // Tìm các conference mà user tham gia làm PC
   List<PCMember> findByUserId(Long userId);
 
+  // Tìm thành viên PC cụ thể
   Optional<PCMember> findByConferenceIdAndUserId(Long conferenceId, Long userId);
 
   List<PCMember> findByConferenceIdAndStatus(Long conferenceId, PCMember.PCMemberStatus status);
 
-  @EntityGraph(attributePaths = {"expertiseTopics"})
+  @EntityGraph(attributePaths = { "expertiseTopics" })
   @Query("SELECT p FROM PCMember p WHERE p.conferenceId = :conferenceId AND p.status = :status")
   List<PCMember> findByConferenceIdAndStatusWithExpertise(
       @Param("conferenceId") Long conferenceId, @Param("status") PCMember.PCMemberStatus status);

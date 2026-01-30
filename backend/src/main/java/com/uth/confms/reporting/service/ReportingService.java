@@ -56,6 +56,7 @@ public class ReportingService {
     this.conferenceRepository = conferenceRepository;
   }
 
+  // Tạo báo cáo thống kê mới nhất từ dữ liệu thực
   public ReportResponseDTO generateReport(Long conferenceId, Long chairId) {
     Conference conference = conferenceRepository
         .findById(conferenceId)
@@ -134,6 +135,7 @@ public class ReportingService {
   }
 
   @Transactional
+  // Tạo và lưu snapshot báo cáo hiện tại
   public ReportResponseDTO createSnapshot(Long conferenceId, Long chairId) {
     ReportResponseDTO report = generateReport(conferenceId, chairId);
 
@@ -157,6 +159,8 @@ public class ReportingService {
     return mapToDTO(snapshot);
   }
 
+  // Lấy báo cáo mới nhất (ưu tiên snapshot gần nhất, nếu không có thì generate
+  // mới)
   public ReportResponseDTO getLatestReport(Long conferenceId, Long chairId) {
     Conference conference = conferenceRepository
         .findById(conferenceId)
@@ -178,6 +182,7 @@ public class ReportingService {
     return generateReport(conferenceId, chairId);
   }
 
+  // Lấy lịch sử các snapshots báo cáo
   public List<ReportResponseDTO> getReportHistory(Long conferenceId, Long chairId) {
     Conference conference = conferenceRepository
         .findById(conferenceId)

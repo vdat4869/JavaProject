@@ -9,14 +9,18 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Entity đại diện cho review (đánh giá bài nộp)
  *
- * <p>Review được tạo bởi reviewer sau khi accept assignment. Review có các trạng thái:
+ * <p>
+ * Review được tạo bởi reviewer sau khi accept assignment. Review có các trạng
+ * thái:
  *
  * <ul>
- *   <li>DRAFT - Đang soạn thảo, chưa submit
- *   <li>SUBMITTED - Đã submit, không thể chỉnh sửa
+ * <li>DRAFT - Đang soạn thảo, chưa submit
+ * <li>SUBMITTED - Đã submit, không thể chỉnh sửa
  * </ul>
  *
- * <p>Review có các scores từ STRONG_ACCEPT đến STRONG_REJECT. Review có thể là confidential (chỉ
+ * <p>
+ * Review có các scores từ STRONG_ACCEPT đến STRONG_REJECT. Review có thể là
+ * confidential (chỉ
  * chair/PC thấy) hoặc public (author thấy).
  *
  * @author UTH-ConfMS Team
@@ -31,53 +35,55 @@ public class Review {
   private Long id;
 
   @Column(nullable = false)
-  private Long assignmentId;
+  private Long assignmentId; // ID phân công
 
   @Column(nullable = false)
-  private Long submissionId;
+  private Long submissionId; // ID bài báo
 
   @Column(nullable = false)
-  private Long reviewerId;
+  private Long reviewerId; // ID người review
 
   @Column(columnDefinition = "TEXT")
-  private String summary;
+  private String summary; // Tóm tắt bài báo
 
   @Column(columnDefinition = "TEXT")
-  private String strengths;
+  private String strengths; // Điểm mạnh
 
   @Column(columnDefinition = "TEXT")
-  private String weaknesses;
+  private String weaknesses; // Điểm yếu
 
   @Column(columnDefinition = "TEXT")
-  private String comments;
+  private String comments; // Nhận xét chi tiết
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private ReviewScore score;
+  private ReviewScore score; // Điểm đánh giá (Strong Accept -> Strong Reject)
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private ReviewStatus status = ReviewStatus.DRAFT;
+  private ReviewStatus status = ReviewStatus.DRAFT; // Trạng thái (DRAFT/SUBMITTED)
 
   @Column(nullable = false)
-  private Boolean isConfidential = false;
+  private Boolean isConfidential = false; // Review bí mật (chỉ Chair thấy)
 
   @Column(nullable = true)
-  private Integer overallRating; // Overall rating (1-5)
+  private Integer overallRating; // Đánh giá chung (1-5)
 
   @Column(nullable = true)
-  private Integer confidence; // Confidence level (1-5)
+  private Integer confidence; // Độ tự tin của reviewer (1-5)
 
   @Column(nullable = true)
-  private Integer numericScore; // Numeric score (1-7): STRONG_ACCEPT=7, STRONG_REJECT=1
+  private Integer numericScore; // Điểm số dạng số (1-7)
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @LastModifiedDate private LocalDateTime submittedAt;
+  @LastModifiedDate
+  private LocalDateTime submittedAt; // Thời gian submit
 
-  public Review() {}
+  public Review() {
+  }
 
   public Review(
       Long id,

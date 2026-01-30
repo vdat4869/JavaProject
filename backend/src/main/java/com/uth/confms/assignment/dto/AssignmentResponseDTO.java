@@ -10,15 +10,15 @@ public class AssignmentResponseDTO {
   private Long reviewerId;
   private String reviewerEmail;
   private String reviewerName;
-  private String status;
-  private Boolean isPrimary;
-  private String submissionAbstract;
+  private String status; // Trạng thái assignment
+  private Boolean isPrimary; // Có phải là reviewer chính không
+  private String submissionAbstract; // Tóm tắt bài báo (cho reviewer xem)
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  private LocalDateTime assignedAt;
+  private LocalDateTime assignedAt; // Thời điểm phân công
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt; // Thời điểm cập nhật cuối
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  private LocalDateTime deadline; // Added deadline field
+  private LocalDateTime deadline; // Hạn chót nộp review
 
   public AssignmentResponseDTO() {
   }

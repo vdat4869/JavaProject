@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TopicRepository extends JpaRepository<Topic, Long> {
-  List<Topic> findByConferenceId(Long conferenceId);
+  List<Topic> findByConferenceId(Long conferenceId); // Tìm topics theo hội nghị
 }

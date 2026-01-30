@@ -20,10 +20,10 @@ import java.util.Map;
 @AllArgsConstructor
 public class MetadataUpdateRequestDTO {
 
-    private String doi;
-    private Integer startPage;
-    private Integer endPage;
-    private PresentationType presentationType;
-    private Integer presentationDurationMinutes;
-    private Map<String, Object> extraMetadata;
+    private String doi; // DOI mới
+    private Integer startPage; // Trang bắt đầu
+    private Integer endPage; // Trang kết thúc
+    private PresentationType presentationType; // Hình thức trình bày
+    private Integer presentationDurationMinutes; // Thời lượng
+    private Map<String, Object> extraMetadata; // Metadata khác
 }

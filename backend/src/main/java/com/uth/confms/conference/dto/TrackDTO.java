@@ -2,11 +2,12 @@ package com.uth.confms.conference.dto;
 
 public class TrackDTO {
   private Long id;
-  private String name;
-  private String description;
-  private Boolean active;
+  private String name; // Tên track
+  private String description; // Mô tả
+  private Boolean active; // Trạng thái hoạt động
 
-  public TrackDTO() {}
+  public TrackDTO() {
+  }
 
   public TrackDTO(Long id, String name, String description, Boolean active) {
     this.id = id;

@@ -85,6 +85,7 @@ public class PCService {
    * @throws BusinessException     Nếu user đã là PC member hoặc đã có invitation
    */
   @Transactional
+  // Mời thành viên tham gia PC
   public PCInvitationResponseDTO invitePCMember(PCInviteDTO dto, Long chairId) {
     Conference conference = conferenceRepository
         .findById(dto.getConferenceId())
@@ -151,6 +152,7 @@ public class PCService {
   }
 
   @Transactional
+  // Chấp nhận lời mời tham gia PC
   public PCMemberDTO acceptInvitation(String token, Long userId) {
     PCInvitation invitation = pcInvitationRepository
         .findByToken(token)
@@ -199,6 +201,7 @@ public class PCService {
   }
 
   @Transactional
+  // Từ chối lời mời
   public void declineInvitation(String token, Long userId) {
     PCInvitation invitation = pcInvitationRepository
         .findByToken(token)
@@ -223,6 +226,7 @@ public class PCService {
         .orElse(null);
   }
 
+  // Lấy danh sách PC members
   public List<PCMemberDTO> getPCMembers(Long conferenceId, Long chairId) {
     Conference conference = conferenceRepository
         .findById(conferenceId)
@@ -263,6 +267,7 @@ public class PCService {
         .collect(Collectors.toList());
   }
 
+  // Gửi email mời với token
   private void sendInvitationEmail(String email, String conferenceName, String token) {
     try {
       jakarta.mail.internet.MimeMessage message = mailSender.createMimeMessage();
@@ -276,16 +281,14 @@ public class PCService {
               "Xin chào,\n\n"
                   + "Bạn đã được mời làm thành viên Program Committee (PC) cho hội nghị:\n"
                   + "=== %s ===\n\n"
-                  + "Vui lòng xem chi tiết và phản hồi tại đường dẫn sau:\n\n"
-                  + "👉 Chấp nhận lời mời:\n"
-                  + "%s/app/pc/invitation/accept?token=%s\n\n"
-                  + "❌ Từ chối lời mời:\n"
-                  + "%s/app/pc/invitation/decline?token=%s\n\n"
+                  + "Vui lòng xem chi tiết lời mời và phản hồi tại đường dẫn sau:\n\n"
+                  + "👉 Xem thư mời:\n"
+                  + "%s/app/pc/invitation?token=%s\n\n"
                   + "Lưu ý: Link này có hiệu lực trong %d ngày.\n"
                   + "Sau khi chấp nhận, bạn sẽ được chuyển đến trang khai báo mâu thuẫn lợi ích (COI).\n\n"
                   + "Trân trọng,\n"
                   + "UTH-ConfMS Team",
-              conferenceName, frontendUrl, token, frontendUrl, token, invitationExpirationDays),
+              conferenceName, frontendUrl, token, invitationExpirationDays),
           false);
       mailSender.send(message);
     } catch (Exception e) {

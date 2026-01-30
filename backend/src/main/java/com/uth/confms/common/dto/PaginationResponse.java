@@ -3,15 +3,16 @@ package com.uth.confms.common.dto;
 import java.util.List;
 
 public class PaginationResponse<T> {
-  private List<T> content;
-  private Integer page;
-  private Integer size;
-  private Long totalElements;
-  private Integer totalPages;
+  private List<T> content; // Nội dung trang hiện tại
+  private Integer page; // Số trang
+  private Integer size; // Kích thước trang
+  private Long totalElements; // Tổng số phần tử
+  private Integer totalPages; // Tổng số trang
   private Boolean first;
   private Boolean last;
 
-  public PaginationResponse() {}
+  public PaginationResponse() {
+  }
 
   public PaginationResponse(
       List<T> content,

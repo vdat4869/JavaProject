@@ -6,13 +6,14 @@ public class ReviewCommentDTO {
   private Long id;
   private Long submissionId;
   private Long reviewerId;
-  private String reviewerName; // Only visible to chair/admin for internal comments
-  private String content;
-  private Boolean isInternal;
+  private String reviewerName; // Chỉ hiển thị cho chair/admin đối với internal comment
+  private String content; // Nội dung comment
+  private Boolean isInternal; // Thảo luận nội bộ
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
-  public ReviewCommentDTO() {}
+  public ReviewCommentDTO() {
+  }
 
   public ReviewCommentDTO(
       Long id,

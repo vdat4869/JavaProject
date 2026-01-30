@@ -12,8 +12,8 @@ import lombok.NoArgsConstructor;
 public class LoginRequest {
   @NotBlank(message = "Email is required")
   @Email(message = "Invalid email format")
-  private String email;
+  private String email; // Địa chỉ email đăng nhập
 
   @NotBlank(message = "Password is required")
-  private String password;
+  private String password; // Mật khẩu người dùng
 }

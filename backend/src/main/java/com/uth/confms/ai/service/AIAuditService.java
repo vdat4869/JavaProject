@@ -105,6 +105,9 @@ public class AIAuditService {
         }
     }
 
+    /**
+     * Cắt ngắn chuỗi nếu vượt quá độ dài cho phép.
+     */
     private String truncate(String str, int maxLength) {
         if (str == null)
             return null;

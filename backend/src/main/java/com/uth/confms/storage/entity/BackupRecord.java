@@ -21,46 +21,46 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BackupRecord {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false)
     private Long conferenceId;
-    
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private BackupType type;
-    
+
     @Column(nullable = false)
-    private String backupPath; // Path to backup file/directory
-    
+    private String backupPath; // Path đến file/directory backup
+
     @Column(nullable = false)
-    private Long fileCount; // Number of files backed up
-    
+    private Long fileCount; // Số lượng files đã backup
+
     @Column(nullable = false)
-    private Long totalSizeBytes; // Total size of backup in bytes
-    
+    private Long totalSizeBytes; // Tổng kích thước backup (bytes)
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private BackupStatus status;
-    
+
     @Column(columnDefinition = "TEXT")
-    private String notes; // Additional notes or error messages
-    
+    private String notes; // Ghi chú hoặc thông báo lỗi
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    
+
     private LocalDateTime completedAt;
-    
+
     public enum BackupType {
-        FULL,           // Full backup of all files
-        INCREMENTAL,    // Incremental backup (only new/changed files)
-        CONFERENCE     // Backup for specific conference
+        FULL, // Sao lưu toàn bộ
+        INCREMENTAL, // Sao lưu tăng dần (chỉ files mới/thay đổi)
+        CONFERENCE // Sao lưu cho conference cụ thể
     }
-    
+
     public enum BackupStatus {
         IN_PROGRESS,
         COMPLETED,

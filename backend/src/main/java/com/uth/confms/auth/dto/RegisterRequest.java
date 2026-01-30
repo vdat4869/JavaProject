@@ -12,19 +12,19 @@ import lombok.NoArgsConstructor;
 public class RegisterRequest {
   @NotBlank
   @Email
-  private String email;
+  private String email; // Địa chỉ email đăng ký
 
   @NotBlank
   @PasswordConstraint
-  private String password;
+  private String password; // Mật khẩu
 
   @NotBlank
-  private String firstName;
+  private String firstName; // Tên
 
   @NotBlank
-  private String lastName;
+  private String lastName; // Họ
 
-  private Long organizationId;
+  private Long organizationId; // ID tổ chức
 
-  private String phone;
+  private String phone; // Số điện thoại
 }

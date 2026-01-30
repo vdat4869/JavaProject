@@ -49,6 +49,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.Arrays;
 
 /**
  * Implementation của CameraReadyService.
@@ -83,6 +84,9 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                 .map(this::mapToSubmissionDTO)
                 .orElseGet(() -> {
                     // Lazy init: Kiểm tra nếu paper exists và accepted thì tạo mới
+                    // Nếu bài báo đã được chấp nhận nhưng chưa có bản ghi CameraReadySubmission,
+                    // hệ thống sẽ tự động tạo mới (lazy initialization) để tác giả có thể bắt đầu
+                    // nộp.
                     Submission originalSubmission = submissionRepositoryMain.findById(paperId)
                             .orElseThrow(() -> new NotFoundException("Paper not found"));
 
@@ -139,7 +143,7 @@ public class CameraReadyServiceImpl implements CameraReadyService {
         // Tạo version mới
         int versionNumber = submission.getNextVersionNumber();
 
-        // Store file using StorageService
+        // Store file using StorageService - Lưu file vật lý
         String storedPath = storageService.storeCameraReadyPdf(conferenceId, paperId, file);
 
         CameraReadyVersion version = CameraReadyVersion.builder()
@@ -233,8 +237,37 @@ public class CameraReadyServiceImpl implements CameraReadyService {
             Pageable pageable) {
         log.debug("Lấy danh sách submissions cho conference {}", conferenceId);
 
-        return submissionRepository.findWithFilters(conferenceId, trackId, status, copyrightConfirmed, pageable)
-                .map(this::mapToSubmissionListDTO);
+        // Tìm kiếm với các bộ lọc
+        Page<CameraReadySubmission> page = submissionRepository.findWithFilters(conferenceId, trackId, status,
+                copyrightConfirmed, pageable);
+
+        if (page.isEmpty()) {
+            return page.map(s -> null); // Should not happen with empty page
+        }
+
+        List<CameraReadySubmission> content = page.getContent();
+        List<Long> paperIds = content.stream().map(CameraReadySubmission::getPaperId).collect(Collectors.toList());
+        Set<Long> trackIds = content.stream().map(CameraReadySubmission::getTrackId).collect(Collectors.toSet());
+
+        // Batch fetch all related data (Performance Optimization: N+1 problem)
+        // Lấy thông tin bài báo gốc, track và tác giả để map vào DTO
+        Map<Long, Submission> submissionMap = submissionRepositoryMain.findAllById(paperIds).stream()
+                .collect(Collectors.toMap(Submission::getId, s -> s));
+
+        Map<Long, String> trackNameMap = trackRepository.findAllById(trackIds).stream()
+                .collect(Collectors.toMap(Track::getId, Track::getName));
+
+        Map<Long, List<SubmissionAuthor>> authorsMap = submissionAuthorRepository.findBySubmissionIdIn(paperIds)
+                .stream()
+                .collect(Collectors.groupingBy(a -> a.getSubmission().getId()));
+
+        return page.map(submission -> {
+            Submission original = submissionMap.get(submission.getPaperId());
+            String trackName = trackNameMap.getOrDefault(submission.getTrackId(), "Unknown");
+            List<SubmissionAuthor> authors = authorsMap.getOrDefault(submission.getPaperId(), List.of());
+
+            return mapToSubmissionListDTO(submission, original, trackName, authors);
+        });
     }
 
     @Override
@@ -273,6 +306,8 @@ public class CameraReadyServiceImpl implements CameraReadyService {
         reviewRepository.save(review);
 
         // Cập nhật trạng thái
+        // Nếu APPROVED -> APPROVED
+        // Nếu REJECTED -> NEED_FIX (yêu cầu sửa lại)
         CameraReadyStatus newStatus = request.getDecision() == ReviewDecision.APPROVED
                 ? CameraReadyStatus.APPROVED
                 : CameraReadyStatus.NEED_FIX;
@@ -359,7 +394,14 @@ public class CameraReadyServiceImpl implements CameraReadyService {
 
         Map<String, Long> byStatus = new HashMap<>();
         for (CameraReadyStatus status : CameraReadyStatus.values()) {
-            byStatus.put(status.name(), submissionRepository.countByConferenceIdAndStatus(conferenceId, status));
+            byStatus.put(status.name(), 0L);
+        }
+
+        List<Object[]> counts = submissionRepository.countByConferenceIdGroupByStatus(conferenceId);
+        for (Object[] row : counts) {
+            CameraReadyStatus status = (CameraReadyStatus) row[0];
+            Long count = (Long) row[1];
+            byStatus.put(status.name(), count);
         }
 
         long total = submissionRepository.countByConferenceId(conferenceId);
@@ -390,12 +432,49 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                     .collect(Collectors.toList());
         }
 
+        if (submissions.isEmpty()) {
+            return ProceedingsExportDTO.builder()
+                    .conferenceId(conferenceId)
+                    .exportedAt(LocalDateTime.now())
+                    .totalPapers(0)
+                    .papers(Collections.emptyList())
+                    .build();
+        }
+
+        List<Long> paperIds = submissions.stream().map(CameraReadySubmission::getPaperId).collect(Collectors.toList());
+        List<UUID> submissionIds = submissions.stream().map(CameraReadySubmission::getId).collect(Collectors.toList());
+        Set<Long> trackIds = submissions.stream().map(CameraReadySubmission::getTrackId).collect(Collectors.toSet());
+
+        // Batch fetch all related data
+        Map<Long, Submission> submissionMap = submissionRepositoryMain.findAllById(paperIds).stream()
+                .collect(Collectors.toMap(Submission::getId, s -> s));
+
+        Map<Long, String> trackNameMap = trackRepository.findAllById(trackIds).stream()
+                .collect(Collectors.toMap(Track::getId, Track::getName));
+
+        Map<Long, List<SubmissionAuthor>> authorsMap = submissionAuthorRepository.findBySubmissionIdIn(paperIds)
+                .stream()
+                .collect(Collectors.groupingBy(a -> a.getSubmission().getId()));
+
+        Map<UUID, CameraReadyMetadata> metadataMap = metadataRepository.findBySubmissionIdIn(submissionIds).stream()
+                .collect(Collectors.toMap(m -> m.getSubmission().getId(), m -> m));
+
+        com.uth.confms.conference.entity.Conference conference = conferenceRepository.findById(conferenceId)
+                .orElse(null);
+
         return ProceedingsExportDTO.builder()
                 .conferenceId(conferenceId)
+                .conferenceName(conference != null ? conference.getName() : "Unknown")
                 .exportedAt(LocalDateTime.now())
                 .totalPapers(submissions.size())
                 .papers(submissions.stream()
-                        .map(this::mapToPaperExportDTO)
+                        .map(s -> {
+                            Submission original = submissionMap.get(s.getPaperId());
+                            CameraReadyMetadata metadata = metadataMap.get(s.getId());
+                            String tName = trackNameMap.getOrDefault(s.getTrackId(), "Unknown");
+                            List<SubmissionAuthor> authors = authorsMap.getOrDefault(s.getPaperId(), List.of());
+                            return mapToPaperExportDTO(s, original, metadata, tName, authors);
+                        })
                         .collect(Collectors.toList()))
                 .build();
     }
@@ -569,27 +648,13 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                 .build();
     }
 
-    private SubmissionListDTO mapToSubmissionListDTO(CameraReadySubmission submission) {
-        String paperTitle = "Unknown";
-        String trackName = "Unknown";
+    private SubmissionListDTO mapToSubmissionListDTO(CameraReadySubmission submission,
+            Submission original, String trackName, List<SubmissionAuthor> authors) {
+
+        String paperTitle = original != null ? original.getTitle() : "Unknown";
         VersionDTO.UserDTO authorDTO = null;
 
-        // Get Paper Title
-        Submission originalSubmission = submissionRepositoryMain.findById(submission.getPaperId()).orElse(null);
-        if (originalSubmission != null) {
-            paperTitle = originalSubmission.getTitle();
-        }
-
-        // Get Track Name
-        if (submission.getTrackId() != null) {
-            Track track = trackRepository.findById(submission.getTrackId()).orElse(null);
-            if (track != null) {
-                trackName = track.getName();
-            }
-        }
-
         // Get Corresponding Author
-        List<SubmissionAuthor> authors = submissionAuthorRepository.findBySubmissionId(submission.getPaperId());
         SubmissionAuthor correspondingAuthor = authors.stream()
                 .filter(a -> Boolean.TRUE.equals(a.getIsCorresponding()))
                 .findFirst()
@@ -649,11 +714,26 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                 .build();
     }
 
-    private ProceedingsExportDTO.PaperExportDTO mapToPaperExportDTO(CameraReadySubmission submission) {
-        CameraReadyMetadata metadata = metadataRepository.findBySubmissionId(submission.getId()).orElse(null);
+    private ProceedingsExportDTO.PaperExportDTO mapToPaperExportDTO(CameraReadySubmission submission,
+            Submission original, CameraReadyMetadata metadata, String trackName, List<SubmissionAuthor> authors) {
+
+        List<ProceedingsExportDTO.AuthorExportDTO> authorDTOs = authors.stream()
+                .map(a -> ProceedingsExportDTO.AuthorExportDTO.builder()
+                        .name(a.getFirstName() + " " + a.getLastName())
+                        .email(a.getEmail())
+                        .affiliation(a.getAffiliation())
+                        .isCorresponding(a.getIsCorresponding())
+                        .build())
+                .collect(Collectors.toList());
 
         return ProceedingsExportDTO.PaperExportDTO.builder()
                 .paperId(submission.getPaperId())
+                .title(original != null ? original.getTitle() : "Unknown")
+                .abstractText(original != null ? original.getAbstractText() : null)
+                .keywords(original != null && original.getKeywords() != null
+                        ? Arrays.asList(original.getKeywords().split(","))
+                        : null)
+                .authors(authorDTOs)
                 .doi(metadata != null ? metadata.getDoi() : null)
                 .startPage(metadata != null ? metadata.getStartPage() : null)
                 .endPage(metadata != null ? metadata.getEndPage() : null)
@@ -662,7 +742,14 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                         : null)
                 .track(ProceedingsExportDTO.TrackExportDTO.builder()
                         .id(submission.getTrackId())
+                        .name(trackName)
                         .build())
+                .presentation(metadata != null && metadata.getPresentationType() != null
+                        ? ProceedingsExportDTO.PresentationExportDTO.builder()
+                                .type(metadata.getPresentationType().toString())
+                                .durationMinutes(metadata.getPresentationDurationMinutes())
+                                .build()
+                        : null)
                 .build();
     }
 

@@ -49,6 +49,9 @@ public class ChairAIController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    /**
+     * Lấy ID người dùng từ thông tin xác thực.
+     */
     private Long getUserIdFromAuthentication(Authentication authentication) {
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)

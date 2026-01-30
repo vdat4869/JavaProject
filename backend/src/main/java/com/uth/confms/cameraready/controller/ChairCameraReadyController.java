@@ -38,7 +38,7 @@ public class ChairCameraReadyController {
         private final CameraReadyService cameraReadyService;
 
         @GetMapping("/submissions")
-        @Operation(summary = "Danh sách bài nộp")
+        @Operation(summary = "Lấy danh sách bài nộp camera-ready (có phân trang và lọc)")
         public ResponseEntity<Page<SubmissionListDTO>> listSubmissions(
                         @PathVariable Long conferenceId,
                         @RequestParam(required = false) Long trackId,
@@ -52,7 +52,7 @@ public class ChairCameraReadyController {
         }
 
         @PostMapping("/submissions/{submissionId}/review")
-        @Operation(summary = "Duyệt bài nộp")
+        @Operation(summary = "Duyệt hoặc yêu cầu chỉnh sửa bài nộp")
         public ResponseEntity<ReviewResponseDTO> reviewSubmission(
                         @PathVariable Long conferenceId,
                         @PathVariable UUID submissionId,
@@ -66,7 +66,7 @@ public class ChairCameraReadyController {
         }
 
         @PutMapping("/submissions/{submissionId}/current-version")
-        @Operation(summary = "Đặt phiên bản hiện tại")
+        @Operation(summary = "Chọn phiên bản chính thức cho bài nộp")
         public ResponseEntity<SubmissionDTO> setCurrentVersion(
                         @PathVariable Long conferenceId,
                         @PathVariable UUID submissionId,
@@ -80,7 +80,7 @@ public class ChairCameraReadyController {
         }
 
         @GetMapping("/submissions/{submissionId}/metadata")
-        @Operation(summary = "Lấy metadata")
+        @Operation(summary = "Lấy thông tin metadata của bài nộp")
         public ResponseEntity<MetadataDTO> getMetadata(
                         @PathVariable Long conferenceId,
                         @PathVariable UUID submissionId) {
@@ -90,7 +90,7 @@ public class ChairCameraReadyController {
         }
 
         @PutMapping("/submissions/{submissionId}/metadata")
-        @Operation(summary = "Cập nhật metadata")
+        @Operation(summary = "Cập nhật metadata (DOI, số trang, v.v.)")
         public ResponseEntity<MetadataDTO> updateMetadata(
                         @PathVariable Long conferenceId,
                         @PathVariable UUID submissionId,
@@ -102,14 +102,14 @@ public class ChairCameraReadyController {
         }
 
         @GetMapping("/statistics")
-        @Operation(summary = "Thống kê")
+        @Operation(summary = "Thống kê tình hình nộp camera-ready")
         public ResponseEntity<StatisticsDTO> getStatistics(@PathVariable Long conferenceId) {
                 StatisticsDTO statistics = cameraReadyService.getStatistics(conferenceId);
                 return ResponseEntity.ok(statistics);
         }
 
         @GetMapping("/export/json")
-        @Operation(summary = "Xuất JSON")
+        @Operation(summary = "Xuất dữ liệu kỷ yếu ra JSON")
         public ResponseEntity<ProceedingsExportDTO> exportJson(
                         @PathVariable Long conferenceId,
                         @RequestParam(required = false) Long trackId,
@@ -120,7 +120,7 @@ public class ChairCameraReadyController {
         }
 
         @GetMapping("/export/csv")
-        @Operation(summary = "Xuất CSV")
+        @Operation(summary = "Xuất dữ liệu kỷ yếu ra CSV")
         public ResponseEntity<byte[]> exportCsv(
                         @PathVariable Long conferenceId,
                         @RequestParam(required = false) Long trackId,
@@ -136,7 +136,7 @@ public class ChairCameraReadyController {
         }
 
         @GetMapping("/export/zip")
-        @Operation(summary = "Xuất ZIP (tất cả PDFs + metadata)")
+        @Operation(summary = "Xuất file ZIP chứa toàn bộ PDFs và metadata")
         public ResponseEntity<byte[]> exportZip(
                         @PathVariable Long conferenceId,
                         @RequestParam(required = false) Long trackId,
@@ -152,7 +152,7 @@ public class ChairCameraReadyController {
         }
 
         @GetMapping("/export/pdf")
-        @Operation(summary = "Xuất PDF (compiled proceedings)")
+        @Operation(summary = "Xuất file PDF tổng hợp (Proceedings)")
         public ResponseEntity<byte[]> exportPdf(
                         @PathVariable Long conferenceId,
                         @RequestParam(required = false) Long trackId,
@@ -168,7 +168,7 @@ public class ChairCameraReadyController {
         }
 
         @PostMapping("/open")
-        @Operation(summary = "Mở nộp camera-ready")
+        @Operation(summary = "Mở đợt nộp camera-ready cho hội nghị")
         public ResponseEntity<Map<String, Object>> openCameraReady(
                         @PathVariable Long conferenceId,
                         @RequestBody(required = false) OpenCameraReadyRequestDTO request,
@@ -183,7 +183,7 @@ public class ChairCameraReadyController {
         }
 
         @PostMapping("/close")
-        @Operation(summary = "Đóng nộp camera-ready")
+        @Operation(summary = "Đóng đợt nộp camera-ready")
         public ResponseEntity<Map<String, Object>> closeCameraReady(
                         @PathVariable Long conferenceId,
                         @RequestBody(required = false) Map<String, String> request,

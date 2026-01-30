@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   CCard,
   CCardBody,
@@ -7,9 +7,7 @@ import {
   CButton,
   CAlert,
   CSpinner,
-  CBadge,
 } from '@coreui/react'
-import { useTranslation } from 'react-i18next'
 import { pcService, PCMember } from '../../services/pc.service'
 import { conferenceService } from '../../services/conference.service'
 import { useAuth } from '../../context/AuthContext'
@@ -23,28 +21,22 @@ import { useAuth } from '../../context/AuthContext'
  * - Handle invitation token from URL
  */
 const InvitationAcceptPage: React.FC = () => {
-  const { t } = useTranslation()
   const { logout } = useAuth()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const token = searchParams.get('token')
-  const location = useLocation()
-  const isDeclinePage = location.pathname.includes('/decline')
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState('')
   const [conferenceName, setConferenceName] = useState<string>('')
-  const [showConfirmDecline, setShowConfirmDecline] = useState(false)
 
   useEffect(() => {
     // Token is required
     if (!token) {
       setError('Invalid invitation link. Missing token.')
-    } else if (isDeclinePage) {
-      setShowConfirmDecline(true)
     }
     setLoading(false)
-  }, [token, isDeclinePage])
+  }, [token])
 
   const handleAccept = async () => {
     if (!token) return
@@ -109,90 +101,77 @@ const InvitationAcceptPage: React.FC = () => {
   }
 
   return (
-    <CCard>
-      <CCardHeader>
-        <h4>PC Member Invitation</h4>
-      </CCardHeader>
-      <CCardBody>
-        {error && (
-          <CAlert color="danger" className="mb-3">
-            {error}
-          </CAlert>
-        )}
+    <div className="container-sm mt-5" style={{ maxWidth: '600px' }}>
+      <CCard className="shadow">
+        <CCardHeader className="bg-primary text-white">
+          <h4 className="mb-0">PC Member Invitation</h4>
+        </CCardHeader>
+        <CCardBody className="p-4">
+          {error && (
+            <CAlert color="danger" className="mb-3">
+              {error}
+            </CAlert>
+          )}
 
-        {!error && (
-          <>
-            <div className="mb-4">
-              <h5>Bạn đã được mời làm PC Member</h5>
-              {conferenceName && (
+          {!error && (
+            <>
+              <div className="mb-4 text-center">
+                <h5>Bạn đã được mời làm Program Committee (PC) Member</h5>
+                {conferenceName && (
+                  <div className="my-3 p-3 bg-light rounded">
+                    <p className="mb-0 text-muted">Hội nghị:</p>
+                    <h5 className="text-primary">{conferenceName}</h5>
+                  </div>
+                )}
                 <p className="text-muted">
-                  Hội nghị: <strong>{conferenceName}</strong>
+                  Vui lòng phản hồi lời mời này. Sau khi chấp nhận, bạn sẽ tham gia vào đội ngũ chuyên gia của hội nghị và có thể review các bài báo được giao.
                 </p>
-              )}
-              <p className="text-muted">
-                Vui lòng chấp nhận hoặc từ chối lời mời này. Sau khi chấp nhận, bạn sẽ có thể
-                review các bài báo được giao.
-              </p>
-            </div>
-
-            {showConfirmDecline ? (
-              <div className="text-center">
-                <CAlert color="warning">
-                  Bạn có chắc chắn muốn từ chối lời mời này không?
-                  <br />
-                  Hành động này không thể hoàn tác.
-                </CAlert>
-                <div className="d-flex justify-content-center gap-3 mt-3">
-                  <CButton
-                    color="secondary"
-                    onClick={() => {
-                      setShowConfirmDecline(false)
-                      navigate('/app/pc/invitation/accept?token=' + token)
-                    }}>
-                    Quay lại
-                  </CButton>
-                  <CButton
-                    color="danger"
-                    onClick={handleDecline}
-                    disabled={processing}>
-                    {processing ? <CSpinner size="sm" /> : 'Xác nhận Từ chối'}
-                  </CButton>
-                </div>
               </div>
-            ) : (
-              <div className="d-flex justify-content-end gap-2">
+
+              <div className="d-grid gap-3 d-md-flex justify-content-center mt-5">
                 <CButton
                   color="danger"
-                  onClick={() => setShowConfirmDecline(true)}
+                  variant="outline"
+                  onClick={handleDecline}
                   disabled={processing}
-                  className="me-2"
+                  className="px-4 py-2"
                 >
-                  Từ chối
+                  Từ chối lời mời
                 </CButton>
-                <CButton color="success" onClick={handleAccept} disabled={processing}>
+                <CButton
+                  color="success"
+                  onClick={handleAccept}
+                  disabled={processing}
+                  className="px-4 py-2"
+                >
                   {processing ? (
                     <>
                       <CSpinner size="sm" className="me-2" />
                       Đang xử lý...
                     </>
                   ) : (
-                    'Chấp nhận'
+                    'Chấp nhận lời mời'
                   )}
                 </CButton>
               </div>
-            )}
-          </>
-        )}
+              <div className="mt-4 text-center">
+                <small className="text-muted">
+                  Sau khi chấp nhận, hệ thống sẽ đăng xuất để cập nhật quyền hạn. Bạn cần đăng nhập lại để tiếp tục.
+                </small>
+              </div>
+            </>
+          )}
 
-        {error && (
-          <div className="mt-3">
-            <CButton color="secondary" onClick={() => navigate('/app')}>
-              Quay lại
-            </CButton>
-          </div>
-        )}
-      </CCardBody>
-    </CCard>
+          {error && (
+            <div className="mt-3 text-center">
+              <CButton color="secondary" onClick={() => navigate('/app')}>
+                Quay lại Trang chủ
+              </CButton>
+            </div>
+          )}
+        </CCardBody>
+      </CCard>
+    </div>
   )
 }
 

@@ -72,6 +72,7 @@ public class DecisionService {
   }
 
   @Transactional
+  // Thực hiện decision cho nhiều submission cùng lúc
   public List<DecisionResultDTO> makeBulkDecisions(BulkDecisionRequestDTO dto, Long chairId, boolean isAdmin) {
     return dto.getSubmissionIds().stream()
         .map(subId -> {
@@ -85,6 +86,7 @@ public class DecisionService {
         .collect(Collectors.toList());
   }
 
+  // Lấy lịch sử thay đổi decision
   public List<DecisionHistoryDTO> getDecisionHistoryDTOs(Long decisionId) {
     return decisionHistoryRepository.findByDecisionIdOrderByChangedAtDesc(decisionId).stream()
         .map(h -> {
@@ -105,6 +107,7 @@ public class DecisionService {
   }
 
   @Transactional
+  // Tạo hoặc cập nhật decision cho một submission
   public DecisionResultDTO makeDecision(DecisionRequestDTO dto, Long chairId, boolean isAdmin) {
     Submission submission = submissionRepository
         .findById(dto.getSubmissionId())
@@ -116,7 +119,6 @@ public class DecisionService {
         .findById(submission.getConferenceId())
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
-    // Check authorization - only chair can make decisions
     // Check authorization - only chair (or admin) can make decisions
     if (!isAdmin && !conference.getChairId().equals(chairId)) {
       throw new UnauthorizedException("Only conference chair or admin can make decisions");
@@ -187,6 +189,7 @@ public class DecisionService {
     return mapToDTO(decision);
   }
 
+  // Lấy decision của một submission
   public DecisionResultDTO getDecisionBySubmission(Long submissionId) {
     Decision decision = decisionRepository
         .findBySubmissionId(submissionId)
@@ -195,12 +198,12 @@ public class DecisionService {
     return mapToDTO(decision);
   }
 
+  // Lấy danh sách decision của hội nghị
   public List<DecisionResultDTO> getDecisionsByConference(Long conferenceId, Long chairId, boolean isAdmin) {
     Conference conference = conferenceRepository
         .findById(conferenceId)
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
-    // Check authorization
     // Check authorization
     if (!isAdmin && !conference.getChairId().equals(chairId)) {
       throw new UnauthorizedException("Only conference chair or admin can view decisions");
@@ -208,18 +211,41 @@ public class DecisionService {
 
     // Get all submissions for this conference
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
+    List<Long> submissionIds = submissions.stream().map(Submission::getId).collect(Collectors.toList());
 
-    // Return all submissions, mapped to DTO. If decision doesn't exist, fields will
-    // be null.
+    // Batch fetch decisions
+    Map<Long, Decision> decisionMap = decisionRepository.findBySubmissionIdIn(submissionIds).stream()
+        .collect(Collectors.toMap(Decision::getSubmissionId, d -> d));
+
+    // Batch fetch review summaries
+    Map<Long, ReviewSummaryDTO> summaryMap = getReviewSummaries(submissionIds);
+
+    // Batch fetch decidedBy users
+    List<Long> userIds = decisionMap.values().stream().map(Decision::getDecidedBy).collect(Collectors.toList());
+    Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
+        .collect(Collectors.toMap(User::getId, u -> u));
+
     return submissions.stream()
         .map(submission -> {
-          Decision decision = decisionRepository.findBySubmissionId(submission.getId()).orElse(null);
+          Decision decision = decisionMap.get(submission.getId());
+          ReviewSummaryDTO reviewSummary = summaryMap.get(submission.getId());
+
           if (decision != null) {
-            return mapToDTO(decision);
+            User decidedByUser = userMap.get(decision.getDecidedBy());
+            return DecisionResultDTO.builder()
+                .id(decision.getId())
+                .submissionId(decision.getSubmissionId())
+                .submissionTitle(submission.getTitle())
+                .decidedBy(decision.getDecidedBy())
+                .decidedByName(decidedByUser != null ? decidedByUser.getFullName() : null)
+                .type(decision.getType().name())
+                .comments(decision.getComments())
+                .notified(decision.getNotified())
+                .locked(decision.getLocked())
+                .decidedAt(decision.getDecidedAt())
+                .reviewSummary(reviewSummary)
+                .build();
           } else {
-            // If no decision yet, create a partial DTO with submission info and review
-            // summary
-            ReviewSummaryDTO reviewSummary = getReviewSummary(submission.getId());
             return DecisionResultDTO.builder()
                 .submissionId(submission.getId())
                 .submissionTitle(submission.getTitle())
@@ -230,6 +256,7 @@ public class DecisionService {
         .collect(Collectors.toList());
   }
 
+  // Lấy danh sách decision chưa gửi thông báo
   public List<DecisionResultDTO> getPendingNotifications() {
     return decisionRepository.findByNotifiedFalse().stream()
         .map(this::mapToDTO)
@@ -278,7 +305,6 @@ public class DecisionService {
         .findById(submission.getConferenceId())
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
-    // Check authorization - only chair can update decisions
     // Check authorization - only chair (or admin) can update decisions
     if (!isAdmin && !conference.getChairId().equals(chairId)) {
       throw new UnauthorizedException("Only conference chair or admin can update decisions");
@@ -357,16 +383,33 @@ public class DecisionService {
    *         distribution
    */
   public ReviewSummaryDTO getReviewSummary(Long submissionId) {
-    // Validate submission exists
-    submissionRepository
-        .findById(submissionId)
-        .orElseThrow(() -> new NotFoundException("Submission not found"));
-
     // Get submitted reviews
     List<Review> reviews = reviewRepository.findBySubmissionIdAndStatus(
         submissionId, Review.ReviewStatus.SUBMITTED);
 
-    if (reviews.isEmpty()) {
+    return calculateSummary(submissionId, reviews);
+  }
+
+  // Lấy review summary cho danh sách submission (dùng cho batch processing)
+  public Map<Long, ReviewSummaryDTO> getReviewSummaries(List<Long> submissionIds) {
+    if (submissionIds == null || submissionIds.isEmpty()) {
+      return new HashMap<>();
+    }
+
+    List<Review> allReviews = reviewRepository.findBySubmissionIdIn(submissionIds);
+    Map<Long, List<Review>> groups = allReviews.stream()
+        .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED)
+        .collect(Collectors.groupingBy(Review::getSubmissionId));
+
+    Map<Long, ReviewSummaryDTO> results = new HashMap<>();
+    for (Long subId : submissionIds) {
+      results.put(subId, calculateSummary(subId, groups.getOrDefault(subId, List.of())));
+    }
+    return results;
+  }
+
+  private ReviewSummaryDTO calculateSummary(Long submissionId, List<Review> reviews) {
+    if (reviews == null || reviews.isEmpty()) {
       Map<String, Integer> emptyDistribution = new HashMap<>();
       emptyDistribution.put("STRONG_ACCEPT", 0);
       emptyDistribution.put("ACCEPT", 0);

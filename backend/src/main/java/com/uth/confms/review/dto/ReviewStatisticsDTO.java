@@ -5,17 +5,18 @@ import java.util.Map;
 
 public class ReviewStatisticsDTO {
   private Long conferenceId;
-  private Double completionRate; // Percentage of completed reviews
-  private Double averageScore; // Average numeric score across all submissions
-  private Map<String, Integer> scoreDistribution; // Distribution of review scores
-  private Double averageCompletionTime; // Average time to complete review (in days)
-  private Integer totalReviews;
-  private Integer completedReviews;
-  private Integer pendingReviews;
-  private Map<LocalDateTime, Integer> submissionTimeline; // Reviews submitted per day
-  private Map<Long, ReviewerPerformanceDTO> reviewerMetrics; // Performance metrics per reviewer
+  private Double completionRate; // Tỷ lệ hoàn thành review
+  private Double averageScore; // Điểm trung bình của tất cả submission
+  private Map<String, Integer> scoreDistribution; // Phân bố điểm số
+  private Double averageCompletionTime; // Thời gian trung bình hoàn thành review (ngày)
+  private Integer totalReviews; // Tổng số review
+  private Integer completedReviews; // Review đã hoàn thành
+  private Integer pendingReviews; // Review đang chờ
+  private Map<LocalDateTime, Integer> submissionTimeline; // Review nộp theo ngày
+  private Map<Long, ReviewerPerformanceDTO> reviewerMetrics; // Hiệu suất reviewer
 
-  public ReviewStatisticsDTO() {}
+  public ReviewStatisticsDTO() {
+  }
 
   public ReviewStatisticsDTO(
       Long conferenceId,

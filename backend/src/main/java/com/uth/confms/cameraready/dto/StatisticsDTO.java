@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * DTO cho thống kê camera-ready.
@@ -23,22 +22,22 @@ import java.util.UUID;
 public class StatisticsDTO {
 
     private Long conferenceId;
-    private LocalDateTime deadline;
-    private Integer daysRemaining;
-    private Integer totalAcceptedPapers;
-    private StatusStatistics statistics;
-    private List<TrackStatistics> byTrack;
+    private LocalDateTime deadline; // Hạn chót
+    private Integer daysRemaining; // Số ngày còn lại
+    private Integer totalAcceptedPapers; // Tổng số bài được chấp nhận
+    private StatusStatistics statistics; // Thống kê theo trạng thái
+    private List<TrackStatistics> byTrack; // Thống kê theo track
 
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class StatusStatistics {
-        private Map<String, Long> byStatus;
-        private Long copyrightConfirmed;
-        private Long copyrightPending;
-        private Double submissionRate;
-        private Double approvalRate;
+        private Map<String, Long> byStatus; // Số lượng theo từng trạng thái
+        private Long copyrightConfirmed; // Số lượng đã xác nhận bản quyền
+        private Long copyrightPending; // Số lượng chưa xác nhận bản quyền
+        private Double submissionRate; // Tỷ lệ đã nộp
+        private Double approvalRate; // Tỷ lệ đã duyệt
     }
 
     @Data
@@ -48,8 +47,8 @@ public class StatisticsDTO {
     public static class TrackStatistics {
         private Long trackId;
         private String trackName;
-        private Integer total;
-        private Integer submitted;
-        private Integer approved;
+        private Integer total; // Tổng số bài trong track
+        private Integer submitted; // Số bài đã nộp camera-ready
+        private Integer approved; // Số bài đã duyệt
     }
 }

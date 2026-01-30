@@ -118,6 +118,7 @@ public class SubmissionService {
    * @throws BusinessException Nếu deadline đã qua
    */
   @Transactional
+  // Tạo submission mới
   public SubmissionResponseDTO createSubmission(SubmissionCreateDTO dto, Long authorId) {
     // Check if submission deadline has passed
     checkSubmissionDeadline(dto.getConferenceId());
@@ -171,6 +172,7 @@ public class SubmissionService {
     return mapToDTO(savedSubmission);
   }
 
+  // Lấy chi tiết submission
   public SubmissionResponseDTO getSubmission(Long id, Long userId) {
     Submission submission = submissionRepository
         .findById(id)
@@ -182,12 +184,14 @@ public class SubmissionService {
     return mapToDTO(submission, userId);
   }
 
+  // Lấy các submission của author
   public List<SubmissionResponseDTO> getMySubmissions(Long authorId) {
     List<Submission> submissions = submissionRepository.findByAuthorId(authorId);
     return mapToDTOList(submissions, authorId);
   }
 
   @Transactional
+  // Cập nhật submission (chỉ khi DRAFT hoặc SUBMITTED; chưa được assign reviewer)
   public SubmissionResponseDTO updateSubmission(Long id, SubmissionUpdateDTO dto, Long authorId) {
     Submission submission = submissionRepository
         .findById(id)
@@ -281,6 +285,7 @@ public class SubmissionService {
   }
 
   @Transactional
+  // Submit bài (chuyển trạng thái sang SUBMITTED)
   public SubmissionResponseDTO submitSubmission(Long id, Long authorId) {
     Submission submission = submissionRepository
         .findById(id)
@@ -313,6 +318,7 @@ public class SubmissionService {
   }
 
   @Transactional
+  // Rút bài (withdraw)
   public SubmissionResponseDTO withdrawSubmission(Long id, Long authorId) {
     Submission submission = submissionRepository
         .findById(id)
@@ -339,6 +345,7 @@ public class SubmissionService {
   }
 
   @Transactional
+  // Upload file PDF cho bài báo
   public SubmissionFileDTO uploadPdf(Long submissionId, MultipartFile file, Long authorId)
       throws IOException {
     Submission submission = submissionRepository
@@ -470,6 +477,7 @@ public class SubmissionService {
    * @param authorId     ID của author
    * @throws BusinessException Nếu author là Chair hoặc PC
    */
+  // Validate quyền nộp bài (không phải Chair/PC)
   private void validateAuthorRole(Long conferenceId, Long authorId) {
     // 1. Kiểm tra nếu là Chair
     com.uth.confms.conference.entity.Conference conference = conferenceRepository.findById(conferenceId)
@@ -775,6 +783,7 @@ public class SubmissionService {
    * @throws NotFoundException     Nếu submission không tồn tại
    * @throws UnauthorizedException Nếu user không có quyền truy cập
    */
+  // Lấy danh sách các version file cũ
   public List<SubmissionFileDTO> getFileVersions(Long id, Long userId) {
     Submission submission = submissionRepository
         .findById(id)

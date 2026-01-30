@@ -16,23 +16,46 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
+/**
+ * Global Exception Handler để xử lý các ngoại lệ trong toàn bộ ứng dụng.
+ *
+ * <p>
+ * Class này bắt các exception được ném ra từ Controller và trả về response
+ * chuẩn
+ * hóa (ApiResponse).
+ * Các loại exception được xử lý bao gồm:
+ * <ul>
+ * <li>BusinessException: Lỗi nghiệp vụ (400)</li>
+ * <li>NotFoundException: Không tìm thấy tài nguyên (404)</li>
+ * <li>UnauthorizedException: Lỗi xác thực (401)</li>
+ * <li>AccessDeniedException: Lỗi quyền truy cập (403)</li>
+ * <li>Validation Exceptions: Lỗi validate dữ liệu đầu vào (400)</li>
+ * <li>Internal Server Error: Các lỗi không xác định khác (500)</li>
+ * </ul>
+ *
+ * @author UTH-ConfMS Team
+ * @version 1.0
+ */
 public class GlobalExceptionHandler {
 
   private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
   @ExceptionHandler(BusinessException.class)
+  // Xử lý lỗi nghiệp vụ (Business Exception)
   public ResponseEntity<ApiResponse<Object>> handleBusinessException(BusinessException e) {
     log.warn("Business exception: {}", e.getMessage());
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
   }
 
   @ExceptionHandler(NotFoundException.class)
+  // Xử lý lỗi không tìm thấy tài nguyên
   public ResponseEntity<ApiResponse<Object>> handleNotFoundException(NotFoundException e) {
     log.warn("Not found: {}", e.getMessage());
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(e.getMessage()));
   }
 
   @ExceptionHandler(UnauthorizedException.class)
+  // Xử lý lỗi chưa xác thực (Unauthorized)
   public ResponseEntity<ApiResponse<Object>> handleUnauthorizedException(UnauthorizedException e) {
     log.warn("Unauthorized: {}", e.getMessage());
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(e.getMessage()));
@@ -47,6 +70,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(AccessDeniedException.class)
+  // Xử lý lỗi từ chối truy cập (Access Denied)
   public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(AccessDeniedException e) {
     log.warn("Access denied: {}", e.getMessage());
     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error("Access denied"));
@@ -76,6 +100,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
+  // Xử lý lỗi validation dữ liệu đầu vào
   public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationException(
       MethodArgumentNotValidException e) {
     Map<String, String> errors = new HashMap<>();
@@ -93,6 +118,7 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(Exception.class)
+  // Xử lý các lỗi không xác định (Internal Server Error)
   public ResponseEntity<ApiResponse<Object>> handleGenericException(Exception e) {
     log.error("Unexpected error: ", e);
     // In development, return detailed error message

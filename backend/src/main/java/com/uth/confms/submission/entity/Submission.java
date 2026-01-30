@@ -36,27 +36,27 @@ public class Submission {
   private Long conferenceId;
 
   @Column(nullable = false)
-  private Long authorId;
+  private Long authorId; // Người nộp bài
 
   @Column(nullable = false)
-  private String title;
+  private String title; // Tiêu đề
 
   @Column(columnDefinition = "TEXT")
-  private String abstractText;
+  private String abstractText; // Tóm tắt
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private SubmissionStatus status = SubmissionStatus.DRAFT;
+  private SubmissionStatus status = SubmissionStatus.DRAFT; // Trạng thái
 
-  private String pdfFilePath;
+  private String pdfFilePath; // Đường dẫn file PDF
 
-  private Long trackId;
+  private Long trackId; // Track (chủ đề)
 
   @Column(columnDefinition = "TEXT")
-  private String keywords;
+  private String keywords; // Từ khóa
 
   @Column(nullable = false)
-  private Boolean withdrawn = false;
+  private Boolean withdrawn = false; // Đã rút bài?
 
   @CreatedDate
   @Column(nullable = false, updatable = false)

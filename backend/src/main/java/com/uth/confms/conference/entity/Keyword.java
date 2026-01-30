@@ -7,7 +7,8 @@ import java.util.List;
 /**
  * Entity đại diện cho keyword (từ khóa) của conference
  *
- * <p>Keywords được sử dụng để tag và categorize conferences.
+ * <p>
+ * Keywords được sử dụng để tag và categorize conferences.
  * Một keyword có thể được sử dụng bởi nhiều conferences (ManyToMany).
  *
  * @author UTH-ConfMS Team
@@ -21,14 +22,15 @@ public class Keyword {
   private Long id;
 
   @Column(unique = true, nullable = false)
-  private String name;
+  private String name; // Tên từ khóa
 
-  private String description;
+  private String description; // Mô tả từ khóa
 
   @ManyToMany(mappedBy = "keywords", fetch = FetchType.LAZY)
   private List<Conference> conferences = new ArrayList<>();
 
-  public Keyword() {}
+  public Keyword() {
+  }
 
   public Keyword(Long id, String name, String description, List<Conference> conferences) {
     this.id = id;

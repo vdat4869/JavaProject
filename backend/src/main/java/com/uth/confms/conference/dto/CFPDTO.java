@@ -4,20 +4,22 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public class CFPDTO {
-  @NotNull private Long conferenceId;
+  @NotNull
+  private Long conferenceId; // ID hội nghị liên quan
 
-  private String callForPapers;
+  private String callForPapers; // Nội dung CFP
 
   @Deprecated
-  private String topics; // Deprecated: Use topicIds instead
+  private String topics; // Đã cũ: dùng topicIds thay thế
 
-  private List<Long> topicIds; // Reference to Conference.topics
+  private List<Long> topicIds; // Danh sách ID chủ đề liên quan
 
-  private String submissionGuidelines;
+  private String submissionGuidelines; // Hướng dẫn nộp bài
 
-  private Boolean open;
+  private Boolean open; // Trạng thái mở/đóng nhận bài
 
-  public CFPDTO() {}
+  public CFPDTO() {
+  }
 
   public CFPDTO(
       Long conferenceId,

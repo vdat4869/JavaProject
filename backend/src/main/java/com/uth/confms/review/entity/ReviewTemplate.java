@@ -9,7 +9,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Entity đại diện cho review template (mẫu đánh giá)
  *
- * <p>Review template được sử dụng để tạo review nhanh chóng với các fields đã được điền sẵn.
+ * <p>
+ * Review template được sử dụng để tạo review nhanh chóng với các fields đã được
+ * điền sẵn.
  *
  * @author UTH-ConfMS Team
  * @version 1.0
@@ -23,37 +25,39 @@ public class ReviewTemplate {
   private Long id;
 
   @Column(nullable = false)
-  private String name; // Template name
+  private String name; // Tên mẫu
 
   @Column(nullable = true)
-  private Long conferenceId; // null = global template, not null = conference-specific template
+  private Long conferenceId; // null = global, not null = riêng cho hội nghị
 
   @Column(columnDefinition = "TEXT")
-  private String summary; // Pre-filled summary
+  private String summary; // Tóm tắt mẫu
 
   @Column(columnDefinition = "TEXT")
-  private String strengths; // Pre-filled strengths
+  private String strengths; // Điểm mạnh mẫu
 
   @Column(columnDefinition = "TEXT")
-  private String weaknesses; // Pre-filled weaknesses
+  private String weaknesses; // Điểm yếu mẫu
 
   @Column(columnDefinition = "TEXT")
-  private String comments; // Pre-filled comments
+  private String comments; // Nhận xét mẫu
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private Review.ReviewScore defaultScore; // Default score
+  private Review.ReviewScore defaultScore; // Điểm mặc định
 
   @Column(nullable = false)
-  private Boolean isDefault = false; // Is this the default template?
+  private Boolean isDefault = false; // Mẫu mặc định?
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @LastModifiedDate private LocalDateTime updatedAt;
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
 
-  public ReviewTemplate() {}
+  public ReviewTemplate() {
+  }
 
   public ReviewTemplate(
       Long id,

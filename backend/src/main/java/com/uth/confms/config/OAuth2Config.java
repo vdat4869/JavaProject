@@ -92,6 +92,7 @@ public class OAuth2Config {
    * 3. Trả về OidcUser để Spring Security xử lý
    */
   @Bean
+  // Xử lý user info trả về từ Google
   public OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService() {
     OidcUserService delegate = new OidcUserService();
     return (userRequest) -> {
@@ -121,6 +122,7 @@ public class OAuth2Config {
    * công
    */
   @Bean
+  // Handler xử lý khi login thành công (Tạo JWT và redirect về frontend)
   public AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler() {
     return new SimpleUrlAuthenticationSuccessHandler() {
       @Override

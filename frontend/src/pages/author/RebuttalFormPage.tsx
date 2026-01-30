@@ -5,7 +5,6 @@ import {
   CCardBody,
   CCardHeader,
   CForm,
-  CFormTextarea,
   CFormLabel,
   CButton,
   CSpinner,
@@ -46,8 +45,12 @@ const RebuttalFormPage: React.FC = () => {
       setLoadingData(true)
       const data = await reviewService.getRebuttal(submissionId!)
       if (data) {
+        console.log('Rebuttal data loaded:', data)
         setRebuttal(data)
-        setContent(data.content)
+        setContent(data.content || '')
+      } else {
+        console.log('No existing rebuttal found for this submission.')
+        setRebuttal(null)
       }
     } catch (error: any) {
       if (error.response?.status !== 404) {
@@ -134,7 +137,8 @@ const RebuttalFormPage: React.FC = () => {
     )
   }
 
-  const canEdit = !rebuttal || rebuttal.status === 'DRAFT'
+  // Robust canEdit check: true if no rebuttal exists, or if the rebuttal status is 'DRAFT' (case-insensitive)
+  const canEdit = !rebuttal || (rebuttal.status && rebuttal.status.toUpperCase() === 'DRAFT')
 
   return (
     <CCard>
@@ -173,11 +177,13 @@ const RebuttalFormPage: React.FC = () => {
             <CFormLabel>
               Nội dung Rebuttal <span className="text-danger">*</span>
             </CFormLabel>
-            <CFormTextarea
+            <textarea
+              className="form-control"
               value={content}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setContent(e.target.value)
-              }
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                console.log('Content changing:', e.target.value);
+                setContent(e.target.value);
+              }}
               required
               rows={10}
               placeholder="Nhập nội dung rebuttal để phản hồi các reviews..."

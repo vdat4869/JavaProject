@@ -28,6 +28,7 @@ public class ReportService {
     this.assignmentRepository = assignmentRepository;
   }
 
+  // Lấy thống kê chung của conference (submissions, acceptance rate)
   public ConferenceStatsDTO getConferenceStats(Long conferenceId) {
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
 
@@ -57,6 +58,7 @@ public class ReportService {
         .build();
   }
 
+  // Lấy thống kê chi tiết về review và assignments
   public ReviewStatsDTO getReviewStats(Long conferenceId) {
     // Get all submissions for this conference
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);

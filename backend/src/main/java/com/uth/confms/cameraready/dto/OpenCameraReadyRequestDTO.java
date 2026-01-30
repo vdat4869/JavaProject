@@ -5,5 +5,5 @@ import lombok.Data;
 
 @Data
 public class OpenCameraReadyRequestDTO {
-    private LocalDateTime deadline;
+    private LocalDateTime deadline; // Hạn chót nộp camera-ready
 }

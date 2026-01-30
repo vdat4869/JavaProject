@@ -116,7 +116,9 @@ public class AuthorAIService {
     }
 
     /**
-     * Polish/cải thiện abstract.
+     * Cải thiện nội dung abstract (Abstract Polish).
+     * AI sẽ gợi ý bản sửa lỗi và giải thích các thay đổi về độ rõ ràng, ngữ pháp,
+     * ngắn gọn.
      */
     public AbstractPolishResponse polishAbstract(AbstractPolishRequest request, Long userId) {
         String systemPrompt = """
@@ -199,7 +201,8 @@ public class AuthorAIService {
     }
 
     /**
-     * Gợi ý keywords.
+     * Gợi ý từ khóa (Keywords) dựa trên tiêu đề và abstract.
+     * Hỗ trợ tránh các từ khóa đã có sẵn.
      */
     public KeywordSuggestResponse suggestKeywords(KeywordSuggestRequest request, Long userId) {
         String systemPrompt = """

@@ -58,6 +58,7 @@ public class DecisionController {
 
   @PostMapping
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Tạo decision mới cho submission (Chair/Admin)
   public ResponseEntity<ApiResponse<DecisionResultDTO>> makeDecision(
       @Valid @RequestBody DecisionRequestDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -67,6 +68,7 @@ public class DecisionController {
 
   @PostMapping("/bulk")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Tạo decision hàng loạt (Chair/Admin)
   public ResponseEntity<ApiResponse<List<DecisionResultDTO>>> makeBulkDecisions(
       @Valid @RequestBody BulkDecisionRequestDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -76,6 +78,7 @@ public class DecisionController {
 
   @GetMapping("/{id}/history")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Xem lịch sử thay đổi decision
   public ResponseEntity<ApiResponse<List<DecisionHistoryDTO>>> getDecisionHistory(
       @PathVariable Long id) {
     return ResponseEntity.ok(ApiResponse.success(decisionService.getDecisionHistoryDTOs(id)));
@@ -83,6 +86,7 @@ public class DecisionController {
 
   @GetMapping("/submission/{submissionId}")
   @PreAuthorize("isAuthenticated()")
+  // Lấy decision của submission
   public ResponseEntity<ApiResponse<DecisionResultDTO>> getDecisionBySubmission(
       @PathVariable Long submissionId) {
     return ResponseEntity.ok(
@@ -91,6 +95,7 @@ public class DecisionController {
 
   @GetMapping("/conference/{conferenceId}")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Lấy danh sách decision theo hội nghị (Chair/Admin)
   public ResponseEntity<ApiResponse<List<DecisionResultDTO>>> getDecisionsByConference(
       @PathVariable Long conferenceId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -101,12 +106,14 @@ public class DecisionController {
 
   @GetMapping("/pending-notifications")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Lấy danh sách decision chưa gửi thông báo
   public ResponseEntity<ApiResponse<List<DecisionResultDTO>>> getPendingNotifications() {
     return ResponseEntity.ok(ApiResponse.success(decisionService.getPendingNotifications()));
   }
 
   @PostMapping("/notify/{decisionId}")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Gửi thông báo cho authors về decision
   public ResponseEntity<ApiResponse<Void>> sendNotification(@PathVariable Long decisionId) {
     com.uth.confms.decision.entity.Decision decision = decisionService.getDecisionEntityById(decisionId);
     notificationService.sendDecisionNotification(decision);
@@ -115,6 +122,7 @@ public class DecisionController {
 
   @PostMapping("/notifications/bulk")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Gửi thông báo hàng loạt
   public ResponseEntity<ApiResponse<Void>> sendBulkNotifications(
       @Valid @RequestBody BulkNotificationRequestDTO dto) {
     notificationService.sendBulkNotifications(dto);
@@ -123,6 +131,7 @@ public class DecisionController {
 
   @PutMapping("/{decisionId}")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Cập nhật decision (khi chưa khóa)
   public ResponseEntity<ApiResponse<DecisionResultDTO>> updateDecision(
       @PathVariable Long decisionId,
       @Valid @RequestBody com.uth.confms.decision.dto.UpdateDecisionRequestDTO dto,

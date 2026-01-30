@@ -41,6 +41,7 @@ public class ReportExportService {
     /**
      * Export report sang CSV
      */
+    // Xuất báo cáo ra định dạng CSV
     public byte[] exportToCsv(Long conferenceId, String reportType) {
         log.info("Exporting report to CSV: conferenceId={}, reportType={}", conferenceId, reportType);
 
@@ -73,6 +74,7 @@ public class ReportExportService {
     /**
      * Export report sang Excel
      */
+    // Xuất báo cáo ra định dạng Excel
     public byte[] exportToExcel(Long conferenceId, String reportType) {
         log.info("Exporting report to Excel: conferenceId={}, reportType={}", conferenceId, reportType);
 
@@ -119,6 +121,7 @@ public class ReportExportService {
     /**
      * Export report sang PDF
      */
+    // Xuất báo cáo ra định dạng PDF
     public byte[] exportToPdf(Long conferenceId, String reportType) {
         log.info("Exporting report to PDF: conferenceId={}, reportType={}", conferenceId, reportType);
 

@@ -5,14 +5,14 @@ import java.time.LocalDateTime;
 public class DecisionHistoryDTO {
     private Long id;
     private Long decisionId;
-    private Long changedBy;
-    private String changedByName;
-    private String changeType;
-    private String oldValue;
-    private String newValue;
-    private String fieldName;
-    private String description;
-    private LocalDateTime changedAt;
+    private Long changedBy; // ID người thay đổi
+    private String changedByName; // Tên người thay đổi
+    private String changeType; // Loại thay đổi
+    private String oldValue; // Giá trị cũ
+    private String newValue; // Giá trị mới
+    private String fieldName; // Tên trường thay đổi
+    private String description; // Mô tả
+    private LocalDateTime changedAt; // Thời gian thay đổi
 
     public DecisionHistoryDTO() {
     }

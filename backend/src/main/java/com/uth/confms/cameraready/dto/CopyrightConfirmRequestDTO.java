@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 public class CopyrightConfirmRequestDTO {
 
     @NotNull(message = "Phải xác nhận bản quyền")
-    private Boolean confirmed;
+    private Boolean confirmed; // Xác nhận đã đọc và đồng ý
 
-    private String agreement;
+    private String agreement; // Nội dung thỏa thuận (nếu có)
 }

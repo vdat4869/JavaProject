@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TrackRepository extends JpaRepository<Track, Long> {
-  List<Track> findByConferenceId(Long conferenceId);
+  List<Track> findByConferenceId(Long conferenceId); // Tìm tracks theo hội nghị
 }

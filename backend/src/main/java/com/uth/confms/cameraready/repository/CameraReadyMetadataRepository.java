@@ -3,6 +3,7 @@ package com.uth.confms.cameraready.repository;
 import com.uth.confms.cameraready.entity.CameraReadyMetadata;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -18,7 +19,9 @@ public interface CameraReadyMetadataRepository extends JpaRepository<CameraReady
 
     Optional<CameraReadyMetadata> findBySubmissionId(UUID submissionId);
 
-    boolean existsByDoi(String doi);
+    List<CameraReadyMetadata> findBySubmissionIdIn(List<UUID> submissionIds);
 
-    Optional<CameraReadyMetadata> findByDoi(String doi);
+    boolean existsByDoi(String doi); // Kiểm tra DOI đã tồn tại chưa
+
+    Optional<CameraReadyMetadata> findByDoi(String doi); // Tìm metadata theo DOI
 }

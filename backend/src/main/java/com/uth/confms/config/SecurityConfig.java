@@ -25,6 +25,22 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+/**
+ * Cấu hình bảo mật chính của ứng dụng (Spring Security).
+ *
+ * <p>
+ * Class này chịu trách nhiệm:
+ * <ul>
+ * <li>Cấu hình Security Filter Chain (CSRF, CORS, authorize requests)</li>
+ * <li>Tích hợp JWT Authentication Filter</li>
+ * <li>Cấu hình OAuth2 Login (Google)</li>
+ * <li>Quản lý AuthenticationManager và PasswordEncoder</li>
+ * <li>Xử lý exception liên quan đến bảo mật (AuthenticationEntryPoint)</li>
+ * </ul>
+ *
+ * @author UTH-ConfMS Team
+ * @version 1.0
+ */
 public class SecurityConfig {
   private final JwtAuthenticationFilter jwtAuthFilter;
   private final UserDetailsService userDetailsService;
@@ -49,6 +65,7 @@ public class SecurityConfig {
   }
 
   @Bean
+  // Cấu hình filter chain bảo mật
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http.csrf(csrf -> csrf.disable())
         .cors(cors -> cors.configurationSource(corsConfigurationSource))
@@ -90,6 +107,7 @@ public class SecurityConfig {
   }
 
   @Bean
+  // Provider xác thực user (DAO pattern)
   public AuthenticationProvider authenticationProvider() {
     DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
     authProvider.setUserDetailsService(userDetailsService);
@@ -104,6 +122,7 @@ public class SecurityConfig {
   }
 
   @Bean
+  // Bean mã hóa mật khẩu (BCrypt)
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
   }

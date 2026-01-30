@@ -7,5 +7,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface KeywordRepository extends JpaRepository<Keyword, Long> {
-  Optional<Keyword> findByName(String name);
+  Optional<Keyword> findByName(String name); // Tìm từ khóa theo tên
 }

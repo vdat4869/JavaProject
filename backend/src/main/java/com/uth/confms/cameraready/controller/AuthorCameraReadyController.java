@@ -34,7 +34,7 @@ public class AuthorCameraReadyController {
     private final CameraReadyService cameraReadyService;
 
     @GetMapping
-    @Operation(summary = "Lấy trạng thái bài nộp")
+    @Operation(summary = "Lấy trạng thái bài nộp camera-ready")
     public ResponseEntity<SubmissionDTO> getSubmission(
             @PathVariable Long conferenceId,
             @PathVariable Long paperId) {
@@ -45,7 +45,7 @@ public class AuthorCameraReadyController {
     }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Tải lên PDF")
+    @Operation(summary = "Tải lên tài liệu camera-ready (PDF)")
     public ResponseEntity<VersionDTO> uploadVersion(
             @PathVariable Long conferenceId,
             @PathVariable Long paperId,
@@ -58,7 +58,7 @@ public class AuthorCameraReadyController {
     }
 
     @GetMapping("/versions")
-    @Operation(summary = "Danh sách phiên bản")
+    @Operation(summary = "Lấy danh sách các phiên bản đã nộp")
     public ResponseEntity<List<VersionDTO>> listVersions(
             @PathVariable Long conferenceId,
             @PathVariable Long paperId) {
@@ -68,7 +68,7 @@ public class AuthorCameraReadyController {
     }
 
     @GetMapping("/versions/{versionId}/download")
-    @Operation(summary = "Tải xuống phiên bản")
+    @Operation(summary = "Tải xuống một phiên bản cụ thể")
     public ResponseEntity<Resource> downloadVersion(
             @PathVariable Long conferenceId,
             @PathVariable Long paperId,
@@ -84,7 +84,7 @@ public class AuthorCameraReadyController {
     }
 
     @PostMapping("/confirm-copyright")
-    @Operation(summary = "Xác nhận bản quyền")
+    @Operation(summary = "Xác nhận bản quyền cho bài báo")
     public ResponseEntity<SubmissionDTO> confirmCopyright(
             @PathVariable Long conferenceId,
             @PathVariable Long paperId,

@@ -2,14 +2,15 @@ package com.uth.confms.review.dto;
 
 public class ReviewerPerformanceDTO {
   private Long reviewerId;
-  private String reviewerName;
-  private Integer totalReviews;
-  private Integer completedReviews;
-  private Double averageScore;
-  private Double averageCompletionTime; // Average time to complete review (in days)
-  private Double completionRate; // Percentage of completed reviews
+  private String reviewerName; // Tên reviewer
+  private Integer totalReviews; // Tổng số review được giao
+  private Integer completedReviews; // Review đã hoàn thành
+  private Double averageScore; // Điểm trung bình đã cho
+  private Double averageCompletionTime; // Thời gian hoàn thành trung bình (ngày)
+  private Double completionRate; // Tỷ lệ hoàn thành
 
-  public ReviewerPerformanceDTO() {}
+  public ReviewerPerformanceDTO() {
+  }
 
   public ReviewerPerformanceDTO(
       Long reviewerId,

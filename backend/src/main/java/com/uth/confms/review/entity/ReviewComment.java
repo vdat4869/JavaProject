@@ -18,21 +18,23 @@ public class ReviewComment {
   private Long submissionId;
 
   @Column(nullable = false)
-  private Long reviewerId;
+  private Long reviewerId; // Người comment
 
   @Column(columnDefinition = "TEXT", nullable = false)
-  private String content;
+  private String content; // Nội dung comment
 
   @Column(nullable = false)
-  private Boolean isInternal = true; // Internal discussion between reviewers
+  private Boolean isInternal = true; // Thảo luận nội bộ (chỉ reviewer thấy)
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @LastModifiedDate private LocalDateTime updatedAt;
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
 
-  public ReviewComment() {}
+  public ReviewComment() {
+  }
 
   public ReviewComment(
       Long id,

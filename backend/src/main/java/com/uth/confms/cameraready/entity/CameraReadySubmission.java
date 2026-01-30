@@ -27,7 +27,7 @@ public class CameraReadySubmission {
   private UUID id;
 
   @Column(nullable = false)
-  private Long paperId;
+  private Long paperId; // ID của bài báo gốc (Submission)
 
   @Column(nullable = false)
   private Long conferenceId;
@@ -36,12 +36,12 @@ public class CameraReadySubmission {
   private Long trackId;
 
   @Column(nullable = false)
-  private Long authorId;
+  private Long authorId; // ID của tác giả chính
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   @Builder.Default
-  private CameraReadyStatus status = CameraReadyStatus.OPEN;
+  private CameraReadyStatus status = CameraReadyStatus.OPEN; // Trạng thái hiện tại
 
   @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
@@ -49,7 +49,7 @@ public class CameraReadySubmission {
 
   @OneToOne(cascade = CascadeType.ALL)
   @JoinColumn(name = "current_version_id")
-  private CameraReadyVersion currentVersion;
+  private CameraReadyVersion currentVersion; // Phiên bản được chọn làm chính thức
 
   @OneToMany(mappedBy = "submission", cascade = CascadeType.ALL, orphanRemoval = true)
   @Builder.Default
@@ -57,10 +57,10 @@ public class CameraReadySubmission {
 
   @OneToOne(cascade = CascadeType.ALL)
   @JoinColumn(name = "metadata_id")
-  private CameraReadyMetadata metadata;
+  private CameraReadyMetadata metadata; // Metadata bổ sung (DOI, trang, v.v.)
 
   @Builder.Default
-  private Boolean copyrightConfirmed = false;
+  private Boolean copyrightConfirmed = false; // Đã xác nhận bản quyền chưa
 
   private Long copyrightConfirmedBy;
 
@@ -75,10 +75,16 @@ public class CameraReadySubmission {
   private LocalDateTime updatedAt;
 
   // Business methods
+  /**
+   * Kiểm tra xem tác giả có thể upload phiên bản mới không.
+   */
   public boolean canUpload() {
     return status == CameraReadyStatus.OPEN || status == CameraReadyStatus.NEED_FIX;
   }
 
+  /**
+   * Kiểm tra xem Chair có thể review submission này không.
+   */
   public boolean canReview() {
     return status == CameraReadyStatus.SUBMITTED;
   }

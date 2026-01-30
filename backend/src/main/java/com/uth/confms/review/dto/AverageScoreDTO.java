@@ -2,10 +2,11 @@ package com.uth.confms.review.dto;
 
 public class AverageScoreDTO {
   private Long submissionId;
-  private Double averageScore;
-  private Integer reviewCount;
+  private Double averageScore; // Điểm trung bình
+  private Integer reviewCount; // Số lượng review
 
-  public AverageScoreDTO() {}
+  public AverageScoreDTO() {
+  }
 
   public AverageScoreDTO(Long submissionId, Double averageScore, Integer reviewCount) {
     this.submissionId = submissionId;

@@ -169,26 +169,58 @@ const CameraReadyManagement: React.FC = () => {
         }
     }
 
-    if (isSelectingConference) {
+    if (!conferenceId) {
+        if (loading) {
+            return (
+                <div className="d-flex justify-content-center p-5">
+                    <CSpinner color="primary" />
+                </div>
+            )
+        }
+
+        if (isSelectingConference) {
+            return (
+                <div className="container-fluid">
+                    <CCard className="mx-auto shadow-sm" style={{ maxWidth: '800px' }}>
+                        <CCardHeader className="bg-primary text-white">
+                            <h4 className="mb-0">Chọn hội nghị để quản lý Camera-Ready</h4>
+                        </CCardHeader>
+                        <CCardBody className="p-4">
+                            {myConferences.length === 0 ? (
+                                <CAlert color="warning">Bạn chưa được gán vào hội nghị nào với quyền Chair.</CAlert>
+                            ) : (
+                                <CListGroup flush>
+                                    {myConferences.map(conf => (
+                                        <CListGroupItem
+                                            key={conf.id}
+                                            as="button"
+                                            className="d-flex justify-content-between align-items-center list-group-item-action py-3"
+                                            onClick={() => navigate(`?conferenceId=${conf.id}`)}
+                                        >
+                                            <span className="fw-semibold">{conf.name}</span>
+                                            <CBadge color="primary" shape="rounded-pill">ID: {conf.id}</CBadge>
+                                        </CListGroupItem>
+                                    ))}
+                                </CListGroup>
+                            )}
+                        </CCardBody>
+                    </CCard>
+                </div>
+            )
+        }
+
         return (
             <div className="container-fluid">
-                <h3>Chọn hội nghị để quản lý Camera-Ready</h3>
-                <div className="list-group mt-3">
-                    {myConferences.map(conf => (
-                        <button
-                            key={conf.id}
-                            className="list-group-item list-group-item-action"
-                            onClick={() => navigate(`?conferenceId=${conf.id}`)}
-                        >
-                            {conf.name}
-                        </button>
-                    ))}
-                </div>
+                <CAlert color="danger">Thiếu conferenceId và không thể tải danh sách hội nghị.</CAlert>
             </div>
         )
     }
 
-    if (loading) return <CSpinner color="primary" />
+    if (loading) return (
+        <div className="d-flex justify-content-center p-5">
+            <CSpinner color="primary" />
+        </div>
+    )
 
     return (
         <div className="container-fluid">
@@ -206,6 +238,9 @@ const CameraReadyManagement: React.FC = () => {
                     </CButton>
                 </div>
             </div>
+
+            {error && <CAlert color="danger" dismissible onClose={() => setError('')}>{error}</CAlert>}
+            {success && <CAlert color="success" dismissible onClose={() => setSuccess('')}>{success}</CAlert>}
 
             {/* ... stats ... */}
 

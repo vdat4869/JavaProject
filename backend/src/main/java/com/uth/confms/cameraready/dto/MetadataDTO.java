@@ -23,11 +23,11 @@ import java.util.UUID;
 public class MetadataDTO {
 
     private UUID submissionId;
-    private String doi;
-    private Integer startPage;
-    private Integer endPage;
-    private PresentationType presentationType;
-    private Integer presentationDurationMinutes;
-    private Map<String, Object> extraMetadata;
+    private String doi; // Digital Object Identifier
+    private Integer startPage; // Trang bắt đầu trong kỷ yếu
+    private Integer endPage; // Trang kết thúc
+    private PresentationType presentationType; // Hình thức trình bày (Oral, Poster)
+    private Integer presentationDurationMinutes; // Thời lượng trình bày (phút)
+    private Map<String, Object> extraMetadata; // Metadata bổ sung khác
     private LocalDateTime updatedAt;
 }

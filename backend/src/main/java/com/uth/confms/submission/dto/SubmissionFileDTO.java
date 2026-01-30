@@ -4,16 +4,17 @@ import java.time.LocalDateTime;
 
 public class SubmissionFileDTO {
   private Long id;
-  private Integer versionNumber;
-  private String fileName;
-  private String filePath;
-  private Long fileSize;
+  private Integer versionNumber; // Số phiên bản
+  private String fileName; // Tên file
+  private String filePath; // Đường dẫn
+  private Long fileSize; // Kích thước
   private String contentType;
-  private Boolean isCurrent;
-  private LocalDateTime uploadedAt;
+  private Boolean isCurrent; // Là version hiện tại?
+  private LocalDateTime uploadedAt; // Thời gian upload
   private String uploadNote;
 
-  public SubmissionFileDTO() {}
+  public SubmissionFileDTO() {
+  }
 
   public SubmissionFileDTO(
       Long id,

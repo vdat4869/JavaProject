@@ -14,13 +14,13 @@ public class SubmissionAuthor {
   private Submission submission;
 
   @Column(nullable = true)
-  private Long userId;
+  private Long userId; // ID hệ thống (nếu có)
 
   @Column(nullable = false)
-  private String firstName;
+  private String firstName; // Tên
 
   @Column(nullable = false)
-  private String lastName;
+  private String lastName; // Họ
 
   private String email;
 
@@ -28,13 +28,13 @@ public class SubmissionAuthor {
   @JoinColumn(name = "organization_id")
   private com.uth.confms.common.entity.Organization organization;
 
-  private String affiliation;
+  private String affiliation; // Đơn vị công tác (nếu không chọn organization)
 
   @Column(nullable = false)
-  private Boolean isCorresponding = false;
+  private Boolean isCorresponding = false; // Tác giả liên hệ chính?
 
   @Column(nullable = false)
-  private Integer orderIndex = 0;
+  private Integer orderIndex = 0; // Thứ tự tác giả
 
   public SubmissionAuthor() {
     this.isCorresponding = false;

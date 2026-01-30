@@ -6,12 +6,13 @@ public class RebuttalDTO {
   private Long id;
   private Long submissionId;
   private Long authorId;
-  private String content;
-  private String status;
+  private String content; // Nội dung phản biện
+  private String status; // Trạng thái
   private LocalDateTime createdAt;
   private LocalDateTime submittedAt;
 
-  public RebuttalDTO() {}
+  public RebuttalDTO() {
+  }
 
   public RebuttalDTO(
       Long id,

@@ -5,21 +5,22 @@ import java.util.List;
 
 public class ConferenceResponseDTO {
   private Long id;
-  private String name;
-  private String acronym;
-  private String description;
-  private Long chairId;
-  private Boolean published;
-  private String reviewMode;
-  private List<TopicDTO> topics;
-  private List<KeywordDTO> keywords;
-  private List<TrackDTO> tracks;
-  private List<DeadlineDTO> deadlines;
-  private CFPResponseDTO cfp;
+  private String name; // Tên hội nghị
+  private String acronym; // Tên viết tắt
+  private String description; // Mô tả
+  private Long chairId; // ID của Chair
+  private Boolean published; // Trạng thái công khai
+  private String reviewMode; // Chế độ review
+  private List<TopicDTO> topics; // Danh sách chủ đề
+  private List<KeywordDTO> keywords; // Danh sách từ khóa
+  private List<TrackDTO> tracks; // Danh sách tracks
+  private List<DeadlineDTO> deadlines; // Danh sách mốc thời gian
+  private CFPResponseDTO cfp; // Thông tin CFP
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
-  public ConferenceResponseDTO() {}
+  public ConferenceResponseDTO() {
+  }
 
   public ConferenceResponseDTO(
       Long id,
@@ -256,7 +257,8 @@ public class ConferenceResponseDTO {
 
     public ConferenceResponseDTO build() {
       return new ConferenceResponseDTO(
-          id, name, acronym, description, chairId, published, reviewMode, topics, keywords, tracks, deadlines, cfp, createdAt, updatedAt);
+          id, name, acronym, description, chairId, published, reviewMode, topics, keywords, tracks, deadlines, cfp,
+          createdAt, updatedAt);
     }
   }
 }

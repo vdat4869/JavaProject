@@ -8,15 +8,17 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Entity đại diện cho decision (quyết định) của chair về submission
  *
- * <p>Decision được tạo bởi chair sau khi có đủ reviews. Decision có các loại:
+ * <p>
+ * Decision được tạo bởi chair sau khi có đủ reviews. Decision có các loại:
  *
  * <ul>
- *   <li>ACCEPT - Chấp nhận submission
- *   <li>REJECT - Từ chối submission
- *   <li>CONDITIONAL_ACCEPT - Chấp nhận có điều kiện
+ * <li>ACCEPT - Chấp nhận submission
+ * <li>REJECT - Từ chối submission
+ * <li>CONDITIONAL_ACCEPT - Chấp nhận có điều kiện
  * </ul>
  *
- * <p>Decision có thể được notify (gửi email) cho author hoặc chưa.
+ * <p>
+ * Decision có thể được notify (gửi email) cho author hoặc chưa.
  *
  * @author UTH-ConfMS Team
  * @version 1.0
@@ -30,29 +32,30 @@ public class Decision {
   private Long id;
 
   @Column(nullable = false)
-  private Long submissionId;
+  private Long submissionId; // ID bài báo
 
   @Column(nullable = false)
-  private Long decidedBy;
+  private Long decidedBy; // ID người ra quyết định (Chair)
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private DecisionType type;
+  private DecisionType type; // Loại quyết định (Accept, Reject...)
 
   @Column(columnDefinition = "TEXT")
-  private String comments;
+  private String comments; // Nhận xét của Chair
 
   @Column(nullable = false)
-  private Boolean notified = false;
+  private Boolean notified = false; // Đã gửi thông báo cho tác giả chưa
 
   @Column(nullable = false)
-  private Boolean locked = false;
+  private Boolean locked = false; // Đã khóa quyết định chưa (sau khi notify)
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime decidedAt;
 
-  public Decision() {}
+  public Decision() {
+  }
 
   public Decision(
       Long id,

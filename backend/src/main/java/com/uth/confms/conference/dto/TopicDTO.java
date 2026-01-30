@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class TopicDTO {
   private Long id;
-  private String name;
-  private String description;
+  private String name; // Tên chủ đề
+  private String description; // Mô tả
 }

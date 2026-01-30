@@ -11,15 +11,17 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Entity đại diện cho hội nghị (Conference)
  *
- * <p>Một conference có thể có:
+ * <p>
+ * Một conference có thể có:
  *
  * <ul>
- *   <li>Nhiều tracks (các track khác nhau)
- *   <li>Nhiều deadlines (các mốc thời gian quan trọng)
- *   <li>Một CFP (Call For Papers)
+ * <li>Nhiều tracks (các track khác nhau)
+ * <li>Nhiều deadlines (các mốc thời gian quan trọng)
+ * <li>Một CFP (Call For Papers)
  * </ul>
  *
- * <p>Conference có thể được publish (công khai) hoặc chưa publish.
+ * <p>
+ * Conference có thể được publish (công khai) hoặc chưa publish.
  *
  * @author UTH-ConfMS Team
  * @version 1.0
@@ -52,25 +54,22 @@ public class Conference {
 
   @Column(nullable = true)
   @Enumerated(EnumType.STRING)
-  private AssignmentStrategy assignmentStrategy; // Assignment strategy preference
+  private AssignmentStrategy assignmentStrategy; // Chiến lược phân công (VD: Cân bằng tải, Dựa trên chuyên môn)
 
   @Column(columnDefinition = "TEXT")
-  private String assignmentRules; // JSON string for assignment rules (e.g., {"requireExpertiseMatch": true, "preferLowWorkload": true})
+  private String assignmentRules; // Các quy tắc phân công dạng JSON (ví dụ: {"requireExpertiseMatch": true})
 
   @Column(nullable = true)
-  private Integer minReviewersPerSubmission = 3; // Minimum reviewers per submission
+  private Integer minReviewersPerSubmission = 3; // Số lượng reviewer tối thiểu cho mỗi bài
 
   @Column(nullable = true)
-  private Integer maxReviewersPerSubmission = 5; // Maximum reviewers per submission
+  private Integer maxReviewersPerSubmission = 5; // Số lượng reviewer tối đa cho mỗi bài
 
   @OneToMany(mappedBy = "conference", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Topic> topics = new ArrayList<>();
 
   @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(
-      name = "conference_keywords",
-      joinColumns = @JoinColumn(name = "conference_id"),
-      inverseJoinColumns = @JoinColumn(name = "keyword_id"))
+  @JoinTable(name = "conference_keywords", joinColumns = @JoinColumn(name = "conference_id"), inverseJoinColumns = @JoinColumn(name = "keyword_id"))
   private List<Keyword> keywords = new ArrayList<>();
 
   @OneToMany(mappedBy = "conference", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -86,9 +85,11 @@ public class Conference {
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @LastModifiedDate private LocalDateTime updatedAt;
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
 
-  public Conference() {}
+  public Conference() {
+  }
 
   public Conference(
       Long id,
@@ -270,19 +271,20 @@ public class Conference {
   }
 
   public enum ReviewMode {
-    SINGLE_BLIND,  // Reviewer knows author, author doesn't know reviewer
-    DOUBLE_BLIND   // Neither knows the other
+    SINGLE_BLIND, // Reviewer knows author, author doesn't know reviewer
+    DOUBLE_BLIND // Neither knows the other
   }
 
   /** Enum định nghĩa assignment strategy */
+  /** Enum định nghĩa chiến lược phân công (Assignment Strategy) */
   public enum AssignmentStrategy {
-    /** Balance workload evenly among reviewers */
+    /** Cân bằng khối lượng công việc đều giữa các reviewer */
     BALANCED,
-    /** Prefer reviewers with expertise matching submission */
+    /** Ưu tiên reviewer có chuyên môn phù hợp với bài nộp */
     EXPERTISE_BASED,
-    /** Prefer reviewers with low current workload */
+    /** Ưu tiên reviewer đang có ít việc */
     WORKLOAD_BASED,
-    /** Use combination of expertise and workload */
+    /** Kết hợp giữa chuyên môn và khối lượng công việc */
     HYBRID
   }
 
@@ -398,7 +400,8 @@ public class Conference {
 
     public Conference build() {
       Conference conference = new Conference(
-          id, name, acronym, description, chairId, published, reviewMode, topics, keywords, tracks, deadlines, cfp, createdAt, updatedAt);
+          id, name, acronym, description, chairId, published, reviewMode, topics, keywords, tracks, deadlines, cfp,
+          createdAt, updatedAt);
       // Set assignment preferences
       conference.setAssignmentStrategy(assignmentStrategy);
       conference.setAssignmentRules(assignmentRules);

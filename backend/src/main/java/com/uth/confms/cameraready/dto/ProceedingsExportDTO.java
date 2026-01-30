@@ -21,10 +21,10 @@ import java.util.List;
 public class ProceedingsExportDTO {
 
     private Long conferenceId;
-    private String conferenceName;
-    private LocalDateTime exportedAt;
-    private Integer totalPapers;
-    private List<PaperExportDTO> papers;
+    private String conferenceName; // Tên hội nghị
+    private LocalDateTime exportedAt; // Thời gian xuất
+    private Integer totalPapers; // Tổng số bài báo
+    private List<PaperExportDTO> papers; // Danh sách bài báo
 
     @Data
     @Builder
@@ -32,16 +32,16 @@ public class ProceedingsExportDTO {
     @AllArgsConstructor
     public static class PaperExportDTO {
         private Long paperId;
-        private String title;
-        private String abstractText;
-        private List<String> keywords;
-        private List<AuthorExportDTO> authors;
-        private TrackExportDTO track;
+        private String title; // Tiêu đề bài báo
+        private String abstractText; // Tóm tắt
+        private List<String> keywords; // Từ khóa
+        private List<AuthorExportDTO> authors; // Danh sách tác giả
+        private TrackExportDTO track; // Track
         private String doi;
         private Integer startPage;
         private Integer endPage;
-        private String pdfPath;
-        private PresentationExportDTO presentation;
+        private String pdfPath; // Đường dẫn file PDF
+        private PresentationExportDTO presentation; // Thông tin trình bày
     }
 
     @Data

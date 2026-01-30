@@ -4,12 +4,13 @@ import java.time.LocalDateTime;
 
 public class DeadlineDTO {
   private Long id;
-  private String type;
-  private LocalDateTime dueDate;
-  private String description;
-  private Boolean hardDeadline;
+  private String type; // Loại hạn chót
+  private LocalDateTime dueDate; // Ngày hết hạn
+  private String description; // Mô tả
+  private Boolean hardDeadline; // Hạn chót cứng
 
-  public DeadlineDTO() {}
+  public DeadlineDTO() {
+  }
 
   public DeadlineDTO(
       Long id, String type, LocalDateTime dueDate, String description, Boolean hardDeadline) {

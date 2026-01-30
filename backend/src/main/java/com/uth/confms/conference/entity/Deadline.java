@@ -16,16 +16,16 @@ public class Deadline {
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private DeadlineType type;
+  private DeadlineType type; // Loại hạn chót
 
   @Column(nullable = false)
-  private LocalDateTime dueDate;
+  private LocalDateTime dueDate; // Ngày giờ hạn chót
 
   @Column(columnDefinition = "TEXT")
-  private String description;
+  private String description; // Mô tả thêm
 
   @Column(nullable = false)
-  private Boolean hardDeadline = true;
+  private Boolean hardDeadline = true; // Hạn chót cứng (không thể nộp trễ)
 
   public Deadline() {
   }

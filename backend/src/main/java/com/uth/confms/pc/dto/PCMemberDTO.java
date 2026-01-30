@@ -8,11 +8,12 @@ public class PCMemberDTO {
   private Long userId;
   private String email;
   private String fullName;
-  private String status;
+  private String status; // Trạng thái thành viên
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
-  public PCMemberDTO() {}
+  public PCMemberDTO() {
+  }
 
   public PCMemberDTO(
       Long id,

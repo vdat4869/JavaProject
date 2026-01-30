@@ -3,15 +3,15 @@ package com.uth.confms.conference.dto;
 import java.util.List;
 
 public class ConferenceUpdateDTO {
-  private String name;
-  private String acronym;
-  private String description;
-  private Boolean published;
-  private String reviewMode; // SINGLE_BLIND or DOUBLE_BLIND
-  private List<TopicDTO> topics;
-  private List<Long> keywordIds; // Reference to existing keywords
-  private List<TrackDTO> tracks;
-  private List<DeadlineDTO> deadlines;
+  private String name; // Tên hội nghị
+  private String acronym; // Tên viết tắt
+  private String description; // Mô tả
+  private Boolean published; // Trạng thái công khai
+  private String reviewMode; // Chế độ review (SINGLE_BLIND, DOUBLE_BLIND)
+  private List<TopicDTO> topics; // Danh sách chủ đề
+  private List<Long> keywordIds; // Danh sách ID từ khóa
+  private List<TrackDTO> tracks; // Danh sách tracks
+  private List<DeadlineDTO> deadlines; // Danh sách deadlines
 
   public String getName() {
     return name;

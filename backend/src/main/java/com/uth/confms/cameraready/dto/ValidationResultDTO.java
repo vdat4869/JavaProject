@@ -20,17 +20,17 @@ import java.util.List;
 @AllArgsConstructor
 public class ValidationResultDTO {
 
-    private boolean passed;
-    
+    private boolean passed; // Kết quả kiểm tra (true/false)
+
     @Builder.Default
-    private List<ValidationError> errors = new ArrayList<>();
-    
+    private List<ValidationError> errors = new ArrayList<>(); // Danh sách lỗi
+
     @Builder.Default
-    private List<ValidationError> warnings = new ArrayList<>();
-    
-    private Integer pageCount;
-    private String pageSize;
-    private Long fileSizeBytes;
+    private List<ValidationError> warnings = new ArrayList<>(); // Danh sách cảnh báo
+
+    private Integer pageCount; // Số trang
+    private String pageSize; // Kích thước trang
+    private Long fileSizeBytes; // Kích thước file
 
     public void addError(String code, String message) {
         errors.add(ValidationError.builder()
@@ -57,8 +57,8 @@ public class ValidationResultDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class ValidationError {
-        private String code;
-        private String message;
-        private String severity;
+        private String code; // Mã lỗi
+        private String message; // Thông báo lỗi
+        private String severity; // Mức độ (ERROR, WARNING)
     }
 }

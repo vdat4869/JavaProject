@@ -24,9 +24,9 @@ public class ReviewResponseDTO {
 
     private UUID reviewId;
     private UUID submissionId;
-    private ReviewDecision decision;
-    private String note;
-    private CameraReadyStatus newStatus;
-    private VersionDTO.UserDTO reviewedBy;
-    private LocalDateTime reviewedAt;
+    private ReviewDecision decision; // Quyết định
+    private String note; // Ghi chú
+    private CameraReadyStatus newStatus; // Trạng thái mới của submission
+    private VersionDTO.UserDTO reviewedBy; // Người duyệt
+    private LocalDateTime reviewedAt; // Thời gian duyệt
 }

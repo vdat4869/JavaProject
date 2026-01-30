@@ -6,16 +6,17 @@ public class DecisionResultDTO {
   private Long id;
   private Long submissionId;
   private String submissionTitle;
-  private Long decidedBy;
-  private String decidedByName;
-  private String type;
-  private String comments;
-  private Boolean notified;
-  private Boolean locked;
-  private LocalDateTime decidedAt;
-  private ReviewSummaryDTO reviewSummary;
+  private Long decidedBy; // ID người quyết định
+  private String decidedByName; // Tên người quyết định
+  private String type; // Loại quyết định
+  private String comments; // Nhận xét
+  private Boolean notified; // Đã gửi thông báo
+  private Boolean locked; // Đã khóa
+  private LocalDateTime decidedAt; // Thời gian quyết định
+  private ReviewSummaryDTO reviewSummary; // Tóm tắt review
 
-  public DecisionResultDTO() {}
+  public DecisionResultDTO() {
+  }
 
   public DecisionResultDTO(
       Long id,

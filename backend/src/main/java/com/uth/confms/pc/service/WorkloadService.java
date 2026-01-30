@@ -66,6 +66,14 @@ public class WorkloadService {
    * @param conferenceId ID của conference
    * @return WorkloadDTO chứa thông tin workload
    */
+  /**
+   * Lấy workload của một reviewer trong một conference
+   *
+   * @param reviewerId   ID của reviewer
+   * @param conferenceId ID của conference
+   * @return WorkloadDTO chứa thông tin workload
+   */
+  // Lấy chi tiết workload của 1 reviewer
   public WorkloadDTO getReviewerWorkload(Long reviewerId, Long conferenceId) {
     Conference conference = conferenceRepository.findById(conferenceId)
         .orElseThrow(() -> new NotFoundException("Conference not found"));
@@ -121,6 +129,14 @@ public class WorkloadService {
    * @param chairId      ID của chair (for authorization)
    * @return WorkloadStatsDTO chứa thông tin statistics
    */
+  /**
+   * Lấy workload statistics của một conference
+   *
+   * @param conferenceId ID của conference
+   * @param chairId      ID của chair (for authorization)
+   * @return WorkloadStatsDTO chứa thông tin statistics
+   */
+  // Thống kê workload toàn bộ conference
   public WorkloadStatsDTO getConferenceWorkloadStats(Long conferenceId, Long chairId) {
     Conference conference = conferenceRepository
         .findById(conferenceId)
@@ -299,7 +315,14 @@ public class WorkloadService {
    * @param totalAssignments Tổng số assignments
    * @return Workload status (LOW, NORMAL, HIGH, OVERLOADED)
    */
-  private String calculateWorkloadStatus(long totalAssignments) {
+  /**
+   * Tính toán workload status dựa trên số lượng assignments
+   *
+   * @param totalAssignments Tổng số assignments
+   * @return Workload status (LOW, NORMAL, HIGH, OVERLOADED)
+   */
+  // Tính trạng thái tải (Thấp/Bình thường/Cao/Quá tải)
+  public String calculateWorkloadStatus(long totalAssignments) {
     if (totalAssignments >= maxAssignmentsPerReviewer) {
       return "OVERLOADED";
     } else if (totalAssignments >= maxAssignmentsPerReviewer * 0.75) {
@@ -327,6 +350,14 @@ public class WorkloadService {
    * @param chairId      ID của chair (for authorization)
    * @return List of WorkloadAlertDTO
    */
+  /**
+   * Lấy workload alerts (overloaded và near-limit reviewers) cho một conference
+   *
+   * @param conferenceId ID của conference
+   * @param chairId      ID của chair (for authorization)
+   * @return List of WorkloadAlertDTO
+   */
+  // Lấy danh sách cảnh báo quá tải
   public List<com.uth.confms.pc.dto.WorkloadAlertDTO> getWorkloadAlerts(
       Long conferenceId, Long chairId) {
     Conference conference = conferenceRepository
@@ -339,16 +370,11 @@ public class WorkloadService {
           "Only conference chair can view workload alerts");
     }
 
-    // Get all PC members
-    List<PCMember> pcMembers = pcMemberRepository.findByConferenceId(conferenceId).stream()
-        .filter(member -> member.getStatus() == PCMember.PCMemberStatus.ACCEPTED)
-        .collect(Collectors.toList());
+    WorkloadStatsDTO stats = getConferenceWorkloadStats(conferenceId, chairId);
 
-    return pcMembers.stream()
+    return stats.getReviewerWorkloads().stream()
         .map(
-            member -> {
-              WorkloadDTO workload = getReviewerWorkload(member.getUserId(), conferenceId);
-
+            workload -> {
               // Check if overloaded or near limit
               String alertType = null;
               String message = null;
@@ -358,7 +384,7 @@ public class WorkloadService {
                 message = String.format(
                     "Reviewer has exceeded the maximum workload limit (%d assignments)",
                     maxAssignmentsPerReviewer);
-              } else if (isNearLimit(member.getUserId(), conferenceId)) {
+              } else if (workload.getWorkloadPercentage() >= warningThreshold * 100.0) {
                 alertType = "NEAR_LIMIT";
                 message = String.format(
                     "Reviewer is near the workload limit (%d/%d assignments, %.1f%%)",
@@ -373,12 +399,12 @@ public class WorkloadService {
               }
 
               return com.uth.confms.pc.dto.WorkloadAlertDTO.builder()
-                  .reviewerId(member.getUserId())
+                  .reviewerId(workload.getReviewerId())
                   .reviewerEmail(workload.getReviewerEmail())
                   .reviewerName(workload.getReviewerName())
                   .conferenceId(conferenceId)
-                  .conferenceName(conference.getName())
-                  .currentAssignments(workload.getTotalAssignments())
+                  .conferenceName(workload.getConferenceName())
+                  .currentAssignments((int) workload.getTotalAssignments())
                   .maxAssignments(maxAssignmentsPerReviewer)
                   .workloadPercentage(workload.getWorkloadPercentage())
                   .alertType(alertType)

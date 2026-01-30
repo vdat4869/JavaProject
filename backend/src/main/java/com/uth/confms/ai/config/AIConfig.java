@@ -14,35 +14,38 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 public class AIConfig {
 
     @Value("${ai.provider:gemini}")
-    private String provider;
+    private String provider; // Nhà cung cấp dịch vụ AI (gemini hoặc openai)
 
     @Value("${ai.openai.api-key:}")
-    private String openaiApiKey;
+    private String openaiApiKey; // API key cho OpenAI
 
     @Value("${ai.openai.model:gpt-4o-mini}")
-    private String openaiModel;
+    private String openaiModel; // Model mặc định của OpenAI
 
     @Value("${ai.openai.base-url:https://api.openai.com/v1}")
-    private String openaiBaseUrl;
+    private String openaiBaseUrl; // Endpoint của OpenAI
 
     @Value("${ai.gemini.api-key:}")
-    private String geminiApiKey;
+    private String geminiApiKey; // API key cho Google Gemini
 
     @Value("${ai.gemini.model:gemini-2.5-flash}")
-    private String geminiModel;
+    private String geminiModel; // Model mặc định của Gemini
 
     @Value("${ai.gemini.base-url:https://generativelanguage.googleapis.com/v1}")
-    private String geminiBaseUrl;
+    private String geminiBaseUrl; // Endpoint của Gemini
 
     @Value("${ai.enabled:false}")
-    private boolean aiEnabled;
+    private boolean aiEnabled; // Trạng thái kích hoạt module AI
 
     @Value("${ai.timeout-seconds:30}")
-    private int timeoutSeconds;
+    private int timeoutSeconds; // Thời gian timeout cho các lời gọi API (giây)
 
     @Value("${ai.mock-mode:false}")
-    private boolean mockMode;
+    private boolean mockMode; // Chế độ giả lập (không gọi API thật)
 
+    /**
+     * Khởi tạo RestTemplate dùng riêng cho các lời gọi AI với cấu hình timeout.
+     */
     @Bean(name = "aiRestTemplate")
     public RestTemplate aiRestTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();

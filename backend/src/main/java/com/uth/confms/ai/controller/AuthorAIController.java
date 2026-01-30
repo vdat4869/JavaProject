@@ -38,7 +38,7 @@ public class AuthorAIController {
     }
 
     /**
-     * Kiểm tra chính tả và ngữ pháp cho title/abstract.
+     * Endpoint kiểm tra chính tả và ngữ pháp.
      */
     @PostMapping("/spell-check")
     @PreAuthorize("hasRole('AUTHOR')")
@@ -76,6 +76,9 @@ public class AuthorAIController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    /**
+     * Lấy ID người dùng từ thông tin xác thực Spring Security.
+     */
     private Long getUserIdFromAuthentication(Authentication authentication) {
         String email = authentication.getName();
         User user = userRepository.findByEmail(email)

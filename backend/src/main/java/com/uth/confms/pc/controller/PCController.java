@@ -72,6 +72,7 @@ public class PCController {
 
   @PostMapping("/invite")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // API mời PC member (Chỉ Chair/Admin)
   public ResponseEntity<ApiResponse<PCInvitationResponseDTO>> invitePCMember(
       @Valid @RequestBody PCInviteDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -80,6 +81,7 @@ public class PCController {
 
   @PostMapping("/invitation/accept")
   @PreAuthorize("isAuthenticated()")
+  // API chấp nhận lời mời tham gia PC
   public ResponseEntity<ApiResponse<PCMemberDTO>> acceptInvitation(
       @RequestParam String token, Authentication authentication) {
     Long userId = getUserIdFromAuthentication(authentication);
@@ -97,6 +99,7 @@ public class PCController {
 
   @GetMapping("/conference/{conferenceId}/members")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // API lấy danh sách PC members của conference
   public ResponseEntity<ApiResponse<List<PCMemberDTO>>> getPCMembers(
       @PathVariable Long conferenceId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -121,6 +124,7 @@ public class PCController {
 
   @PostMapping("/coi/declare")
   @PreAuthorize("hasRole('PC') or hasRole('REVIEWER')")
+  // API tự khai báo mâu thuẫn lợi ích (COI)
   public ResponseEntity<ApiResponse<ConflictOfInterest>> declareCOI(
       @Valid @RequestBody COIDeclareDTO dto,
       Authentication authentication,
@@ -183,6 +187,7 @@ public class PCController {
 
   @GetMapping("/reviewer/{reviewerId}/workload")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN') or hasRole('PC') or hasRole('REVIEWER')")
+  // API xem chi tiết workload của reviewer
   public ResponseEntity<ApiResponse<WorkloadDTO>> getReviewerWorkload(
       @PathVariable Long reviewerId,
       @RequestParam Long conferenceId,
@@ -210,6 +215,7 @@ public class PCController {
 
   @GetMapping("/conference/{conferenceId}/workload-alerts")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // API xem danh sách cảnh báo quá tải workload
   public ResponseEntity<ApiResponse<List<WorkloadAlertDTO>>> getWorkloadAlerts(
       @PathVariable Long conferenceId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);

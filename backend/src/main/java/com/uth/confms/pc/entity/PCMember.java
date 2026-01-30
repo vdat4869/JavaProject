@@ -11,15 +11,17 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Entity đại diện cho PC member (thành viên Program Committee)
  *
- * <p>PC member được mời bởi chair và có các trạng thái:
+ * <p>
+ * PC member được mời bởi chair và có các trạng thái:
  *
  * <ul>
- *   <li>PENDING - Đã được mời, chờ accept/decline
- *   <li>ACCEPTED - Đã chấp nhận invitation
- *   <li>DECLINED - Đã từ chối invitation
+ * <li>PENDING - Đã được mời, chờ accept/decline
+ * <li>ACCEPTED - Đã chấp nhận invitation
+ * <li>DECLINED - Đã từ chối invitation
  * </ul>
  *
- * <p>Chỉ PC members với status ACCEPTED mới có thể được assign reviews.
+ * <p>
+ * Chỉ PC members với status ACCEPTED mới có thể được assign reviews.
  *
  * @author UTH-ConfMS Team
  * @version 1.0
@@ -43,25 +45,24 @@ public class PCMember {
   private PCMemberStatus status = PCMemberStatus.PENDING;
 
   @Column(columnDefinition = "TEXT")
-  private String expertiseKeywords; // Comma-separated keywords that reviewer has expertise in
+  private String expertiseKeywords; // Từ khóa chuyên môn (comma-separated)
 
   @ManyToMany(fetch = FetchType.LAZY)
-  @JoinTable(
-      name = "pc_member_expertise_topics",
-      joinColumns = @JoinColumn(name = "pc_member_id"),
-      inverseJoinColumns = @JoinColumn(name = "topic_id"))
-  private java.util.List<com.uth.confms.conference.entity.Topic> expertiseTopics;
+  @JoinTable(name = "pc_member_expertise_topics", joinColumns = @JoinColumn(name = "pc_member_id"), inverseJoinColumns = @JoinColumn(name = "topic_id"))
+  private java.util.List<com.uth.confms.conference.entity.Topic> expertiseTopics; // Các chủ đề chuyên môn
 
   @Column(nullable = true)
-  private Integer preferredMaxAssignments; // Reviewer's preferred maximum number of assignments
+  private Integer preferredMaxAssignments; // Số lượng bái review tối đa mong muốn
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @LastModifiedDate private LocalDateTime updatedAt;
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
 
-  public PCMember() {}
+  public PCMember() {
+  }
 
   public PCMember(
       Long id,
@@ -228,7 +229,8 @@ public class PCMember {
 
     public PCMember build() {
       return new PCMember(
-          id, conferenceId, userId, status, expertiseKeywords, expertiseTopics, preferredMaxAssignments, createdAt, updatedAt);
+          id, conferenceId, userId, status, expertiseKeywords, expertiseTopics, preferredMaxAssignments, createdAt,
+          updatedAt);
     }
   }
 }

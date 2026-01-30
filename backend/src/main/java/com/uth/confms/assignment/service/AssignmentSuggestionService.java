@@ -239,11 +239,8 @@ public class AssignmentSuggestionService {
   }
 
   /**
-   * Tính toán keyword match score giữa reviewer expertise và submission keywords
-   *
-   * @param pcMember   PC member (reviewer)
-   * @param submission Submission
-   * @return Keyword match score từ 0.0 đến 1.0
+   * Tính toán điểm khớp từ khóa (Keyword match score).
+   * So sánh từ khóa của bài báo với từ khóa chuyên môn của reviewer.
    */
   private double calculateKeywordMatchScore(PCMember pcMember, Submission submission) {
     if (submission.getKeywords() == null || submission.getKeywords().trim().isEmpty()) {
@@ -285,12 +282,9 @@ public class AssignmentSuggestionService {
   }
 
   /**
-   * Tính toán topic match score giữa reviewer expertise topics và submission
-   * topics
-   *
-   * @param pcMember   PC member (reviewer)
-   * @param submission Submission
-   * @return Topic match score từ 0.0 đến 1.0
+   * Tính toán điểm khớp chủ đề (Topic match score).
+   * So sánh các chủ đề của hội nghị mà bài báo thuộc về với chủ đề chuyên môn của
+   * reviewer.
    */
   private double calculateTopicMatchScore(PCMember pcMember, Submission submission) {
     // Get conference topics

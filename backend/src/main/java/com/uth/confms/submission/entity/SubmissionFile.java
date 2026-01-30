@@ -18,10 +18,10 @@ public class SubmissionFile {
   private Submission submission;
 
   @Column(nullable = false)
-  private Integer versionNumber;
+  private Integer versionNumber; // Số phiên bản
 
   @Column(nullable = false)
-  private String filePath;
+  private String filePath; // Đường dẫn file
 
   @Column(nullable = false)
   private String fileName;
@@ -32,10 +32,10 @@ public class SubmissionFile {
   @Column(nullable = false)
   private String contentType;
 
-  private String checksum;
+  private String checksum; // Checksum kiểm tra toàn vẹn
 
   @Column(nullable = false)
-  private Boolean isCurrent = false;
+  private Boolean isCurrent = false; // Phiên bản hiện tại?
 
   @CreatedDate
   @Column(nullable = false, updatable = false)

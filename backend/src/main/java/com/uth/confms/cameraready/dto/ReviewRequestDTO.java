@@ -22,9 +22,9 @@ import java.util.UUID;
 public class ReviewRequestDTO {
 
     @NotNull(message = "Quyết định không được để trống")
-    private ReviewDecision decision;
+    private ReviewDecision decision; // Quyết định (APPROVED, REJECTED)
 
-    private String note;
+    private String note; // Ghi chú của reviewer
 
-    private UUID versionId;
+    private UUID versionId; // ID của phiên bản được review (nếu có)
 }

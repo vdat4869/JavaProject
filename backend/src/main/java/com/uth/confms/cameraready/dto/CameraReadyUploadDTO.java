@@ -5,12 +5,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 public class CameraReadyUploadDTO {
   @NotNull(message = "Submission ID is required")
-  private Long submissionId;
+  private Long submissionId; // ID bài báo
 
   @NotNull(message = "PDF file is required")
-  private MultipartFile pdfFile;
+  private MultipartFile pdfFile; // File PDF tải lên
 
-  public CameraReadyUploadDTO() {}
+  public CameraReadyUploadDTO() {
+  }
 
   public Long getSubmissionId() {
     return submissionId;

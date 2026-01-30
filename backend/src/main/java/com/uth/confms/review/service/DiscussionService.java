@@ -29,13 +29,14 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Service quản lý internal discussions và rebuttals
  *
- * <p>Service này xử lý các nghiệp vụ liên quan đến:
+ * <p>
+ * Service này xử lý các nghiệp vụ liên quan đến:
  *
  * <ul>
- *   <li>Internal discussion giữa reviewers (chỉ PC members)
- *   <li>Author rebuttals (phản hồi reviews)
- *   <li>Quản lý review comments
- *   <li>Authorization cho discussions
+ * <li>Internal discussion giữa reviewers (chỉ PC members)
+ * <li>Author rebuttals (phản hồi reviews)
+ * <li>Quản lý review comments
+ * <li>Authorization cho discussions
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -73,25 +74,24 @@ public class DiscussionService {
    * Thêm internal comment (thảo luận nội bộ giữa reviewers)
    *
    * @param submissionId ID của submission
-   * @param content Nội dung comment
-   * @param reviewerId ID của reviewer thêm comment
+   * @param content      Nội dung comment
+   * @param reviewerId   ID của reviewer thêm comment
    * @return ReviewCommentDTO chứa thông tin comment đã tạo
-   * @throws NotFoundException Nếu không tìm thấy submission
+   * @throws NotFoundException     Nếu không tìm thấy submission
    * @throws UnauthorizedException Nếu reviewer không phải PC member
    */
   @Transactional
+  // Thêm internal comment (thảo luận nội bộ giữa reviewers)
   public ReviewCommentDTO addInternalComment(Long submissionId, String content, Long reviewerId) {
-    Submission submission =
-        submissionRepository
-            .findById(submissionId)
-            .orElseThrow(() -> new NotFoundException("Submission not found"));
+    Submission submission = submissionRepository
+        .findById(submissionId)
+        .orElseThrow(() -> new NotFoundException("Submission not found"));
 
     // Check if reviewer is PC member
-    PCMember pcMember =
-        pcMemberRepository
-            .findByConferenceIdAndUserId(submission.getConferenceId(), reviewerId)
-            .orElseThrow(
-                () -> new UnauthorizedException("Only PC members can add internal comments"));
+    PCMember pcMember = pcMemberRepository
+        .findByConferenceIdAndUserId(submission.getConferenceId(), reviewerId)
+        .orElseThrow(
+            () -> new UnauthorizedException("Only PC members can add internal comments"));
 
     if (pcMember.getStatus() != PCMember.PCMemberStatus.ACCEPTED) {
       throw new UnauthorizedException("PC member must be accepted");
@@ -100,68 +100,64 @@ public class DiscussionService {
     // Check review deadline
     checkReviewDeadline(submission.getConferenceId());
 
-    ReviewComment comment =
-        ReviewComment.builder()
-            .submissionId(submissionId)
-            .reviewerId(reviewerId)
-            .content(content)
-            .isInternal(true)
-            .build();
+    ReviewComment comment = ReviewComment.builder()
+        .submissionId(submissionId)
+        .reviewerId(reviewerId)
+        .content(content)
+        .isInternal(true)
+        .build();
 
     comment = commentRepository.save(comment);
 
     return mapCommentToDTO(comment, true); // true = show reviewer name for internal comments
   }
 
+  // Lấy danh sách internal comments
   public List<ReviewCommentDTO> getInternalComments(
       Long submissionId, Long userId, boolean isChairOrAdmin) {
-    Submission submission =
-        submissionRepository
-            .findById(submissionId)
-            .orElseThrow(() -> new NotFoundException("Submission not found"));
+    Submission submission = submissionRepository
+        .findById(submissionId)
+        .orElseThrow(() -> new NotFoundException("Submission not found"));
 
-    // Check authorization: only PC members, chair, or admin can see internal comments
-    Conference conference =
-        conferenceRepository
-            .findById(submission.getConferenceId())
-            .orElseThrow(() -> new NotFoundException("Conference not found"));
+    // Check authorization: only PC members, chair, or admin can see internal
+    // comments
+    Conference conference = conferenceRepository
+        .findById(submission.getConferenceId())
+        .orElseThrow(() -> new NotFoundException("Conference not found"));
 
-    boolean isPC =
-        pcMemberRepository
-            .findByConferenceIdAndUserId(submission.getConferenceId(), userId)
-            .isPresent();
+    boolean isPC = pcMemberRepository
+        .findByConferenceIdAndUserId(submission.getConferenceId(), userId)
+        .isPresent();
 
     if (!isPC && !isChairOrAdmin && !conference.getChairId().equals(userId)) {
       throw new UnauthorizedException(
           "Only PC members, chair, or admin can view internal comments");
     }
 
-    List<ReviewComment> comments =
-        commentRepository.findBySubmissionIdAndIsInternalTrue(submissionId);
+    List<ReviewComment> comments = commentRepository.findBySubmissionIdAndIsInternalTrue(submissionId);
 
     return comments.stream()
         .map(
-            comment ->
-                mapCommentToDTO(comment, true)) // Show reviewer names for internal discussion
+            comment -> mapCommentToDTO(comment, true)) // Show reviewer names for internal discussion
         .collect(Collectors.toList());
   }
 
   /**
    * Tạo hoặc cập nhật rebuttal (phản hồi của author)
    *
-   * @param dto Thông tin rebuttal (submissionId, content)
+   * @param dto      Thông tin rebuttal (submissionId, content)
    * @param authorId ID của author tạo rebuttal
    * @return RebuttalDTO chứa thông tin rebuttal
-   * @throws NotFoundException Nếu không tìm thấy submission
+   * @throws NotFoundException     Nếu không tìm thấy submission
    * @throws UnauthorizedException Nếu không phải author của submission
-   * @throws BusinessException Nếu rebuttal đã được submit
+   * @throws BusinessException     Nếu rebuttal đã được submit
    */
   @Transactional
+  // Tạo hoặc cập nhật rebuttal (phản hồi của author)
   public RebuttalDTO createOrUpdateRebuttal(RebuttalSubmitDTO dto, Long authorId) {
-    Submission submission =
-        submissionRepository
-            .findById(dto.getSubmissionId())
-            .orElseThrow(() -> new NotFoundException("Submission not found"));
+    Submission submission = submissionRepository
+        .findById(dto.getSubmissionId())
+        .orElseThrow(() -> new NotFoundException("Submission not found"));
 
     // Check authorization - only submission author can create rebuttal
     if (!submission.getAuthorId().equals(authorId)) {
@@ -173,13 +169,12 @@ public class DiscussionService {
 
     if (rebuttal == null) {
       // Create new rebuttal
-      rebuttal =
-          Rebuttal.builder()
-              .submissionId(dto.getSubmissionId())
-              .authorId(authorId)
-              .content(dto.getContent())
-              .status(Rebuttal.RebuttalStatus.DRAFT)
-              .build();
+      rebuttal = Rebuttal.builder()
+          .submissionId(dto.getSubmissionId())
+          .authorId(authorId)
+          .content(dto.getContent())
+          .status(Rebuttal.RebuttalStatus.DRAFT)
+          .build();
     } else {
       // Update existing rebuttal (only if still in DRAFT status)
       if (rebuttal.getStatus() != Rebuttal.RebuttalStatus.DRAFT) {
@@ -199,11 +194,11 @@ public class DiscussionService {
   }
 
   @Transactional
+  // Submit rebuttal (chuyển trạng thái sang SUBMITTED)
   public RebuttalDTO submitRebuttal(Long rebuttalId, Long authorId) {
-    Rebuttal rebuttal =
-        rebuttalRepository
-            .findById(rebuttalId)
-            .orElseThrow(() -> new NotFoundException("Rebuttal not found"));
+    Rebuttal rebuttal = rebuttalRepository
+        .findById(rebuttalId)
+        .orElseThrow(() -> new NotFoundException("Rebuttal not found"));
 
     // Check authorization
     if (!rebuttal.getAuthorId().equals(authorId)) {
@@ -222,12 +217,12 @@ public class DiscussionService {
     return mapRebuttalToDTO(rebuttal);
   }
 
+  // Lấy rebuttal của submission
   public RebuttalDTO getRebuttalBySubmission(
       Long submissionId, Long userId, boolean isChairOrAdmin) {
-    Submission submission =
-        submissionRepository
-            .findById(submissionId)
-            .orElseThrow(() -> new NotFoundException("Submission not found"));
+    Submission submission = submissionRepository
+        .findById(submissionId)
+        .orElseThrow(() -> new NotFoundException("Submission not found"));
 
     Rebuttal rebuttal = rebuttalRepository.findBySubmissionId(submissionId).orElse(null);
 
@@ -237,10 +232,9 @@ public class DiscussionService {
 
     // Check authorization: author, reviewers, chair, or admin can view
     boolean isAuthor = submission.getAuthorId().equals(userId);
-    boolean isPC =
-        pcMemberRepository
-            .findByConferenceIdAndUserId(submission.getConferenceId(), userId)
-            .isPresent();
+    boolean isPC = pcMemberRepository
+        .findByConferenceIdAndUserId(submission.getConferenceId(), userId)
+        .isPresent();
 
     if (!isAuthor && !isPC && !isChairOrAdmin) {
       throw new UnauthorizedException("You don't have permission to view this rebuttal");
@@ -255,13 +249,13 @@ public class DiscussionService {
    * @param conferenceId Conference ID
    * @throws BusinessException If deadline has passed and is hard deadline
    */
+  // Kiểm tra deadline review
   private void checkReviewDeadline(Long conferenceId) {
     List<Deadline> deadlines = deadlineRepository.findByConferenceId(conferenceId);
-    Deadline reviewDeadline =
-        deadlines.stream()
-            .filter(d -> d.getType() == Deadline.DeadlineType.REVIEW)
-            .findFirst()
-            .orElse(null);
+    Deadline reviewDeadline = deadlines.stream()
+        .filter(d -> d.getType() == Deadline.DeadlineType.REVIEW)
+        .findFirst()
+        .orElse(null);
 
     if (reviewDeadline != null && reviewDeadline.getDueDate().isBefore(LocalDateTime.now())) {
       if (reviewDeadline.getHardDeadline()) {
@@ -271,8 +265,7 @@ public class DiscussionService {
   }
 
   private ReviewCommentDTO mapCommentToDTO(ReviewComment comment, boolean showReviewerName) {
-    User reviewer =
-        showReviewerName ? userRepository.findById(comment.getReviewerId()).orElse(null) : null;
+    User reviewer = showReviewerName ? userRepository.findById(comment.getReviewerId()).orElse(null) : null;
 
     return ReviewCommentDTO.builder()
         .id(comment.getId())

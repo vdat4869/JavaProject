@@ -5,17 +5,18 @@ import java.time.LocalDateTime;
 public class CameraReadyResponseDTO {
   private Long id;
   private Long submissionId;
-  private String submissionTitle;
-  private String pdfFilePath;
-  private Long fileSize;
-  private String checksum;
-  private String validationStatus;
-  private String validationNotes;
-  private Boolean approved;
-  private LocalDateTime uploadedAt;
-  private LocalDateTime updatedAt;
+  private String submissionTitle; // Tiêu đề bài báo
+  private String pdfFilePath; // Đường dẫn file PDF
+  private Long fileSize; // Kích thước file (bytes)
+  private String checksum; // Checksum SHA-256
+  private String validationStatus; // Trạng thái validate
+  private String validationNotes; // Ghi chú validate
+  private Boolean approved; // Đã được duyệt chưa
+  private LocalDateTime uploadedAt; // Thời gian tải lên
+  private LocalDateTime updatedAt; // Thời gian cập nhật
 
-  public CameraReadyResponseDTO() {}
+  public CameraReadyResponseDTO() {
+  }
 
   public CameraReadyResponseDTO(
       Long id,

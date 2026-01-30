@@ -101,6 +101,7 @@ public class EmailServiceImpl implements EmailService {
   @Override
   @Retryable(retryFor = { MessagingException.class,
       RuntimeException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2.0))
+  // Gửi email đơn lẻ
   public void sendEmail(String to, String subject, String templateName, Map<String, Object> model) {
     // Check quota before sending
     if (!quotaService.isQuotaAvailable(EmailQuota.QuotaType.DAILY)) {
@@ -160,6 +161,7 @@ public class EmailServiceImpl implements EmailService {
 
   @Override
   @Async("emailTaskExecutor")
+  // Gửi danh sách emails bất đồng bộ
   public CompletableFuture<Integer> sendBulkEmailAsync(
       List<String> recipients, String subject, String templateName, Map<String, Object> model) {
     return CompletableFuture.supplyAsync(() -> {
@@ -168,6 +170,7 @@ public class EmailServiceImpl implements EmailService {
   }
 
   @Override
+  // Gửi danh sách emails đồng bộ theo lô
   public int sendBulkEmail(
       List<String> recipients, String subject, String templateName, Map<String, Object> model) {
     log.info("Starting bulk email sending to {} recipients", recipients.size());
@@ -246,6 +249,7 @@ public class EmailServiceImpl implements EmailService {
   @Override
   @Retryable(retryFor = { MessagingException.class,
       RuntimeException.class }, maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2.0))
+  // Gửi email đơn giản (plain text)
   public void sendSimpleEmail(String to, String subject, String content) {
     // Check quota before sending
     if (!quotaService.isQuotaAvailable(EmailQuota.QuotaType.DAILY)) {
@@ -298,6 +302,7 @@ public class EmailServiceImpl implements EmailService {
    * Queue email for retry
    */
   @Transactional(propagation = Propagation.REQUIRES_NEW)
+  // Đưa email vào hàng đợi để retry sau
   public void queueEmail(String to, String subject, String templateName, String content, Map<String, Object> model) {
     try {
       // Render template if needed

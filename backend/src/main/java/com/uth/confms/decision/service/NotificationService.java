@@ -69,6 +69,7 @@ public class NotificationService {
   }
 
   @Transactional
+  // Gửi email thông báo decision cho author
   public void sendDecisionNotification(Decision decision) {
     Submission submission = submissionRepository
         .findById(decision.getSubmissionId())
@@ -158,6 +159,7 @@ public class NotificationService {
   }
 
   @Transactional
+  // Gửi thông báo hàng loạt cho danh sách submission
   public void sendBulkNotifications(BulkNotificationRequestDTO dto) {
     NotificationLog.NotificationType notificationType;
     try {
@@ -223,6 +225,7 @@ public class NotificationService {
     }
   }
 
+  // Tạo nội dung feedback ẩn danh từ các reviews
   private String generateAnonymizedFeedback(List<Review> reviews) {
     if (reviews.isEmpty()) {
       return "No reviews available.";
@@ -381,6 +384,7 @@ public class NotificationService {
   }
 
   @Transactional
+  // Gửi thông báo kết quả review camera-ready
   public void sendCameraReadyReviewNotification(
       CameraReadySubmission crSubmission, ReviewDecision decision, String note) {
     Submission submission = submissionRepository
@@ -426,6 +430,7 @@ public class NotificationService {
   }
 
   @Transactional
+  // Gửi thông báo mở nộp Camera-Ready
   public void sendCameraReadyOpenNotification(Submission submission, LocalDateTime deadline) {
     Conference conference = conferenceRepository.findById(submission.getConferenceId()).orElse(null);
     String conferenceName = conference != null ? conference.getName() : "Conference";

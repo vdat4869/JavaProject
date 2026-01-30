@@ -35,6 +35,11 @@ public class AIGatewayService {
         this.objectMapper = new ObjectMapper();
     }
 
+    /**
+     * Gửi yêu cầu chat đến AI. Tự động chọn provider (Gemini/OpenAI) dựa trên cấu
+     * hình.
+     * Support mock mode để test mà không tốn phí.
+     */
     public AIResponse chat(String systemPrompt, String userPrompt) {
         if (!aiConfig.isConfigured()) {
             throw new IllegalStateException("AI is not configured correctly.");
@@ -128,6 +133,10 @@ public class AIGatewayService {
         }
     }
 
+    /**
+     * Tạo dữ liệu giả lập cho chế độ test (Mock Mode).
+     * Phân loại nội dung dựa trên system prompt để trả về JSON phù hợp.
+     */
     private String generateMockResponse(String systemPrompt, String userPrompt) {
         String sysMatch = systemPrompt.toLowerCase();
 
@@ -177,6 +186,9 @@ public class AIGatewayService {
         return aiConfig.getCurrentModel();
     }
 
+    /**
+     * Lớp đóng gói kết quả phản hồi từ AI.
+     */
     public static class AIResponse {
         private final boolean success;
         private final String content;

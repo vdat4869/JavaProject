@@ -31,8 +31,9 @@ public class ChairAIService {
     }
 
     /**
-     * Soạn thảo email thông báo.
-     * Chair PHẢI review và chỉnh sửa trước khi gửi.
+     * Soạn thảo bản nháp email thông báo (Decision, Invitation, Reminder, etc.)
+     * Dựa trên ngữ cảnh và tông giọng yêu cầu.
+     * QUAN TRỌNG: AI chỉ soạn bản nháp, Chair phải kiểm tra lại trước khi gửi.
      */
     public EmailDraftResponse draftEmail(EmailDraftRequest request, Long userId) {
         String languageInstruction = "vi".equals(request.getLanguage())

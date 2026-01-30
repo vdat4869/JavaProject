@@ -138,12 +138,7 @@ public class AuthController {
   }
 
   /**
-   * Change password for current user
-   *
-   * @param authentication Authentication object
-   * @param request        Change password request (currentPassword, newPassword)
-   * @param httpRequest    HTTP request
-   * @return ApiResponse confirming password change
+   * Thay đổi mật khẩu cho người dùng hiện tại.
    */
   @PostMapping("/change-password")
   @PreAuthorize("isAuthenticated()")
@@ -199,7 +194,7 @@ public class AuthController {
   }
 
   /**
-   * Request password reset link
+   * Yêu cầu gửi link khôi phục mật khẩu.
    */
   @PostMapping("/forgot-password")
   @NoAuth
@@ -211,7 +206,7 @@ public class AuthController {
   }
 
   /**
-   * Reset password using token
+   * Đặt lại mật khẩu mới.
    */
   @PostMapping("/reset-password")
   @NoAuth

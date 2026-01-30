@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "email_quota", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"quota_date", "quota_type"})
+        @UniqueConstraint(columnNames = { "quota_date", "quota_type" })
 })
 @EntityListeners(AuditingEntityListener.class)
 @Data
@@ -25,49 +25,49 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EmailQuota {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false)
     private LocalDate quotaDate; // Date for daily quota tracking
-    
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private QuotaType quotaType;
-    
+
     @Column(nullable = false)
     @Builder.Default
     private Long emailsSent = 0L; // Number of emails sent
-    
+
     @Column(nullable = false)
     private Long quotaLimit; // Maximum emails allowed (per day/hour)
-    
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean quotaExceeded = false;
-    
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
-    
+
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
-    
+
     public enum QuotaType {
-        DAILY,  // Daily quota limit
-        HOURLY  // Hourly quota limit
+        DAILY, // Daily quota limit
+        HOURLY // Hourly quota limit
     }
-    
+
     /**
      * Check if quota is exceeded
      */
     public boolean isQuotaExceeded() {
         return emailsSent >= quotaLimit;
     }
-    
+
     /**
      * Get remaining quota
      */

@@ -8,5 +8,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CFPRepository extends JpaRepository<CFP, Long> {
-  Optional<CFP> findByConference(Conference conference);
+  Optional<CFP> findByConference(Conference conference); // Tìm CFP theo hội nghị
 }

@@ -7,8 +7,10 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ReviewCommentRepository extends JpaRepository<ReviewComment, Long> {
+  // Lấy tất cả comments của submission
   List<ReviewComment> findBySubmissionId(Long submissionId);
 
+  // Lấy comments internal (chỉ thảo luận nội bộ)
   List<ReviewComment> findBySubmissionIdAndIsInternalTrue(Long submissionId);
 
   List<ReviewComment> findByReviewerId(Long reviewerId);

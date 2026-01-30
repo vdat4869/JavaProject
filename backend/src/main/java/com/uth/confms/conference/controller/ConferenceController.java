@@ -45,18 +45,21 @@ public class ConferenceController {
 
   @GetMapping("/public")
   @NoAuth
+  // Lấy danh sách hội nghị đã được public
   public ResponseEntity<ApiResponse<List<ConferenceResponseDTO>>> getPublishedConferences() {
     return ResponseEntity.ok(ApiResponse.success(conferenceService.getPublishedConferences()));
   }
 
   @GetMapping("/{id}")
   @NoAuth
+  // Lấy thông tin chi tiết hội nghị
   public ResponseEntity<ApiResponse<ConferenceResponseDTO>> getConference(@PathVariable Long id) {
     return ResponseEntity.ok(ApiResponse.success(conferenceService.getConference(id)));
   }
 
   @GetMapping("/my")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Lấy danh sách hội nghị của user (dành cho Chair/Admin)
   public ResponseEntity<ApiResponse<List<ConferenceResponseDTO>>> getMyConferences(
       Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -65,6 +68,7 @@ public class ConferenceController {
 
   @PostMapping
   @PreAuthorize("hasRole('ADMIN')")
+  // Tạo hội nghị mới (Chỉ Admin)
   public ResponseEntity<ApiResponse<ConferenceResponseDTO>> createConference(
       @Valid @RequestBody ConferenceCreateDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -73,6 +77,7 @@ public class ConferenceController {
 
   @PutMapping("/{id}")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Cập nhật thông tin hội nghị (Chair/Admin)
   public ResponseEntity<ApiResponse<ConferenceResponseDTO>> updateConference(
       @PathVariable Long id,
       @Valid @RequestBody ConferenceUpdateDTO dto,
@@ -84,6 +89,7 @@ public class ConferenceController {
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasRole('ADMIN')")
+  // Xóa hội nghị (Chỉ Admin)
   public ResponseEntity<ApiResponse<Void>> deleteConference(
       @PathVariable Long id, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);

@@ -22,23 +22,23 @@ import java.util.List;
  */
 public class ConferenceCreateDTO {
   @NotBlank
-  private String name;
+  private String name; // Tên hội nghị
 
-  private String acronym;
+  private String acronym; // Tên viết tắt
 
-  private String description;
+  private String description; // Mô tả hội nghị
 
-  private String reviewMode; // SINGLE_BLIND or DOUBLE_BLIND
+  private String reviewMode; // Chế độ review (SINGLE_BLIND, DOUBLE_BLIND)
 
-  private List<TopicDTO> topics;
+  private List<TopicDTO> topics; // Danh sách các chủ đề
 
-  private List<Long> keywordIds; // Reference to existing keywords
+  private List<Long> keywordIds; // Danh sách ID các từ khóa
 
-  private List<TrackDTO> tracks;
+  private List<TrackDTO> tracks; // Danh sách các track (lĩnh vực)
 
-  private List<DeadlineDTO> deadlines;
+  private List<DeadlineDTO> deadlines; // Danh sách các mốc thời gian
 
-  private Long chairId; // Assigned chair ID (Admin only)
+  private Long chairId; // ID của Chair (Chỉ dành cho Admin khi tạo hộ)
 
   public String getName() {
     return name;

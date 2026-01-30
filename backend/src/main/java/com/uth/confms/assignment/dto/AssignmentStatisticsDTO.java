@@ -5,24 +5,26 @@ import java.util.Map;
 /**
  * DTO cho assignment statistics
  *
- * <p>DTO này chứa các thống kê về assignments trong một conference.
+ * <p>
+ * DTO này chứa các thống kê về assignments trong một conference.
  *
  * @author UTH-ConfMS Team
  * @version 1.0
  */
 public class AssignmentStatisticsDTO {
-  private Integer totalAssignments;
-  private Integer totalReviewers;
-  private Double averageAssignmentsPerReviewer;
-  private Integer minAssignments;
-  private Integer maxAssignments;
-  private Map<String, Integer> statusDistribution; // ASSIGNED, ACCEPTED, DECLINED, COMPLETED
-  private Map<String, Integer> workloadDistribution; // LOW, NORMAL, HIGH, OVERLOADED
-  private Double acceptanceRate; // Percentage of assignments accepted
-  private Double completionRate; // Percentage of assignments completed
-  private Double declineRate; // Percentage of assignments declined
+  private Integer totalAssignments; // Tổng số phân công
+  private Integer totalReviewers; // Tổng số reviewer tham gia
+  private Double averageAssignmentsPerReviewer; // Số phân công trung bình mỗi reviewer
+  private Integer minAssignments; // Số phân công ít nhất một reviewer nhận
+  private Integer maxAssignments; // Số phân công nhiều nhất một reviewer nhận
+  private Map<String, Integer> statusDistribution; // Phân bổ trạng thái (ASSIGNED, ACCEPTED, etc.)
+  private Map<String, Integer> workloadDistribution; // Phân bổ khối lượng công việc (LOW, NORMAL, etc.)
+  private Double acceptanceRate; // Tỷ lệ chấp nhận phân công (%)
+  private Double completionRate; // Tỷ lệ hoàn thành review (%)
+  private Double declineRate; // Tỷ lệ từ chối phân công (%)
 
-  public AssignmentStatisticsDTO() {}
+  public AssignmentStatisticsDTO() {
+  }
 
   public AssignmentStatisticsDTO(
       Integer totalAssignments,

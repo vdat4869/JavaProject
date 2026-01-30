@@ -20,10 +20,10 @@ import jakarta.validation.constraints.NotNull;
 public class UpdateDecisionRequestDTO {
     private String type; // ACCEPT, REJECT, CONDITIONAL_ACCEPT (optional)
 
-    private String comments; // New comments (optional)
+    private String comments; // Nhận xét mới (optional)
 
     @NotNull(message = "Reason for change is required")
-    private String reason; // Reason for updating (required for audit)
+    private String reason; // Lý do thay đổi (bắt buộc để audit)
 
     public String getType() {
         return type;

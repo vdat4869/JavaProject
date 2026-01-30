@@ -18,28 +18,30 @@ public class PCInvitation {
   private Long conferenceId;
 
   @Column(nullable = false)
-  private Long invitedUserId;
+  private Long invitedUserId; // Người được mời
 
   @Column(nullable = false)
-  private Long invitedBy;
+  private Long invitedBy; // Người mời (Chair)
 
   @Column(nullable = false, unique = true)
-  private String token;
+  private String token; // Token xác thực trong email
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   private InvitationStatus status = InvitationStatus.PENDING;
 
   @Column(nullable = false)
-  private LocalDateTime expiresAt;
+  private LocalDateTime expiresAt; // Thời gian hết hạn
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @LastModifiedDate private LocalDateTime updatedAt;
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
 
-  public PCInvitation() {}
+  public PCInvitation() {
+  }
 
   public PCInvitation(
       Long id,
@@ -139,10 +141,10 @@ public class PCInvitation {
   }
 
   public enum InvitationStatus {
-    PENDING,
-    ACCEPTED,
-    DECLINED,
-    EXPIRED
+    PENDING, // Đang chờ
+    ACCEPTED, // Đã chấp nhận
+    DECLINED, // Đã từ chối
+    EXPIRED // Hết hạn
   }
 
   public static class Builder {

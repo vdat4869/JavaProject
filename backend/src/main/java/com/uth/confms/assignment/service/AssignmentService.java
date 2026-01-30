@@ -98,6 +98,10 @@ public class AssignmentService {
     this.deadlineRepository = deadlineRepository;
   }
 
+  /**
+   * Tạo phân công mới (chỉ Chair hoặc Admin có quyền).
+   * Kiểm tra PC member status, COI và workload limit trước khi thực hiện.
+   */
   @Transactional
   public AssignmentResponseDTO createAssignment(AssignmentCreateDTO dto, Long chairId, boolean isAdmin) {
     Submission submission = submissionRepository
@@ -110,7 +114,6 @@ public class AssignmentService {
         .findById(submission.getConferenceId())
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
-    // Check authorization - only chair can assign
     // Check authorization - only chair (or admin) can assign
     if (!isAdmin && !conference.getChairId().equals(chairId)) {
       throw new UnauthorizedException("Only conference chair or admin can assign reviewers");
@@ -181,6 +184,10 @@ public class AssignmentService {
     return mapToDTO(assignment);
   }
 
+  /**
+   * Reviewer chấp nhận phân công. Chuyển trạng thái sang ACCEPTED.
+   * Nếu bài báo đang ở trạng thái SUBMITTED, tự động chuyển sang UNDER_REVIEW.
+   */
   @Transactional
   public AssignmentResponseDTO acceptAssignment(Long assignmentId, Long reviewerId) {
     Assignment assignment = assignmentRepository
@@ -210,6 +217,11 @@ public class AssignmentService {
     return mapToDTO(assignment);
   }
 
+  /**
+   * Reviewer từ chối phân công. Chuyển trạng thái sang DECLINED.
+   * Nếu đây là reviewer cuối cùng phản hồi và các reviewer khác đã xong, cập nhật
+   * trạng thái bài báo.
+   */
   @Transactional
   public AssignmentResponseDTO declineAssignment(Long assignmentId, Long reviewerId) {
     Assignment assignment = assignmentRepository
@@ -249,6 +261,9 @@ public class AssignmentService {
     return mapToDTO(assignment);
   }
 
+  /**
+   * Xóa phân công (chỉ Chair hoặc Admin).
+   */
   @Transactional
   public void deleteAssignment(Long assignmentId, Long chairId, boolean isAdmin) {
     Assignment assignment = assignmentRepository
@@ -263,7 +278,6 @@ public class AssignmentService {
         .findById(submission.getConferenceId())
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
-    // Check authorization
     // Check authorization
     if (!isAdmin && !conference.getChairId().equals(chairId)) {
       throw new UnauthorizedException("Only conference chair or admin can delete assignments");
@@ -295,7 +309,6 @@ public class AssignmentService {
         .findById(submission.getConferenceId())
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
-    // Check authorization
     // Check authorization
     if (!isAdmin && !conference.getChairId().equals(chairId)) {
       throw new UnauthorizedException("Only conference chair or admin can reassign assignments");
@@ -389,7 +402,6 @@ public class AssignmentService {
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
-    // Check authorization
     if (!isAdmin && !conference.getChairId().equals(chairId)) {
       throw new UnauthorizedException("Only conference chair or admin can view assignments");
     }
@@ -442,7 +454,6 @@ public class AssignmentService {
         .findById(submission.getConferenceId())
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
-    // Check authorization
     // Check authorization
     if (!isAdmin && !conference.getChairId().equals(chairId)) {
       throw new UnauthorizedException("Only conference chair or admin can auto-assign reviewers");
@@ -536,7 +547,6 @@ public class AssignmentService {
         .orElseThrow(() -> new NotFoundException("Conference not found"));
 
     // Check authorization
-    // Check authorization
     if (!isAdmin && !conference.getChairId().equals(chairId)) {
       throw new UnauthorizedException("Only conference chair or admin can view assignment statistics");
     }
@@ -594,14 +604,9 @@ public class AssignmentService {
     workloadDistribution.put("HIGH", 0);
     workloadDistribution.put("OVERLOADED", 0);
 
-    for (Long reviewerId : reviewerIds) {
-      try {
-        com.uth.confms.pc.dto.WorkloadDTO workload = workloadService.getReviewerWorkload(reviewerId, conferenceId);
-        String status = workload.getWorkloadStatus();
-        workloadDistribution.merge(status, 1, Integer::sum);
-      } catch (Exception e) {
-        // Skip if error
-      }
+    for (Map.Entry<Long, Integer> entry : reviewerAssignmentCounts.entrySet()) {
+      String status = workloadService.calculateWorkloadStatus(entry.getValue());
+      workloadDistribution.merge(status, 1, Integer::sum);
     }
 
     // Calculate rates
@@ -728,12 +733,15 @@ public class AssignmentService {
         .map(Assignment::getReviewerId)
         .collect(Collectors.toSet());
 
+    // Batch fetch all reviews for these reviewers to avoid N+1
+    Map<Long, List<Review>> reviewerReviewsMap = reviewRepository.findByReviewerIdIn(reviewerIds).stream()
+        .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED && r.getScore() != null)
+        .collect(Collectors.groupingBy(Review::getReviewerId));
+
     double totalReviewerRating = 0.0;
     int reviewersWithReviews = 0;
     for (Long reviewerId : reviewerIds) {
-      List<Review> reviewerReviews = reviewRepository.findByReviewerId(reviewerId).stream()
-          .filter(r -> r.getStatus() == Review.ReviewStatus.SUBMITTED && r.getScore() != null)
-          .collect(Collectors.toList());
+      List<Review> reviewerReviews = reviewerReviewsMap.getOrDefault(reviewerId, List.of());
 
       if (!reviewerReviews.isEmpty()) {
         double reviewerAvgScore = reviewerReviews.stream()

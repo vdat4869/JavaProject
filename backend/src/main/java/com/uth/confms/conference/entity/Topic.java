@@ -14,10 +14,10 @@ public class Topic {
   private Conference conference;
 
   @Column(nullable = false)
-  private String name;
+  private String name; // Tên chủ đề
 
   @Column(columnDefinition = "TEXT")
-  private String description;
+  private String description; // Mô tả chủ đề
 
   public Topic() {
   }

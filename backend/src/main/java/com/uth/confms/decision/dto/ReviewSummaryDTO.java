@@ -5,12 +5,14 @@ import java.util.Map;
 /**
  * DTO chứa review summary cho submission
  *
- * <p>DTO này cung cấp thông tin tổng hợp về reviews để hỗ trợ chair trong decision-making:
+ * <p>
+ * DTO này cung cấp thông tin tổng hợp về reviews để hỗ trợ chair trong
+ * decision-making:
  *
  * <ul>
- *   <li>Average score - Điểm trung bình
- *   <li>Review count - Số lượng reviews đã submit
- *   <li>Score distribution - Phân bố điểm
+ * <li>Average score - Điểm trung bình
+ * <li>Review count - Số lượng reviews đã submit
+ * <li>Score distribution - Phân bố điểm
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -18,11 +20,12 @@ import java.util.Map;
  */
 public class ReviewSummaryDTO {
   private Long submissionId;
-  private Double averageScore;
-  private Integer reviewCount;
-  private Map<String, Integer> scoreDistribution;
+  private Double averageScore; // Điểm trung bình
+  private Integer reviewCount; // Số lượng review
+  private Map<String, Integer> scoreDistribution; // Phân bố điểm số
 
-  public ReviewSummaryDTO() {}
+  public ReviewSummaryDTO() {
+  }
 
   public ReviewSummaryDTO(
       Long submissionId,

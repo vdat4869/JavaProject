@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @Builder
 public class KeywordDTO {
   private Long id;
-  private String name;
-  private String description;
+  private String name; // Tên từ khóa
+  private String description; // Mô tả
 }

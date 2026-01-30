@@ -8,17 +8,20 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 /**
  * Entity đại diện cho Conflict of Interest (COI) giữa reviewer và submission
  *
- * <p>COI được khai báo bởi reviewer hoặc tự động phát hiện nếu reviewer là author. COI có các loại:
+ * <p>
+ * COI được khai báo bởi reviewer hoặc tự động phát hiện nếu reviewer là author.
+ * COI có các loại:
  *
  * <ul>
- *   <li>CO_AUTHOR - Reviewer là đồng tác giả
- *   <li>COLLABORATOR - Reviewer là cộng tác viên
- *   <li>ADVISOR - Reviewer là cố vấn
- *   <li>INSTITUTIONAL - Cùng tổ chức
- *   <li>OTHER - Lý do khác
+ * <li>CO_AUTHOR - Reviewer là đồng tác giả
+ * <li>COLLABORATOR - Reviewer là cộng tác viên
+ * <li>ADVISOR - Reviewer là cố vấn
+ * <li>INSTITUTIONAL - Cùng tổ chức
+ * <li>OTHER - Lý do khác
  * </ul>
  *
- * <p>Reviewer có COI sẽ không được assign để review submission đó.
+ * <p>
+ * Reviewer có COI sẽ không được assign để review submission đó.
  *
  * @author UTH-ConfMS Team
  * @version 1.0
@@ -39,19 +42,20 @@ public class ConflictOfInterest {
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private COIType type;
+  private COIType type; // Loại mâu thuẫn
 
   @Column(columnDefinition = "TEXT")
-  private String reason;
+  private String reason; // Lý do cụ thể
 
   @Column(nullable = false)
-  private Boolean active = true;
+  private Boolean active = true; // Still active?
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime declaredAt;
 
-  public ConflictOfInterest() {}
+  public ConflictOfInterest() {
+  }
 
   public ConflictOfInterest(
       Long id,

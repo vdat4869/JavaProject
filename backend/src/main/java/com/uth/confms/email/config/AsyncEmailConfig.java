@@ -15,21 +15,22 @@ import java.util.concurrent.Executor;
 @Configuration
 @EnableAsync
 public class AsyncEmailConfig implements AsyncConfigurer {
-    
+
     @Value("${app.email.async.core-pool-size:5}")
     private int corePoolSize;
-    
+
     @Value("${app.email.async.max-pool-size:10}")
     private int maxPoolSize;
-    
+
     @Value("${app.email.async.queue-capacity:100}")
     private int queueCapacity;
-    
+
     @Value("${app.email.async.thread-name-prefix:email-async-}")
     private String threadNamePrefix;
-    
+
     @Override
     @Bean(name = "emailTaskExecutor")
+    // Cấu hình Executor cho việc gửi email bất đồng bộ
     public Executor getAsyncExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(corePoolSize);

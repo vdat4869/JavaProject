@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react'
+import { lazy, Suspense } from 'react'
 import { RouteObject, Navigate } from 'react-router-dom'
 import { CSpinner } from '@coreui/react'
 import { UserRole } from '../context/AuthContext'
@@ -507,21 +507,7 @@ export const routes: RouteObject[] = [
         handle: { roles: ['PC'] as UserRole[] },
       },
       {
-        path: 'pc/invitation/accept',
-        element: (
-          <Suspense
-            fallback={
-              <div className="d-flex justify-content-center p-5">
-                <CSpinner color="primary" />
-              </div>
-            }
-          >
-            <InvitationAcceptPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'pc/invitation/decline',
+        path: 'pc/invitation',
         element: (
           <Suspense
             fallback={

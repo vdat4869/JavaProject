@@ -73,6 +73,7 @@ public class ReviewController {
 
   @PostMapping("/draft")
   @PreAuthorize("hasRole('PC')")
+  // Tạo hoặc cập nhật review nháp
   public ResponseEntity<ApiResponse<ReviewResponseDTO>> createOrUpdateDraft(
       @Valid @RequestBody ReviewSubmitDTO dto, Authentication authentication) {
     Long reviewerId = getUserIdFromAuthentication(authentication);
@@ -82,6 +83,7 @@ public class ReviewController {
 
   @PostMapping("/{id}/submit")
   @PreAuthorize("hasRole('PC')")
+  // Submit review chính thức
   public ResponseEntity<ApiResponse<ReviewResponseDTO>> submitReview(
       @PathVariable Long id, Authentication authentication) {
     Long reviewerId = getUserIdFromAuthentication(authentication);
@@ -90,6 +92,7 @@ public class ReviewController {
 
   @GetMapping("/assignment/{assignmentId}")
   @PreAuthorize("hasRole('PC')")
+  // Lấy review của tôi cho assignment cụ thể
   public ResponseEntity<ApiResponse<ReviewResponseDTO>> getMyReview(
       @PathVariable Long assignmentId, Authentication authentication) {
     Long reviewerId = getUserIdFromAuthentication(authentication);
@@ -99,6 +102,7 @@ public class ReviewController {
 
   @GetMapping("/submission/{submissionId}")
   @PreAuthorize("isAuthenticated()")
+  // Lấy danh sách reviews của một submission
   public ResponseEntity<ApiResponse<List<ReviewResponseDTO>>> getReviewsBySubmission(
       @PathVariable Long submissionId, Authentication authentication) {
     Long userId = getUserIdFromAuthentication(authentication);
@@ -110,6 +114,7 @@ public class ReviewController {
 
   @GetMapping("/{id}")
   @PreAuthorize("isAuthenticated()")
+  // Lấy chi tiết một review
   public ResponseEntity<ApiResponse<ReviewResponseDTO>> getReview(
       @PathVariable Long id, Authentication authentication) {
     Long userId = getUserIdFromAuthentication(authentication);
@@ -139,6 +144,7 @@ public class ReviewController {
 
   @PostMapping("/submission/{submissionId}/comments")
   @PreAuthorize("hasRole('PC')")
+  // Thêm comment thảo luận nội bộ (chỉ PC)
   public ResponseEntity<ApiResponse<ReviewCommentDTO>> addInternalComment(
       @PathVariable Long submissionId, @RequestBody String content, Authentication authentication) {
     Long reviewerId = getUserIdFromAuthentication(authentication);
@@ -149,6 +155,7 @@ public class ReviewController {
 
   @GetMapping("/submission/{submissionId}/comments")
   @PreAuthorize("hasRole('PC') or hasRole('CHAIR') or hasRole('ADMIN')")
+  // Lấy danh sách internal comments (PC/Chair/Admin)
   public ResponseEntity<ApiResponse<List<ReviewCommentDTO>>> getInternalComments(
       @PathVariable Long submissionId, Authentication authentication) {
     Long userId = getUserIdFromAuthentication(authentication);
@@ -162,6 +169,7 @@ public class ReviewController {
 
   @PostMapping("/rebuttal")
   @PreAuthorize("hasRole('AUTHOR')")
+  // Tạo hoặc cập nhật phản biện (Author)
   public ResponseEntity<ApiResponse<RebuttalDTO>> createOrUpdateRebuttal(
       @Valid @RequestBody RebuttalSubmitDTO dto, Authentication authentication) {
     Long authorId = getUserIdFromAuthentication(authentication);
@@ -171,6 +179,7 @@ public class ReviewController {
 
   @PostMapping("/rebuttal/{id}/submit")
   @PreAuthorize("hasRole('AUTHOR')")
+  // Nộp phản biện chính thức (Author)
   public ResponseEntity<ApiResponse<RebuttalDTO>> submitRebuttal(
       @PathVariable Long id, Authentication authentication) {
     Long authorId = getUserIdFromAuthentication(authentication);
@@ -179,6 +188,7 @@ public class ReviewController {
 
   @GetMapping("/rebuttal/submission/{submissionId}")
   @PreAuthorize("isAuthenticated()")
+  // Lấy thông tin phản biện của submission
   public ResponseEntity<ApiResponse<RebuttalDTO>> getRebuttalBySubmission(
       @PathVariable Long submissionId, Authentication authentication) {
     Long userId = getUserIdFromAuthentication(authentication);

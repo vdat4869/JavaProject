@@ -15,26 +15,27 @@ public class NotificationLog {
 
   private Long submissionId;
 
-  private Long userId;
+  private Long userId; // Người nhận (Author)
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private NotificationType type;
+  private NotificationType type; // Loại thông báo
 
-  private String subject;
+  private String subject; // Tiêu đề email
 
   @Column(columnDefinition = "TEXT")
-  private String content;
+  private String content; // Nội dung email
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
-  private LocalDateTime sentAt;
+  private LocalDateTime sentAt; // Thời gian gửi
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private NotificationStatus status = NotificationStatus.SENT;
+  private NotificationStatus status = NotificationStatus.SENT; // Trạng thái gửi
 
-  public NotificationLog() {}
+  public NotificationLog() {
+  }
 
   public NotificationLog(
       Long id,

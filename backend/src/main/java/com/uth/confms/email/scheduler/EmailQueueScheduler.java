@@ -13,13 +13,14 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class EmailQueueScheduler {
-    
+
     private final EmailQueueService emailQueueService;
-    
+
     /**
      * Process pending emails every minute
      */
     @Scheduled(fixedRate = 60000) // Every minute
+    // Lên lịch xử lý hàng đợi email mỗi phút
     public void processEmailQueue() {
         try {
             int processed = emailQueueService.processPendingEmails();

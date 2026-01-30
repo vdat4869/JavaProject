@@ -26,6 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   }
 
   @Override
+  // Filter kiểm tra JWT trong header mỗi request
   protected void doFilterInternal(
       @NonNull HttpServletRequest request,
       @NonNull HttpServletResponse response,
@@ -41,13 +42,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     jwt = authHeader.substring(7);
-    
+
     // Skip if token is empty or invalid format
     if (jwt == null || jwt.trim().isEmpty() || !jwt.contains(".")) {
       filterChain.doFilter(request, response);
       return;
     }
-    
+
     try {
       userEmail = jwtService.extractUsername(jwt);
     } catch (Exception e) {
@@ -60,9 +61,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       try {
         UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
         if (jwtService.validateToken(jwt, userDetails)) {
-          UsernamePasswordAuthenticationToken authToken =
-              new UsernamePasswordAuthenticationToken(
-                  userDetails, null, userDetails.getAuthorities());
+          UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+              userDetails, null, userDetails.getAuthorities());
           authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
           SecurityContextHolder.getContext().setAuthentication(authToken);
         }

@@ -19,24 +19,26 @@ public class CFP {
   private Conference conference;
 
   @Column(columnDefinition = "TEXT")
-  private String callForPapers;
+  private String callForPapers; // Nội dung lời mời viết bài
 
   @Column(columnDefinition = "TEXT")
-  private String topics;
+  private String topics; // Danh sách chủ đề (để tương thích ngược)
 
   @Column(columnDefinition = "TEXT")
-  private String submissionGuidelines;
+  private String submissionGuidelines; // Hướng dẫn nộp bài
 
   @Column(nullable = false)
-  private Boolean open = false;
+  private Boolean open = false; // Trạng thái mở/đóng nộp bài
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @LastModifiedDate private LocalDateTime updatedAt;
+  @LastModifiedDate
+  private LocalDateTime updatedAt;
 
-  public CFP() {}
+  public CFP() {
+  }
 
   public CFP(
       Long id,

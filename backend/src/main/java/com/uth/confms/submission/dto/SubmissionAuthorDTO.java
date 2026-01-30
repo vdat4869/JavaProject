@@ -7,17 +7,18 @@ public class SubmissionAuthorDTO {
   private Long userId;
 
   @NotBlank(message = "First name is required")
-  private String firstName;
+  private String firstName; // Tên
 
   @NotBlank(message = "Last name is required")
-  private String lastName;
+  private String lastName; // Họ
 
   private String email;
-  private String affiliation;
-  private Boolean isCorresponding;
-  private Integer orderIndex;
+  private String affiliation; // Đơn vị công tác
+  private Boolean isCorresponding; // Tác giả liên hệ chính?
+  private Integer orderIndex; // Thứ tự
 
-  public SubmissionAuthorDTO() {}
+  public SubmissionAuthorDTO() {
+  }
 
   public SubmissionAuthorDTO(
       Long id,

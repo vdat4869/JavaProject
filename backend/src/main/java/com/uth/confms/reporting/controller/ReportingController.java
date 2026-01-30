@@ -14,12 +14,15 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Controller quản lý reports và statistics
  *
- * <p>Các endpoints:
+ * <p>
+ * Các endpoints:
  *
  * <ul>
- *   <li>GET /api/reporting/conference/{id} - Lấy latest report (CHAIR/ADMIN)
- *   <li>POST /api/reporting/conference/{id}/snapshot - Tạo report snapshot (CHAIR/ADMIN)
- *   <li>GET /api/reporting/conference/{id}/history - Lấy report history (CHAIR/ADMIN)
+ * <li>GET /api/reporting/conference/{id} - Lấy latest report (CHAIR/ADMIN)
+ * <li>POST /api/reporting/conference/{id}/snapshot - Tạo report snapshot
+ * (CHAIR/ADMIN)
+ * <li>GET /api/reporting/conference/{id}/history - Lấy report history
+ * (CHAIR/ADMIN)
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -38,6 +41,7 @@ public class ReportingController {
 
   @GetMapping("/conference/{conferenceId}")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // API lấy báo cáo tổng hợp mới nhất
   public ResponseEntity<ApiResponse<ReportResponseDTO>> getLatestReport(
       @PathVariable Long conferenceId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -47,6 +51,7 @@ public class ReportingController {
 
   @PostMapping("/conference/{conferenceId}/snapshot")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // API tạo snapshot báo cáo mới
   public ResponseEntity<ApiResponse<ReportResponseDTO>> createSnapshot(
       @PathVariable Long conferenceId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -56,6 +61,7 @@ public class ReportingController {
 
   @GetMapping("/conference/{conferenceId}/history")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // API xem lịch sử các báo cáo
   public ResponseEntity<ApiResponse<List<ReportResponseDTO>>> getReportHistory(
       @PathVariable Long conferenceId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -65,8 +71,7 @@ public class ReportingController {
 
   private Long getUserIdFromAuthentication(Authentication authentication) {
     String email = authentication.getName();
-    User user =
-        userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+    User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
     return user.getId();
   }
 }

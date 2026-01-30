@@ -7,32 +7,37 @@ package com.uth.confms.cameraready.entity;
  * @version 1.0.0
  */
 public enum CameraReadyStatus {
-    
+
     /**
      * Chưa mở thời gian nộp camera-ready.
+     * Trạng thái mặc định khi chưa đến deadline hoặc chưa được kích hoạt.
      */
     NOT_OPEN,
-    
+
     /**
      * Đang mở, chờ tác giả tải lên lần đầu.
+     * Tác giả có thể upload file ở trạng thái này.
      */
     OPEN,
-    
+
     /**
      * Đã nộp, đang chờ Chair duyệt.
+     * Tác giả đã upload file, Chair cần review.
      */
     SUBMITTED,
-    
+
     /**
      * Chair yêu cầu chỉnh sửa.
+     * Tác giả cần upload lại file mới.
      */
     NEED_FIX,
-    
+
     /**
      * Đã phê duyệt, sẵn sàng vào kỷ yếu.
+     * Bài nộp đã được chấp nhận cho camera-ready.
      */
     APPROVED,
-    
+
     /**
      * Thời gian nộp đã kết thúc.
      */

@@ -6,17 +6,19 @@ import jakarta.validation.constraints.NotNull;
 /**
  * DTO cho request submit review
  *
- * <p>DTO này chứa thông tin review cần submit:
+ * <p>
+ * DTO này chứa thông tin review cần submit:
  *
  * <ul>
- *   <li>assignmentId - ID của assignment (required)
- *   <li>summary - Tóm tắt review (required)
- *   <li>strengths - Điểm mạnh (optional)
- *   <li>weaknesses - Điểm yếu (optional)
- *   <li>comments - Comments chi tiết (required)
- *   <li>score - Điểm đánh giá (required): STRONG_ACCEPT, ACCEPT, WEAK_ACCEPT, BORDERLINE,
- *       WEAK_REJECT, REJECT, STRONG_REJECT
- *   <li>isConfidential - Có phải confidential review không (required)
+ * <li>assignmentId - ID của assignment (required)
+ * <li>summary - Tóm tắt review (required)
+ * <li>strengths - Điểm mạnh (optional)
+ * <li>weaknesses - Điểm yếu (optional)
+ * <li>comments - Comments chi tiết (required)
+ * <li>score - Điểm đánh giá (required): STRONG_ACCEPT, ACCEPT, WEAK_ACCEPT,
+ * BORDERLINE,
+ * WEAK_REJECT, REJECT, STRONG_REJECT
+ * <li>isConfidential - Có phải confidential review không (required)
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -27,26 +29,26 @@ public class ReviewSubmitDTO {
   private Long assignmentId;
 
   @NotBlank(message = "Summary is required")
-  private String summary;
+  private String summary; // Tóm tắt
 
-  private String strengths;
+  private String strengths; // Điểm mạnh
 
-  private String weaknesses;
+  private String weaknesses; // Điểm yếu
 
   @NotBlank(message = "Comments are required")
-  private String comments;
+  private String comments; // Nhận xét
 
   @NotBlank(message = "Score is required")
-  private String score; // ReviewScore enum value
+  private String score; // Điểm đánh giá (enum)
 
   @NotNull(message = "Is confidential flag is required")
-  private Boolean isConfidential;
+  private Boolean isConfidential; // Bí mật
 
-  private Integer overallRating; // Overall rating (1-5)
+  private Integer overallRating; // Đánh giá chung (1-5)
 
-  private Integer confidence; // Confidence level (1-5)
+  private Integer confidence; // Độ tự tin (1-5)
 
-  private Long templateId; // Optional: Review template ID to apply
+  private Long templateId; // Optional: ID mẫu review để áp dụng
 
   public Long getAssignmentId() {
     return assignmentId;

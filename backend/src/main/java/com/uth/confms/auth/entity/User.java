@@ -48,17 +48,17 @@ public class User {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "organization_id")
-  private com.uth.confms.common.entity.Organization organization;
+  private com.uth.confms.common.entity.Organization organization; // Tổ chức/Trường đại học
 
-  private String phone;
-
-  @Builder.Default
-  @Column(nullable = false)
-  private Boolean emailVerified = true; // Email verification disabled - default to true
+  private String phone; // Số điện thoại
 
   @Builder.Default
   @Column(nullable = false)
-  private Boolean active = true;
+  private Boolean emailVerified = true; // Trạng thái xác thực email (mặc định là true hệ thống hiện tại)
+
+  @Builder.Default
+  @Column(nullable = false)
+  private Boolean active = true; // Trạng thái hoạt động của tài khoản
 
   @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
@@ -78,10 +78,10 @@ public class User {
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
-  private LocalDateTime createdAt;
+  private LocalDateTime createdAt; // Thời điểm tạo tài khoản
 
   @LastModifiedDate
-  private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt; // Thời điểm cập nhật cuối cùng
 
   /**
    * Lấy tên đầy đủ của user (firstName + lastName)

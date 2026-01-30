@@ -130,10 +130,7 @@ public class UserController {
   }
 
   /**
-   * Deactivate user account (chỉ admin)
-   *
-   * @param id ID của user cần deactivate
-   * @return ApiResponse xác nhận deactivate
+   * Khóa tài khoản người dùng (chỉ ADMIN).
    */
   @PutMapping("/{id}/deactivate")
   @PreAuthorize("hasRole('ADMIN')")
@@ -143,10 +140,7 @@ public class UserController {
   }
 
   /**
-   * Activate user account (chỉ admin)
-   *
-   * @param id ID của user cần activate
-   * @return ApiResponse xác nhận activate
+   * Kích hoạt lại tài khoản người dùng (chỉ ADMIN).
    */
   @PutMapping("/{id}/activate")
   @PreAuthorize("hasRole('ADMIN')")

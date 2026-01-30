@@ -26,6 +26,7 @@ public class ReportController {
 
   @GetMapping("/conference/{conferenceId}/stats")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // API lấy thống kê chung của conference
   public ResponseEntity<ApiResponse<ConferenceStatsDTO>> getConferenceStats(
       @PathVariable Long conferenceId) {
     return ResponseEntity.ok(ApiResponse.success(reportService.getConferenceStats(conferenceId)));
@@ -33,6 +34,7 @@ public class ReportController {
 
   @GetMapping("/conference/{conferenceId}/review-stats")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // API lấy thống kê chi tiết về review
   public ResponseEntity<ApiResponse<ReviewStatsDTO>> getReviewStats(
       @PathVariable Long conferenceId) {
     return ResponseEntity.ok(ApiResponse.success(reportService.getReviewStats(conferenceId)));
@@ -40,6 +42,7 @@ public class ReportController {
 
   @GetMapping("/conference/{conferenceId}/sla-stats")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // API lấy thống kê SLA
   public ResponseEntity<ApiResponse<SLAStatsDTO>> getSLAStats(
       @PathVariable Long conferenceId) {
     return ResponseEntity.ok(ApiResponse.success(slaService.getSLAStats(conferenceId)));
@@ -47,15 +50,16 @@ public class ReportController {
 
   @GetMapping("/export")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // API xuất báo cáo (PDF, Excel, CSV)
   public ResponseEntity<byte[]> exportReport(
       @RequestParam Long conferenceId,
       @RequestParam(defaultValue = "ALL") String reportType,
       @RequestParam(defaultValue = "CSV") String format) {
-    
+
     byte[] exportData;
     String filename;
     String contentType;
-    
+
     if ("PDF".equalsIgnoreCase(format)) {
       exportData = reportExportService.exportToPdf(conferenceId, reportType);
       filename = String.format("report_%s_%s.pdf", conferenceId, LocalDate.now());
@@ -70,10 +74,10 @@ public class ReportController {
       filename = String.format("report_%s_%s.csv", conferenceId, LocalDate.now());
       contentType = "text/csv";
     }
-    
+
     return ResponseEntity.ok()
-            .contentType(MediaType.parseMediaType(contentType))
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-            .body(exportData);
+        .contentType(MediaType.parseMediaType(contentType))
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+        .body(exportData);
   }
 }

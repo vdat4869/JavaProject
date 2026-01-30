@@ -35,6 +35,7 @@ public class COIService {
   private final UserRepository userRepository;
   private final SubmissionAuthorRepository submissionAuthorRepository;
 
+  // Kiểm tra xem reviewer có COI với submission không
   public boolean hasCOI(Long reviewerId, Long submissionId) {
     return coiRepository.findByReviewerIdAndSubmissionId(reviewerId, submissionId)
         .map(ConflictOfInterest::getActive)
@@ -42,6 +43,7 @@ public class COIService {
   }
 
   @Transactional
+  // Tự động phát hiện và gợi ý COI cho reviewer cụ thể
   public void detectAndSuggestCOI(Long reviewerId, Long submissionId) {
     Submission submission = submissionRepository.findById(submissionId)
         .orElseThrow(() -> new RuntimeException("Submission not found"));
@@ -90,6 +92,7 @@ public class COIService {
   }
 
   @Transactional
+  // Quét toàn bộ PC members để phát hiện institutional conflicts
   public void detectInstitutionalConflicts(Long submissionId) {
     Submission submission = submissionRepository.findById(submissionId)
         .orElseThrow(() -> new RuntimeException("Submission not found"));
@@ -162,6 +165,7 @@ public class COIService {
   }
 
   @Transactional
+  // Reviewer chủ động khai báo COI
   public ConflictOfInterest declareCOI(COIDeclareDTO dto, Long reviewerId, HttpServletRequest request) {
     ConflictOfInterest.COIType type;
     try {
@@ -182,6 +186,7 @@ public class COIService {
   }
 
   @Transactional
+  // Xóa COI đã khai báo (chỉ reviewer sở hữu mới được xóa)
   public void removeCOI(Long coiId, Long reviewerId, HttpServletRequest request) {
     ConflictOfInterest coi = coiRepository.findById(coiId)
         .orElseThrow(() -> new RuntimeException("COI not found"));
@@ -204,6 +209,7 @@ public class COIService {
     return new ArrayList<>();
   }
 
+  // Thống kê tình hình COI của conference
   public COIStatisticsDTO getCOIStatistics(Long conferenceId, Long chairId) {
     List<Submission> submissions = submissionRepository.findByConferenceId(conferenceId);
     long submissionsWithCOI = submissions.stream()

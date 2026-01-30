@@ -16,8 +16,10 @@ import java.util.UUID;
 @Repository
 public interface CameraReadyReviewRepository extends JpaRepository<CameraReadyReview, UUID> {
 
+    // Tìm tất cả reviews của một submission, sắp xếp theo thời gian mới nhất
     List<CameraReadyReview> findBySubmissionIdOrderByReviewedAtDesc(UUID submissionId);
 
+    // Tìm tất cả reviews được thực hiện bởi một reviewer
     List<CameraReadyReview> findByReviewedBy(Long reviewerId);
 
     long countBySubmissionId(UUID submissionId);

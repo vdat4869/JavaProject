@@ -39,19 +39,19 @@ public class CameraReadyVersion {
     private CameraReadySubmission submission;
 
     @Column(name = "version_number", nullable = false)
-    private Integer versionNumber;
+    private Integer versionNumber; // Số phiên bản (1, 2, 3...)
 
     @Column(name = "original_filename", nullable = false, length = 255)
-    private String originalFilename;
+    private String originalFilename; // Tên file gốc
 
     @Column(name = "stored_path", nullable = false, length = 500)
-    private String storedPath;
+    private String storedPath; // Đường dẫn lưu file trên ổ cứng/cloud
 
     @Column(name = "file_size_bytes", nullable = false)
     private Long fileSizeBytes;
 
     @Column(name = "checksum_sha256", nullable = false, length = 64)
-    private String checksumSha256;
+    private String checksumSha256; // Checksum để kiểm tra toàn vẹn file
 
     @Column(name = "page_count")
     private Integer pageCount;
@@ -61,16 +61,16 @@ public class CameraReadyVersion {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "validation_result", columnDefinition = "jsonb")
-    private Map<String, Object> validationResult;
+    private Map<String, Object> validationResult; // Kết quả validate PDF (JSON)
 
     @Column(name = "validation_passed")
-    private Boolean validationPassed;
+    private Boolean validationPassed; // Đã qua bước kiểm tra kỹ thuật chưa
 
     @Column(name = "uploaded_by", nullable = false)
     private Long uploadedBy;
 
     @Column(name = "uploaded_at", nullable = false)
-    private LocalDateTime uploadedAt;
+    private LocalDateTime uploadedAt; // Thời gian tải lên
 
     public boolean isCurrent() {
         return submission != null

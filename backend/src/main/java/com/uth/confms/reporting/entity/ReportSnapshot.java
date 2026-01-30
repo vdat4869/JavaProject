@@ -52,7 +52,8 @@ public class ReportSnapshot {
   @Column(nullable = false, updatable = false)
   private LocalDateTime snapshotAt;
 
-  public ReportSnapshot() {}
+  public ReportSnapshot() {
+  }
 
   public ReportSnapshot(
       Long id,

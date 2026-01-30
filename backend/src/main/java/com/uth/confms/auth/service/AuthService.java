@@ -187,7 +187,8 @@ public class AuthService {
   }
 
   /**
-   * Change password for user
+   * Thay đổi mật khẩu người dùng.
+   * Kiểm tra mật khẩu hiện tại trước khi cập nhật.
    */
   @Transactional
   public void changePassword(Long userId, ChangePasswordRequest request, HttpServletRequest httpRequest) {
@@ -229,7 +230,8 @@ public class AuthService {
   }
 
   /**
-   * Logout - Revoke refresh token and log action
+   * Đăng xuất người dùng.
+   * Thu hồi (revoke) refresh token và ghi log hành động.
    */
   public void logout(String refreshToken, HttpServletRequest httpRequest) {
     String tokenHash = sha256Hex(refreshToken);
@@ -654,7 +656,8 @@ public class AuthService {
   }
 
   /**
-   * Send password reset email
+   * Gửi email yêu cầu khôi phục mật khẩu.
+   * Tạo một token khôi phục và gửi qua email cho người dùng.
    */
   @Transactional
   public void forgotPassword(ForgotPasswordRequest request, HttpServletRequest httpRequest) {
@@ -695,7 +698,8 @@ public class AuthService {
   }
 
   /**
-   * Reset password using token
+   * Khôi phục mật khẩu bằng token.
+   * Kiểm tra tính hợp lệ và thời hạn của token trước khi đặt lại mật khẩu.
    */
   @Transactional
   public void resetPassword(ResetPasswordRequest request, HttpServletRequest httpRequest) {

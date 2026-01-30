@@ -12,16 +12,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserDTO {
-  private Long id;
-  private String email;
-  private String firstName;
-  private String lastName;
-  private Long organizationId;
-  private String organizationName;
-  private String phone;
-  private Boolean emailVerified;
-  private Boolean active;
-  private Set<String> roles;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+  private Long id; // ID người dùng
+  private String email; // Email
+  private String firstName; // Tên
+  private String lastName; // Họ
+  private Long organizationId; // ID tổ chức
+  private String organizationName; // Tên tổ chức
+  private String phone; // Số điện thoại
+  private Boolean emailVerified; // Đã xác thực email chưa
+  private Boolean active; // Trạng thái hoạt động
+  private Set<String> roles; // Các vai trò của user
+  private LocalDateTime createdAt; // Ngày tạo
+  private LocalDateTime updatedAt; // Ngày cập nhật
 }

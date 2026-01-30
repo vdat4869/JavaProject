@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RebuttalRepository extends JpaRepository<Rebuttal, Long> {
+  // Tìm rebuttal theo submission ID
   Optional<Rebuttal> findBySubmissionId(Long submissionId);
 
   List<Rebuttal> findByAuthorId(Long authorId);

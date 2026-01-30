@@ -15,25 +15,27 @@ public class Rebuttal {
   private Long id;
 
   @Column(nullable = false)
-  private Long submissionId;
+  private Long submissionId; // ID bài báo
 
   @Column(nullable = false)
-  private Long authorId;
+  private Long authorId; // ID tác giả
 
   @Column(columnDefinition = "TEXT", nullable = false)
-  private String content;
+  private String content; // Nội dung phản biện
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
-  private RebuttalStatus status = RebuttalStatus.DRAFT;
+  private RebuttalStatus status = RebuttalStatus.DRAFT; // Trạng thái
 
   @CreatedDate
   @Column(nullable = false, updatable = false)
   private LocalDateTime createdAt;
 
-  @LastModifiedDate private LocalDateTime submittedAt;
+  @LastModifiedDate
+  private LocalDateTime submittedAt; // Thời gian nộp
 
-  public Rebuttal() {}
+  public Rebuttal() {
+  }
 
   public Rebuttal(
       Long id,

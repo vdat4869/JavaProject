@@ -14,13 +14,13 @@ public class SubmissionResponseDTO {
   private Long trackId;
   private String keywords;
   private Boolean withdrawn;
-  private Boolean canEdit;
-  private Boolean canWithdraw;
-  private List<SubmissionAuthorDTO> authors;
-  private List<SubmissionFileDTO> files;
+  private Boolean canEdit; // Có thể chỉnh sửa?
+  private Boolean canWithdraw; // Có thể rút?
+  private List<SubmissionAuthorDTO> authors; // Danh sách tác giả
+  private List<SubmissionFileDTO> files; // Lịch sử file
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
-  private String reviewMode;
+  private String reviewMode; // Chế độ review (Single/Double Blind)
   private String trackName;
 
   public SubmissionResponseDTO() {

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ConferenceRepository extends JpaRepository<Conference, Long> {
-  List<Conference> findByPublishedTrue();
+  List<Conference> findByPublishedTrue(); // Tìm các hội nghị đã public
 
-  List<Conference> findByChairId(Long chairId);
+  List<Conference> findByChairId(Long chairId); // Tìm các hội nghị theo Chair ID
 }

@@ -5,12 +5,13 @@ import java.time.LocalDateTime;
 public class PCInvitationResponseDTO {
   private Long id;
   private Long conferenceId;
-  private String invitedUserEmail;
-  private String status;
-  private LocalDateTime expiresAt;
+  private String invitedUserEmail; // Email người được mời
+  private String status; // Trạng thái (PENDING, ACCEPTED,...)
+  private LocalDateTime expiresAt; // Thời gian hết hạn
   private LocalDateTime createdAt;
 
-  public PCInvitationResponseDTO() {}
+  public PCInvitationResponseDTO() {
+  }
 
   public PCInvitationResponseDTO(
       Long id,

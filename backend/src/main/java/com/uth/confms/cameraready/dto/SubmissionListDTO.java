@@ -23,12 +23,12 @@ public class SubmissionListDTO {
 
     private UUID id;
     private Long paperId;
-    private String paperTitle;
+    private String paperTitle; // Tiêu đề bài báo
     private Long trackId;
     private String trackName;
-    private CameraReadyStatus status;
-    private Integer currentVersionNumber;
-    private Boolean copyrightConfirmed;
-    private VersionDTO.UserDTO correspondingAuthor;
+    private CameraReadyStatus status; // Trạng thái
+    private Integer currentVersionNumber; // Số phiên bản hiện tại
+    private Boolean copyrightConfirmed; // Trạng thái bản quyền
+    private VersionDTO.UserDTO correspondingAuthor; // Tác giả liên hệ
     private LocalDateTime updatedAt;
 }

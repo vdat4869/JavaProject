@@ -77,6 +77,7 @@ public class ReviewService {
   }
 
   @Transactional
+  // Tạo hoặc cập nhật draft review
   public ReviewResponseDTO createOrUpdateDraft(ReviewSubmitDTO dto, Long reviewerId) {
     Assignment assignment = assignmentRepository
         .findById(dto.getAssignmentId())
@@ -148,6 +149,7 @@ public class ReviewService {
   }
 
   @Transactional
+  // Submit review (không thể sửa sau khi submit)
   public ReviewResponseDTO submitReview(Long reviewId, Long reviewerId) {
     Review review = reviewRepository
         .findById(reviewId)
@@ -211,6 +213,7 @@ public class ReviewService {
     return mapToDTO(review, showReviewerName);
   }
 
+  // Lấy review của user hiện tại cho assignment
   public ReviewResponseDTO getMyReview(Long assignmentId, Long reviewerId) {
     Review review = reviewRepository
         .findByAssignmentIdAndReviewerId(assignmentId, reviewerId)
@@ -224,6 +227,8 @@ public class ReviewService {
     return mapToDTO(review, true); // true = show reviewer name (own review)
   }
 
+  // Lấy danh sách reviews của submission (author chỉ thấy submitted &
+  // non-confidential)
   public List<ReviewResponseDTO> getReviewsBySubmission(
       Long submissionId, Long userId, boolean isChairOrAdmin) {
     // Validate submission exists
@@ -237,6 +242,19 @@ public class ReviewService {
     boolean showReviewerName = shouldShowReviewerName(submissionId, userId, isChairOrAdmin);
 
     return reviews.stream()
+        .filter(review -> {
+          // Chair/Admin can see all
+          if (isChairOrAdmin)
+            return true;
+          // Reviewer can see own review (even if draft)
+          if (review.getReviewerId().equals(userId))
+            return true;
+
+          // For others (Authors):
+          // 1. Must be SUBMITTED
+          // 2. Must not be confidential
+          return review.getStatus() == Review.ReviewStatus.SUBMITTED && !review.getIsConfidential();
+        })
         .map(review -> {
           // For own review, always show reviewer name
           boolean showName = review.getReviewerId().equals(userId) || showReviewerName;
@@ -245,13 +263,26 @@ public class ReviewService {
         .collect(Collectors.toList());
   }
 
+  // Lấy chi tiết review
   public ReviewResponseDTO getReview(Long reviewId, Long userId, boolean isChairOrAdmin) {
     Review review = reviewRepository
         .findById(reviewId)
         .orElseThrow(() -> new NotFoundException("Review not found"));
 
     // Check authorization: reviewer can see own review, chair/admin can see all
-    boolean canView = review.getReviewerId().equals(userId) || isChairOrAdmin;
+    boolean isOwner = review.getReviewerId().equals(userId);
+    boolean isAuthor = false;
+    try {
+      var submission = submissionRepository.findById(review.getSubmissionId()).orElse(null);
+      if (submission != null && submission.getAuthorId().equals(userId)) {
+        isAuthor = true;
+      }
+    } catch (Exception e) {
+      // Ignore navigation/author lookup errors
+    }
+
+    boolean canView = isOwner || isChairOrAdmin
+        || (isAuthor && review.getStatus() == Review.ReviewStatus.SUBMITTED && !review.getIsConfidential());
     if (!canView) {
       throw new UnauthorizedException("You don't have permission to view this review");
     }
@@ -315,6 +346,7 @@ public class ReviewService {
    * @param submissionId Submission ID
    * @throws BusinessException If deadline has passed and is hard deadline
    */
+  // Kiểm tra deadline review
   private void checkReviewDeadline(Long submissionId) {
     Submission submission = submissionRepository
         .findById(submissionId)
@@ -363,6 +395,7 @@ public class ReviewService {
    * @param submissionId Submission ID
    * @return AverageScoreDTO với average score và review count
    */
+  // Tính điểm trung bình của submission
   public AverageScoreDTO getAverageScore(Long submissionId) {
     // Validate submission exists
     submissionRepository
@@ -396,6 +429,7 @@ public class ReviewService {
    * @param chairId      Chair ID để check authorization
    * @return ReviewStatisticsDTO với các metrics
    */
+  // Lấy thống kê review cho conference
   public ReviewStatisticsDTO getReviewStatistics(Long conferenceId, Long chairId) {
     // Check authorization
     Conference conference = conferenceRepository

@@ -170,7 +170,7 @@ export const reviewService = {
    */
   getReview: async (id: number): Promise<Review> => {
     const response = await apiClient.get<{ success: boolean; data: Review }>(`/reviews/${id}`)
-    return response.data.data || response.data
+    return response.data.data
   },
 
   /**
@@ -182,7 +182,7 @@ export const reviewService = {
       const response = await apiClient.get<{ success: boolean; data: Review }>(
         `/reviews/assignment/${assignmentId}`
       )
-      return response.data.data || response.data
+      return response.data.data
     } catch (error: any) {
       if (error.response?.status === 404) {
         return null
@@ -199,7 +199,7 @@ export const reviewService = {
     const response = await apiClient.get<{ success: boolean; data: Review[] }>(
       `/reviews/submission/${submissionId}`
     )
-    return response.data.data || response.data
+    return response.data.data
   },
 
   /**
@@ -211,7 +211,7 @@ export const reviewService = {
       '/reviews/draft',
       data
     )
-    return response.data.data || response.data
+    return response.data.data
   },
 
   /**
@@ -222,7 +222,7 @@ export const reviewService = {
     const response = await apiClient.post<{ success: boolean; data: Review }>(
       `/reviews/${id}/submit`
     )
-    return response.data.data || response.data
+    return response.data.data
   },
 
   /**
@@ -233,7 +233,7 @@ export const reviewService = {
     const response = await apiClient.get<{ success: boolean; data: AverageScore }>(
       `/reviews/submission/${submissionId}/average-score`
     )
-    return response.data.data || response.data
+    return response.data.data
   },
 
   /**
@@ -244,7 +244,7 @@ export const reviewService = {
     const response = await apiClient.get<{ success: boolean; data: ReviewStatistics }>(
       `/reviews/conference/${conferenceId}/statistics`
     )
-    return response.data.data || response.data
+    return response.data.data
   },
 
   /**
@@ -255,7 +255,7 @@ export const reviewService = {
     const response = await apiClient.get<{ success: boolean; data: ReviewComment[] }>(
       `/reviews/submission/${submissionId}/comments`
     )
-    return response.data.data || response.data
+    return response.data.data
   },
 
   /**
@@ -273,7 +273,7 @@ export const reviewService = {
         },
       }
     )
-    return response.data.data || response.data
+    return response.data.data
   },
 
   /**
@@ -285,7 +285,7 @@ export const reviewService = {
       const response = await apiClient.get<{ success: boolean; data: Rebuttal }>(
         `/reviews/rebuttal/submission/${submissionId}`
       )
-      return response.data.data || response.data
+      return response.data.data
     } catch (error: any) {
       if (error.response?.status === 404) {
         return null
@@ -303,7 +303,7 @@ export const reviewService = {
       '/reviews/rebuttal',
       data
     )
-    return response.data.data || response.data
+    return response.data.data
   },
 
   /**
@@ -314,7 +314,7 @@ export const reviewService = {
     const response = await apiClient.post<{ success: boolean; data: Rebuttal }>(
       `/reviews/rebuttal/${id}/submit`
     )
-    return response.data.data || response.data
+    return response.data.data
   },
 
   /**

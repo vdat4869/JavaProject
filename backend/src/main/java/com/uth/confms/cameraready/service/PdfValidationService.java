@@ -11,9 +11,18 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public interface PdfValidationService {
 
+    /**
+     * Kiểm tra tính hợp lệ của file PDF (số trang, kích thước, định dạng).
+     */
     ValidationResultDTO validate(MultipartFile file);
 
+    /**
+     * Lấy số trang của file PDF.
+     */
     int getPageCount(byte[] pdfContent) throws Exception;
 
+    /**
+     * Lấy kích thước trang của file PDF (ví dụ: A4, Letter).
+     */
     String getPageSize(byte[] pdfContent) throws Exception;
 }

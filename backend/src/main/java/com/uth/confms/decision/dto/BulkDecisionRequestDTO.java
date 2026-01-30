@@ -6,14 +6,14 @@ import java.util.List;
 
 public class BulkDecisionRequestDTO {
     @NotEmpty(message = "Submission list cannot be empty")
-    private List<Long> submissionIds;
+    private List<Long> submissionIds; // Danh sách ID submission
 
     @NotNull(message = "Decision type is required")
-    private String type;
+    private String type; // Loại decision (ACCEPT/REJECT)
 
-    private String comments;
+    private String comments; // Nhận xét chung
 
-    private Boolean sendNotification = false;
+    private Boolean sendNotification = false; // Gửi thông báo ngay
 
     public List<Long> getSubmissionIds() {
         return submissionIds;

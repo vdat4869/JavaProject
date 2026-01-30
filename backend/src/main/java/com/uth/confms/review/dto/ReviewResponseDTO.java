@@ -7,21 +7,22 @@ public class ReviewResponseDTO {
   private Long assignmentId;
   private Long submissionId;
   private Long reviewerId;
-  private String reviewerName; // Only visible to chair/admin, null for double-blind
-  private String summary;
-  private String strengths;
-  private String weaknesses;
-  private String comments;
-  private String score;
-  private String status;
-  private Boolean isConfidential;
-  private Integer overallRating; // Overall rating (1-5)
-  private Integer confidence; // Confidence level (1-5)
-  private Integer numericScore; // Numeric score (1-7)
+  private String reviewerName; // Chỉ hiện cho chair/admin hoặc trong single-blind
+  private String summary; // Tóm tắt
+  private String strengths; // Điểm mạnh
+  private String weaknesses; // Điểm yếu
+  private String comments; // Nhận xét
+  private String score; // Điểm đánh giá
+  private String status; // Trạng thái
+  private Boolean isConfidential; // Bí mật
+  private Integer overallRating; // Đánh giá chung (1-5)
+  private Integer confidence; // Độ tự tin (1-5)
+  private Integer numericScore; // Điểm số (1-7)
   private LocalDateTime createdAt;
   private LocalDateTime submittedAt;
 
-  public ReviewResponseDTO() {}
+  public ReviewResponseDTO() {
+  }
 
   public ReviewResponseDTO(
       Long id,

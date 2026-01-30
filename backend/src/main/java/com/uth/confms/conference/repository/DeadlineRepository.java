@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DeadlineRepository extends JpaRepository<Deadline, Long> {
-  List<Deadline> findByConferenceId(Long conferenceId);
+  List<Deadline> findByConferenceId(Long conferenceId); // Tìm deadlines theo hội nghị
 
-  List<Deadline> findByConferenceIdIn(List<Long> conferenceIds);
+  List<Deadline> findByConferenceIdIn(List<Long> conferenceIds); // Tìm deadlines cho nhiều hội nghị
 }

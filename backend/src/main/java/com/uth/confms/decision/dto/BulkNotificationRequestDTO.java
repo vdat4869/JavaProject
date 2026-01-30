@@ -6,14 +6,14 @@ import java.util.List;
 
 public class BulkNotificationRequestDTO {
   @NotEmpty(message = "Submission IDs are required")
-  private List<Long> submissionIds;
+  private List<Long> submissionIds; // Danh sách submission ID
 
   @NotNull(message = "Notification type is required")
   private String notificationType; // DECISION_ACCEPT, DECISION_REJECT, etc.
 
-  private String customSubject;
+  private String customSubject; // Tiêu đề tùy chỉnh
 
-  private String customMessage;
+  private String customMessage; // Nội dung tùy chỉnh
 
   public List<Long> getSubmissionIds() {
     return submissionIds;

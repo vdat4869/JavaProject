@@ -7,15 +7,16 @@ import java.util.List;
 /**
  * DTO cho request tạo submission mới
  *
- * <p>DTO này chứa thông tin cần thiết để tạo submission:
+ * <p>
+ * DTO này chứa thông tin cần thiết để tạo submission:
  *
  * <ul>
- *   <li>conferenceId - ID của conference (required)
- *   <li>title - Tiêu đề submission (required)
- *   <li>abstractText - Tóm tắt submission (required)
- *   <li>trackId - ID của track (optional)
- *   <li>keywords - Từ khóa (optional)
- *   <li>authors - Danh sách authors (optional)
+ * <li>conferenceId - ID của conference (required)
+ * <li>title - Tiêu đề submission (required)
+ * <li>abstractText - Tóm tắt submission (required)
+ * <li>trackId - ID của track (optional)
+ * <li>keywords - Từ khóa (optional)
+ * <li>authors - Danh sách authors (optional)
  * </ul>
  *
  * @author UTH-ConfMS Team
@@ -26,18 +27,19 @@ public class SubmissionCreateDTO {
   private Long conferenceId;
 
   @NotBlank(message = "Title is required")
-  private String title;
+  private String title; // Tiêu đề
 
   @NotBlank(message = "Abstract is required")
-  private String abstractText;
+  private String abstractText; // Tóm tắt
 
-  private Long trackId;
+  private Long trackId; // Track ID (nếu có)
 
-  private String keywords;
+  private String keywords; // Từ khóa
 
-  private List<SubmissionAuthorDTO> authors;
+  private List<SubmissionAuthorDTO> authors; // Danh sách đồng tác giả
 
-  public SubmissionCreateDTO() {}
+  public SubmissionCreateDTO() {
+  }
 
   public Long getConferenceId() {
     return conferenceId;

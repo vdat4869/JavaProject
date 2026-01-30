@@ -25,12 +25,14 @@ public class CFPController {
 
   @GetMapping("/conference/{conferenceId}")
   @NoAuth
+  // Lấy thông tin CFP của hội nghị
   public ResponseEntity<ApiResponse<CFPResponseDTO>> getCFP(@PathVariable Long conferenceId) {
     return ResponseEntity.ok(ApiResponse.success(cfpService.getCFPByConference(conferenceId)));
   }
 
   @PostMapping
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Tạo hoặc cập nhật CFP
   public ResponseEntity<ApiResponse<CFPResponseDTO>> createOrUpdateCFP(
       @Valid @RequestBody CFPDTO dto, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -39,6 +41,7 @@ public class CFPController {
 
   @PostMapping("/{conferenceId}/publish")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Mở CFP (Nhận bài nộp)
   public ResponseEntity<ApiResponse<CFPResponseDTO>> publishCFP(
       @PathVariable Long conferenceId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);
@@ -47,6 +50,7 @@ public class CFPController {
 
   @PostMapping("/{conferenceId}/close")
   @PreAuthorize("hasRole('CHAIR') or hasRole('ADMIN')")
+  // Đóng CFP (Ngưng nhận bài nộp)
   public ResponseEntity<ApiResponse<CFPResponseDTO>> closeCFP(
       @PathVariable Long conferenceId, Authentication authentication) {
     Long chairId = getUserIdFromAuthentication(authentication);

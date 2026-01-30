@@ -33,8 +33,8 @@ public class ReviewerAIService {
         }
 
         /**
-         * Tạo tóm tắt trung lập (không chứa ngôn ngữ đánh giá).
-         * Dùng cho PC bidding hoặc quick triage.
+         * Tạo bản tóm tắt bài báo với ngôn ngữ trung lập (không đánh giá hay/dở).
+         * Hỗ trợ PC Member nhanh chóng nắm bắt nội dung để thực hiện bidding.
          */
         public NeutralSummaryResponse generateNeutralSummary(NeutralSummaryRequest request, Long userId) {
                 String systemPrompt = """
@@ -156,8 +156,9 @@ public class ReviewerAIService {
         }
 
         /**
-         * Gợi ý độ tương đồng giữa reviewer và paper.
-         * Chỉ là hint, KHÔNG tự động assign.
+         * Tính toán gợi ý độ tương đồng giữa chuyên môn của Reviewer và nội dung bài
+         * báo.
+         * Hỗ trợ Chair trong việc phân công reviewer phù hợp nhất.
          */
         public SimilarityHintResponse calculateSimilarityHint(SimilarityHintRequest request, Long userId) {
                 String systemPrompt = """

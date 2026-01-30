@@ -37,6 +37,7 @@ public interface CameraReadySubmissionRepository extends JpaRepository<CameraRea
 
         Page<CameraReadySubmission> findByConferenceIdAndTrackId(Long conferenceId, Long trackId, Pageable pageable);
 
+        // Query phức tạp để lọc submission theo nhiều tiêu chí
         @Query("SELECT s FROM CameraReadySubmission s WHERE s.conferenceId = :conferenceId " +
                         "AND (:trackId IS NULL OR s.trackId = :trackId) " +
                         "AND (:status IS NULL OR s.status = :status) " +
@@ -53,4 +54,8 @@ public interface CameraReadySubmissionRepository extends JpaRepository<CameraRea
         long countByConferenceIdAndCopyrightConfirmedTrue(Long conferenceId);
 
         long countByConferenceId(Long conferenceId);
+
+        // Đếm số lượng theo status để làm thống kê
+        @Query("SELECT s.status, COUNT(s) FROM CameraReadySubmission s WHERE s.conferenceId = :conferenceId GROUP BY s.status")
+        List<Object[]> countByConferenceIdGroupByStatus(@Param("conferenceId") Long conferenceId);
 }

@@ -206,11 +206,8 @@ public class UserService {
   }
 
   /**
-   * Cập nhật danh sách các vai trò của người dùng
-   *
-   * @param userId    ID của người dùng cần cập nhật
-   * @param roleNames Tập hợp các tên vai trò mới
-   * @throws NotFoundException nếu user hoặc bất kỳ role nào không tồn tại
+   * Cập nhật danh sách các vai trò (Role) của người dùng.
+   * Chỉ ADMIN mới có quyền này.
    */
   @Transactional
   public void updateUserRoles(Long userId, Set<String> roleNames) {

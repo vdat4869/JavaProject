@@ -14,13 +14,13 @@ public class Track {
   private Conference conference;
 
   @Column(nullable = false)
-  private String name;
+  private String name; // Tên track (Lĩnh vực nghiên cứu)
 
   @Column(columnDefinition = "TEXT")
-  private String description;
+  private String description; // Mô tả track
 
   @Column(nullable = false)
-  private Boolean active = true;
+  private Boolean active = true; // Trạng thái hoạt động
 
   public Track() {
   }

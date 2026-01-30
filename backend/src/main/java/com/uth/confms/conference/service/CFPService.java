@@ -34,6 +34,9 @@ public class CFPService {
     this.topicRepository = topicRepository;
   }
 
+  /**
+   * Lấy thông tin CFP của một hội nghị.
+   */
   @Transactional(readOnly = true)
   public CFPResponseDTO getCFPByConference(Long conferenceId) {
     String conferenceErrorMessage = "Conference with id " + conferenceId + " not found";
@@ -48,6 +51,10 @@ public class CFPService {
     return mapToDTO(cfp);
   }
 
+  /**
+   * Tạo hoặc cập nhật thông tin CFP.
+   * Chỉ Chair của hội nghị mới được phép thực hiện.
+   */
   @Transactional
   @SuppressWarnings("deprecation")
   public CFPResponseDTO createOrUpdateCFP(CFPDTO dto, Long chairId) {
@@ -105,6 +112,9 @@ public class CFPService {
     return mapToDTO(cfp);
   }
 
+  /**
+   * Mở CFP (cho phép nộp bài).
+   */
   @Transactional
   public CFPResponseDTO publishCFP(Long conferenceId, Long chairId) {
     String conferenceErrorMessage = "Conference with id " + conferenceId + " not found";
@@ -127,6 +137,9 @@ public class CFPService {
     return mapToDTO(savedCfp);
   }
 
+  /**
+   * Đóng CFP (ngưng nhận bài).
+   */
   @Transactional
   public CFPResponseDTO closeCFP(Long conferenceId, Long chairId) {
     String conferenceErrorMessage = "Conference with id " + conferenceId + " not found";

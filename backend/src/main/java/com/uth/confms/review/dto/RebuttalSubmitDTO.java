@@ -8,7 +8,7 @@ public class RebuttalSubmitDTO {
   private Long submissionId;
 
   @NotBlank(message = "Content is required")
-  private String content;
+  private String content; // Nội dung phản biện
 
   public Long getSubmissionId() {
     return submissionId;
