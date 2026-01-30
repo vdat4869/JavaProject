@@ -12,6 +12,7 @@ import com.uth.confms.cameraready.service.PdfValidationService;
 import com.uth.confms.common.exception.NotFoundException;
 import com.uth.confms.common.exception.BusinessException;
 import com.uth.confms.common.util.FileUtil;
+import com.uth.confms.common.util.PdfFontUtil;
 import com.uth.confms.conference.entity.Deadline;
 import com.uth.confms.conference.entity.Deadline.DeadlineType;
 import com.uth.confms.conference.entity.Track;
@@ -29,6 +30,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.springframework.core.io.InputStreamResource;
@@ -943,22 +945,28 @@ public class CameraReadyServiceImpl implements CameraReadyService {
         PDPage page = new PDPage(PDRectangle.A4);
         document.addPage(page);
 
+        // Load Unicode-compatible fonts for Vietnamese support
+        PDFont boldFont = PdfFontUtil.loadBoldFont(document);
+        PDFont regularFont = PdfFontUtil.loadRegularFont(document);
+        boolean hasUnicodeFont = PdfFontUtil.hasCustomFonts();
+
         try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 24);
+            contentStream.setFont(boldFont, 24);
             contentStream.newLineAtOffset(50, 750);
-            contentStream.showText(
-                    export.getConferenceName() != null ? export.getConferenceName() : "Conference Proceedings");
+            String conferenceName = export.getConferenceName() != null ? export.getConferenceName()
+                    : "Conference Proceedings";
+            contentStream.showText(PdfFontUtil.prepareText(conferenceName, hasUnicodeFont));
             contentStream.endText();
 
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, 700);
             contentStream.showText("Total Papers: " + export.getTotalPapers());
             contentStream.endText();
 
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, 680);
             contentStream.showText("Exported: " + export.getExportedAt().toString());
             contentStream.endText();
@@ -971,6 +979,11 @@ public class CameraReadyServiceImpl implements CameraReadyService {
         int totalItems = export.getPapers().size();
         int totalPages = (totalItems + itemsPerPage - 1) / itemsPerPage;
 
+        // Load Unicode-compatible fonts for Vietnamese support
+        PDFont boldFont = PdfFontUtil.loadBoldFont(document);
+        PDFont regularFont = PdfFontUtil.loadRegularFont(document);
+        boolean hasUnicodeFont = PdfFontUtil.hasCustomFonts();
+
         for (int pageNum = 0; pageNum < totalPages; pageNum++) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
@@ -978,7 +991,7 @@ public class CameraReadyServiceImpl implements CameraReadyService {
             try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
                 // Title
                 contentStream.beginText();
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 18);
+                contentStream.setFont(boldFont, 18);
                 contentStream.newLineAtOffset(50, 750);
                 contentStream.showText("Table of Contents");
                 contentStream.endText();
@@ -994,17 +1007,18 @@ public class CameraReadyServiceImpl implements CameraReadyService {
                             : (currentPage + i - startIdx + 1);
 
                     contentStream.beginText();
-                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                    contentStream.setFont(regularFont, 10);
                     contentStream.newLineAtOffset(50, yPos);
                     String title = paper.getTitle() != null ? paper.getTitle() : "Untitled";
                     if (title.length() > 60) {
                         title = title.substring(0, 57) + "...";
                     }
-                    contentStream.showText(String.format("%d. %s", i + 1, title));
+                    contentStream
+                            .showText(String.format("%d. %s", i + 1, PdfFontUtil.prepareText(title, hasUnicodeFont)));
                     contentStream.endText();
 
                     contentStream.beginText();
-                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                    contentStream.setFont(regularFont, 10);
                     contentStream.newLineAtOffset(500, yPos);
                     contentStream.showText(String.valueOf(pageNumForPaper));
                     contentStream.endText();
@@ -1022,15 +1036,21 @@ public class CameraReadyServiceImpl implements CameraReadyService {
         PDPage page = new PDPage(PDRectangle.A4);
         document.addPage(page);
 
+        // Load Unicode-compatible fonts for Vietnamese support
+        PDFont boldFont = PdfFontUtil.loadBoldFont(document);
+        PDFont regularFont = PdfFontUtil.loadRegularFont(document);
+        boolean hasUnicodeFont = PdfFontUtil.hasCustomFonts();
+
         try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+            contentStream.setFont(boldFont, 16);
             contentStream.newLineAtOffset(50, 750);
-            contentStream.showText(title != null ? title : "Paper Not Available");
+            String displayTitle = title != null ? title : "Paper Not Available";
+            contentStream.showText(PdfFontUtil.prepareText(displayTitle, hasUnicodeFont));
             contentStream.endText();
 
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, 700);
             contentStream.showText("PDF file is not available for this paper.");
             contentStream.endText();

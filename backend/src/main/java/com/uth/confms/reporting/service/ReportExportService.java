@@ -13,8 +13,10 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+import com.uth.confms.common.util.PdfFontUtil;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -260,44 +262,48 @@ public class ReportExportService {
                 .count();
         double acceptanceRate = submissions.size() > 0 ? (double) accepted / submissions.size() * 100 : 0.0;
 
+        // Load Unicode-compatible fonts for Vietnamese support
+        PDFont boldFont = PdfFontUtil.loadBoldFont(document);
+        PDFont regularFont = PdfFontUtil.loadRegularFont(document);
+
         try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 18);
+            contentStream.setFont(boldFont, 18);
             contentStream.newLineAtOffset(50, 750);
             contentStream.showText("Conference Statistics Report");
             contentStream.endText();
 
             int yPos = 700;
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, yPos);
             contentStream.showText("Total Submissions: " + submissions.size());
             contentStream.endText();
 
             yPos -= 20;
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, yPos);
             contentStream.showText("Accepted: " + accepted);
             contentStream.endText();
 
             yPos -= 20;
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, yPos);
             contentStream.showText("Rejected: " + rejected);
             contentStream.endText();
 
             yPos -= 20;
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, yPos);
             contentStream.showText("Pending: " + pending);
             contentStream.endText();
 
             yPos -= 20;
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, yPos);
             contentStream.showText(String.format("Acceptance Rate: %.2f%%", acceptanceRate));
             contentStream.endText();
@@ -311,13 +317,18 @@ public class ReportExportService {
         int itemsPerPage = 30;
         int totalPages = (submissions.size() + itemsPerPage - 1) / itemsPerPage;
 
+        // Load Unicode-compatible fonts for Vietnamese support
+        PDFont boldFont = PdfFontUtil.loadBoldFont(document);
+        PDFont regularFont = PdfFontUtil.loadRegularFont(document);
+        boolean hasUnicodeFont = PdfFontUtil.hasCustomFonts();
+
         for (int pageNum = 0; pageNum < totalPages; pageNum++) {
             PDPage page = new PDPage(PDRectangle.A4);
             document.addPage(page);
 
             try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
                 contentStream.beginText();
-                contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+                contentStream.setFont(boldFont, 16);
                 contentStream.newLineAtOffset(50, 750);
                 contentStream.showText("Submissions List");
                 contentStream.endText();
@@ -334,9 +345,10 @@ public class ReportExportService {
                     }
 
                     contentStream.beginText();
-                    contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 10);
+                    contentStream.setFont(regularFont, 10);
                     contentStream.newLineAtOffset(50, yPos);
-                    contentStream.showText(String.format("%d. %s [%s]", i + 1, title, submission.getStatus()));
+                    contentStream.showText(String.format("%d. %s [%s]", i + 1,
+                            PdfFontUtil.prepareText(title, hasUnicodeFont), submission.getStatus()));
                     contentStream.endText();
 
                     yPos -= 15;
@@ -355,9 +367,13 @@ public class ReportExportService {
         PDPage page = new PDPage(PDRectangle.A4);
         document.addPage(page);
 
+        // Load Unicode-compatible fonts for Vietnamese support
+        PDFont boldFont = PdfFontUtil.loadBoldFont(document);
+        PDFont regularFont = PdfFontUtil.loadRegularFont(document);
+
         try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+            contentStream.setFont(boldFont, 16);
             contentStream.newLineAtOffset(50, 750);
             contentStream.showText("Reviews Summary");
             contentStream.endText();
@@ -375,21 +391,21 @@ public class ReportExportService {
 
             int yPos = 700;
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, yPos);
             contentStream.showText("Total Reviews: " + totalReviews);
             contentStream.endText();
 
             yPos -= 20;
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, yPos);
             contentStream.showText("Completed Reviews: " + completedReviews);
             contentStream.endText();
 
             yPos -= 20;
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, yPos);
             contentStream.showText("Pending Reviews: " + (totalReviews - completedReviews));
             contentStream.endText();
@@ -405,9 +421,13 @@ public class ReportExportService {
         PDPage page = new PDPage(PDRectangle.A4);
         document.addPage(page);
 
+        // Load Unicode-compatible fonts for Vietnamese support
+        PDFont boldFont = PdfFontUtil.loadBoldFont(document);
+        PDFont regularFont = PdfFontUtil.loadRegularFont(document);
+
         try (PDPageContentStream contentStream = new PDPageContentStream(document, page)) {
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 16);
+            contentStream.setFont(boldFont, 16);
             contentStream.newLineAtOffset(50, 750);
             contentStream.showText("Decisions Summary");
             contentStream.endText();
@@ -434,21 +454,21 @@ public class ReportExportService {
 
             int yPos = 700;
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, yPos);
             contentStream.showText("Total Decisions: " + totalDecisionsInt);
             contentStream.endText();
 
             yPos -= 20;
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, yPos);
             contentStream.showText("Accepted: " + acceptedInt);
             contentStream.endText();
 
             yPos -= 20;
             contentStream.beginText();
-            contentStream.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA), 12);
+            contentStream.setFont(regularFont, 12);
             contentStream.newLineAtOffset(50, yPos);
             contentStream.showText("Rejected: " + rejectedInt);
             contentStream.endText();
